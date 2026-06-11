@@ -32,6 +32,8 @@
     "senior",
     "10+ years",
     "director",
+    "staff",
+    "lead",
     "principal",
     "manager",
     "9+ years",
@@ -77,22 +79,22 @@
       "name": "Remotive",
       "type": "remotive",
       "url": "https://remotive.com/api/remote-jobs",
-      "enabled": false,
-      "_note": "Requires remotive scraper function in scraper.py — not yet implemented"
+      "enabled": true
     },
     {
       "name": "Arbeitnow",
       "type": "arbeitnow",
       "url": "https://www.arbeitnow.com/api/job-board-api",
+      "pages": 2,
       "enabled": false,
-      "_note": "Requires arbeitnow scraper function in scraper.py — not yet implemented"
+      "_note": "Implemented, but listings skew Europe/Germany — enable if that's of interest"
     },
     {
       "name": "HN Who's Hiring",
       "type": "hn_hiring",
-      "url": "https://hacker-news.firebaseio.com/v0/item/",
-      "enabled": false,
-      "_note": "Requires hn_hiring scraper function in scraper.py — not yet implemented"
+      "url": "https://hn.algolia.com/api/v1/",
+      "enabled": true,
+      "_note": "Auto-finds the latest monthly thread via Algolia"
     }
   ]
 }

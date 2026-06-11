@@ -31,6 +31,11 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 CONFIG_PATH = SCRIPT_DIR / "scraper_config.json"
 
+# Reuse the filter's fingerprint + seen-list so "seen" means "already
+# evaluated by the LLM", not merely "already scraped". A job that gets
+# scraped but never filtered keeps reappearing until it's processed.
+from filter_jobs import job_fingerprint, load_seen  # noqa: E402
+
 USER_AGENT = "JobFilterBot/1.0 (personal job search; contact: see config)"
 MAX_DESC_CHARS = 4000  # keep descriptions within the LLM's context budget
 
@@ -107,23 +112,129 @@ def scrape_wwr_rss(source_cfg):
     return jobs
 
 
+def scrape_remotive(source_cfg):
+    """Remotive public API: https://remotive.com/api/remote-jobs
+    Their terms ask for low request volume — fine for a nightly cron."""
+    raw = fetch(source_cfg.get("url", "https://remotive.com/api/remote-jobs"))
+    data = json.loads(raw)
+    jobs = []
+    for item in data.get("jobs", []):
+        tags = ", ".join(item.get("tags", []))
+        desc = strip_html(item.get("description", ""))
+        if tags:
+            desc = f"TAGS: {tags}\n{desc}"
+        jobs.append({
+            "title": item.get("title", ""),
+            "company": item.get("company_name", ""),
+            "location": item.get("candidate_required_location") or "Remote",
+            "salary": item.get("salary", ""),
+            "url": item.get("url", ""),
+            "description": desc,
+            "source": "remotive",
+        })
+    return jobs
+
+
+def scrape_arbeitnow(source_cfg):
+    """Arbeitnow public API (paginated). Listings skew Europe/Germany."""
+    base = source_cfg.get("url", "https://www.arbeitnow.com/api/job-board-api")
+    pages = source_cfg.get("pages", 2)
+    jobs = []
+    for page in range(1, pages + 1):
+        raw = fetch(f"{base}?page={page}")
+        data = json.loads(raw)
+        for item in data.get("data", []):
+            extras = ", ".join(item.get("tags", []) + item.get("job_types", []))
+            desc = strip_html(item.get("description", ""))
+            if extras:
+                desc = f"TAGS: {extras}\n{desc}"
+            loc = item.get("location", "")
+            if item.get("remote"):
+                loc = f"{loc} (Remote)" if loc else "Remote"
+            jobs.append({
+                "title": item.get("title", ""),
+                "company": item.get("company_name", ""),
+                "location": loc,
+                "salary": "",
+                "url": item.get("url", ""),
+                "description": desc,
+                "source": "arbeitnow",
+            })
+        if not data.get("links", {}).get("next"):
+            break
+        time.sleep(1)
+    return jobs
+
+
+def scrape_hn_hiring(source_cfg):
+    """Latest monthly 'Ask HN: Who is hiring?' thread via the Algolia API.
+    One request finds the thread, one fetches every comment in it."""
+    search_url = ("https://hn.algolia.com/api/v1/search_by_date"
+                  "?tags=story,author_whoishiring&query=who%20is%20hiring")
+    hits = json.loads(fetch(search_url)).get("hits", [])
+    thread = next((h for h in hits
+                   if "who is hiring" in (h.get("title") or "").lower()), None)
+    if thread is None:
+        raise ValueError("Could not locate a 'Who is hiring?' thread")
+    story_id = thread.get("story_id") or thread.get("objectID")
+    item = json.loads(fetch(f"https://hn.algolia.com/api/v1/items/{story_id}"))
+
+    jobs = []
+    for c in item.get("children", []):
+        text = strip_html(c.get("text") or "")
+        if not text or len(text) < 40:
+            continue  # deleted/empty/noise comments
+        lines = text.splitlines()
+        first = lines[0]
+        # Convention: "Company | Role | Location | extras..."
+        parts = [p.strip() for p in first.split("|")]
+        if len(parts) >= 2:
+            company, title = parts[0], parts[1]
+            location = parts[2] if len(parts) > 2 else ""
+        else:
+            company, title, location = "", first[:120], ""
+        jobs.append({
+            "title": title[:150],
+            "company": company[:100],
+            "location": location[:100],
+            "salary": "",
+            "url": f"https://news.ycombinator.com/item?id={c.get('id','')}",
+            "description": text,
+            "source": "hn_hiring",
+        })
+    return jobs
+
+
 SCRAPERS = {
     "remoteok": scrape_remoteok,
     "wwr_rss": scrape_wwr_rss,
+    "remotive": scrape_remotive,
+    "arbeitnow": scrape_arbeitnow,
+    "hn_hiring": scrape_hn_hiring,
 }
 
 # ---------------------------------------------------------------- pipeline
 
+def _compile_keywords(keywords):
+    """Whole-word/phrase regexes, so 'AI' doesn't match 'maintain'
+    and 'ML' doesn't match 'html'. Phrases match across whitespace."""
+    patterns = []
+    for kw in keywords:
+        escaped = r"\s+".join(re.escape(part) for part in kw.lower().split())
+        patterns.append(re.compile(r"(?<!\w)" + escaped + r"(?!\w)"))
+    return patterns
+
+
 def keyword_prefilter(jobs, cfg):
     """Cheap text filter so the LLM only sees plausible listings."""
-    include = [k.lower() for k in cfg.get("include_keywords", [])]
-    exclude = [k.lower() for k in cfg.get("exclude_keywords", [])]
+    include = _compile_keywords(cfg.get("include_keywords", []))
+    exclude = _compile_keywords(cfg.get("exclude_keywords", []))
     kept = []
     for job in jobs:
         text = f"{job['title']} {job['description']}".lower()
-        if exclude and any(k in text for k in exclude):
+        if exclude and any(p.search(text) for p in exclude):
             continue
-        if include and not any(k in text for k in include):
+        if include and not any(p.search(text) for p in include):
             continue
         kept.append(job)
     return kept
@@ -145,6 +256,8 @@ def main():
     parser.add_argument("--out", default=str(SCRIPT_DIR / "scraped_jobs.json"))
     parser.add_argument("--no-prefilter", action="store_true",
                         help="Skip keyword filtering; pass everything to the LLM")
+    parser.add_argument("--include-seen", action="store_true",
+                        help="Also emit jobs the filter has already evaluated")
     args = parser.parse_args()
 
     if not CONFIG_PATH.exists():
@@ -172,10 +285,20 @@ def main():
             print(f"FAILED ({e}) — continuing with other sources")
         time.sleep(cfg.get("delay_between_sources", 2))  # be polite
 
-    before = len(all_jobs)
+    fetched = len(all_jobs)
     all_jobs = dedupe(all_jobs)
+    deduped = len(all_jobs)
     if not args.no_prefilter:
         all_jobs = keyword_prefilter(all_jobs, cfg)
+    prefiltered = len(all_jobs)
+
+    already_seen = 0
+    if not args.include_seen:
+        seen = load_seen()
+        if seen:
+            fresh = [j for j in all_jobs if job_fingerprint(j) not in seen]
+            already_seen = len(all_jobs) - len(fresh)
+            all_jobs = fresh
 
     out = {
         "scraped_at": datetime.now(timezone.utc).isoformat(),
@@ -184,7 +307,9 @@ def main():
     with open(args.out, "w", encoding="utf-8") as f:
         json.dump(out, f, indent=2, ensure_ascii=False)
 
-    print(f"\n{before} fetched -> {len(all_jobs)} after dedupe/prefilter")
+    print(f"\n{fetched} fetched -> {deduped} after dedupe -> "
+          f"{prefiltered} after prefilter -> {len(all_jobs)} new "
+          f"({already_seen} already evaluated)")
     print(f"Wrote {args.out}")
     print(f"Next: python3 filter_jobs.py {Path(args.out).name}")
 
