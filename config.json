@@ -36,17 +36,19 @@
       "Qdrant"
     ],
     "preferences": [
+      "TOP PRIORITY: roles located in New York City or Long Island (onsite or hybrid)",
+      "Also acceptable: fully remote roles anywhere in the US",
+      "Also acceptable: onsite/hybrid roles in Florida, Virginia, Boston, Colorado, Switzerland (Zurich/Basel), or Spain",
       "Full-time or internship",
       "Medium to Large company",
       "Cybersecurity or AI/ML focus",
-      "Onsite preferred, but remote and hybrid are acceptable",
       "Junior to mid-level roles"
     ],
     "dealbreakers": [
+      "Onsite or hybrid role located outside ALL of these areas: New York metro, Florida, Virginia, Boston, Colorado, Switzerland, Spain",
       "Requires Active Security Clearance",
       "Senior-level only",
       "Requires 5+ years of experience",
-      "Requires relocation",
       "TS/SCI required",
       "Unpaid or commission-only"
     ]

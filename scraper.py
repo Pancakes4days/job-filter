@@ -48,6 +48,7 @@ def strip_html(text):
     text = html.unescape(text or "")
     text = re.sub(r"<br\s*/?>|</p>|</li>|</div>", "\n", text, flags=re.I)
     text = TAG_RE.sub(" ", text)
+    text = re.sub(r"\s+([.,;:!?])", r"\1", text)  # tidy ' .' artifacts from inline tags
     lines = [WS_RE.sub(" ", ln).strip() for ln in text.splitlines()]
     return "\n".join(ln for ln in lines if ln)[:MAX_DESC_CHARS]
 
@@ -205,12 +206,105 @@ def scrape_hn_hiring(source_cfg):
     return jobs
 
 
+def _fetch_greenhouse(slug):
+    raw = fetch(f"https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true")
+    data = json.loads(raw)
+    jobs = []
+    for item in data.get("jobs", []):
+        jobs.append({
+            "title": item.get("title", ""),
+            "company": slug,
+            "location": (item.get("location") or {}).get("name", ""),
+            "salary": "",
+            "url": item.get("absolute_url", ""),
+            "description": strip_html(item.get("content", "")),
+            "source": f"greenhouse:{slug}",
+        })
+    return jobs
+
+
+def _fetch_lever(slug):
+    raw = fetch(f"https://api.lever.co/v0/postings/{slug}?mode=json")
+    data = json.loads(raw)
+    jobs = []
+    for item in data:
+        cats = item.get("categories") or {}
+        desc = item.get("descriptionPlain") or strip_html(item.get("description", ""))
+        extras = ", ".join(filter(None, [cats.get("team"), cats.get("commitment")]))
+        if extras:
+            desc = f"{extras}\n{desc}"
+        jobs.append({
+            "title": item.get("text", ""),
+            "company": slug,
+            "location": cats.get("location", ""),
+            "salary": "",
+            "url": item.get("hostedUrl", ""),
+            "description": desc[:MAX_DESC_CHARS],
+            "source": f"lever:{slug}",
+        })
+    return jobs
+
+
+def _fetch_ashby(slug):
+    raw = fetch(f"https://api.ashbyhq.com/posting-api/job-board/{slug}")
+    data = json.loads(raw)
+    jobs = []
+    for item in data.get("jobs", []):
+        loc = item.get("location") or item.get("locationName") or ""
+        if item.get("isRemote"):
+            loc = f"{loc} (Remote)" if loc else "Remote"
+        jobs.append({
+            "title": item.get("title", ""),
+            "company": slug,
+            "location": loc,
+            "salary": "",
+            "url": item.get("jobUrl") or item.get("applyUrl", ""),
+            "description": strip_html(item.get("descriptionHtml", ""))
+                           or item.get("departmentName", ""),
+            "source": f"ashby:{slug}",
+        })
+    return jobs
+
+
+PLATFORM_FETCHERS = {
+    "greenhouse": _fetch_greenhouse,
+    "lever": _fetch_lever,
+    "ashby": _fetch_ashby,
+}
+
+
+def scrape_watchlist(source_cfg):
+    """Company career pages via their ATS platform APIs (Greenhouse/Lever/Ashby).
+    Config: {"type": "watchlist", "companies":
+             [{"platform": "greenhouse", "slug": "datadog", "label": "Datadog"}, ...]}
+    Use detect_platforms.py to build the companies list from company names."""
+    jobs = []
+    companies = source_cfg.get("companies", [])
+    for c in companies:
+        platform, slug = c.get("platform"), c.get("slug")
+        fetcher = PLATFORM_FETCHERS.get(platform)
+        if not fetcher or not slug:
+            print(f"\n  ! watchlist entry missing/unknown platform: {c}", end="")
+            continue
+        try:
+            found = fetcher(slug)
+            label = c.get("label", slug)
+            for j in found:
+                j["company"] = label
+            jobs.extend(found)
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as e:
+            print(f"\n  ! {platform}:{slug} failed ({e}) — continuing", end="")
+        time.sleep(1)  # be polite across many small requests
+    return jobs
+
+
 SCRAPERS = {
     "remoteok": scrape_remoteok,
     "wwr_rss": scrape_wwr_rss,
     "remotive": scrape_remotive,
     "arbeitnow": scrape_arbeitnow,
     "hn_hiring": scrape_hn_hiring,
+    "watchlist": scrape_watchlist,
 }
 
 # ---------------------------------------------------------------- pipeline
@@ -226,8 +320,13 @@ def _compile_keywords(keywords):
 
 
 def keyword_prefilter(jobs, cfg):
-    """Cheap text filter so the LLM only sees plausible listings."""
+    """Cheap text filter so the LLM only sees plausible listings.
+    include: must match at least one (if list non-empty)
+    require: must ALSO match at least one (if list non-empty) — use for
+             e.g. early-career terms to triage large watchlist volumes
+    exclude: any match drops the job"""
     include = _compile_keywords(cfg.get("include_keywords", []))
+    require = _compile_keywords(cfg.get("require_keywords", []))
     exclude = _compile_keywords(cfg.get("exclude_keywords", []))
     kept = []
     for job in jobs:
@@ -235,6 +334,29 @@ def keyword_prefilter(jobs, cfg):
         if exclude and any(p.search(text) for p in exclude):
             continue
         if include and not any(p.search(text) for p in include):
+            continue
+        if require and not any(p.search(text) for p in require):
+            continue
+        kept.append(job)
+    return kept
+
+
+def location_prefilter(jobs, cfg):
+    """Filter on the location field. Jobs with NO location info pass through
+    (the LLM judges those). exclude beats include."""
+    inc = _compile_keywords(cfg.get("location_include", []))
+    exc = _compile_keywords(cfg.get("location_exclude", []))
+    if not inc and not exc:
+        return jobs
+    kept = []
+    for job in jobs:
+        loc = (job.get("location") or "").lower().strip()
+        if not loc:
+            kept.append(job)
+            continue
+        if exc and any(p.search(loc) for p in exc):
+            continue
+        if inc and not any(p.search(loc) for p in inc):
             continue
         kept.append(job)
     return kept
@@ -288,6 +410,8 @@ def main():
     fetched = len(all_jobs)
     all_jobs = dedupe(all_jobs)
     deduped = len(all_jobs)
+    all_jobs = location_prefilter(all_jobs, cfg)
+    located = len(all_jobs)
     if not args.no_prefilter:
         all_jobs = keyword_prefilter(all_jobs, cfg)
     prefiltered = len(all_jobs)
@@ -308,8 +432,8 @@ def main():
         json.dump(out, f, indent=2, ensure_ascii=False)
 
     print(f"\n{fetched} fetched -> {deduped} after dedupe -> "
-          f"{prefiltered} after prefilter -> {len(all_jobs)} new "
-          f"({already_seen} already evaluated)")
+          f"{located} after location filter -> {prefiltered} after prefilter "
+          f"-> {len(all_jobs)} new ({already_seen} already evaluated)")
     print(f"Wrote {args.out}")
     print(f"Next: python3 filter_jobs.py {Path(args.out).name}")
 

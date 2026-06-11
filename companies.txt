@@ -1,0 +1,213 @@
+# Companies extracted from junior_applications.pdf — deduped & cleaned
+# One per line. Feed to: python3 detect_platforms.py companies.txt
+8am
+Abacus Insights
+Acorns
+ACX
+Acuity Insurance
+ADP
+Adobe
+AIG
+AlteraSF
+American Express
+Arcesium
+ASTi
+Atlassian
+AtlasQuo
+Auctor
+Auzmor
+Balyasny
+Bandwidth
+Bank of China
+Bechtel
+Bedrock Robotics
+Beli
+BGC Group
+BlackRock
+Blackstone
+Bloomberg
+Boeing
+Braze
+Brilliant
+Broadridge
+CAA
+Cadent
+Capital Group
+Capstone
+CareSource
+Careyaya Health Tech
+CertiK
+Cboe
+Cisco
+Citadel
+Citi
+Clarity Innovations
+CLEAR
+Coinbase
+Comcast
+Convergent
+Coursicle
+Creative Spirit US
+Crowe
+CrowdStrike
+Datadog
+Deutsche Bank
+Dexcom
+DigitalOcean
+Disney
+Domino Data Lab
+DoorDash
+Dow Jones
+DriveWealth
+Dropbox
+DV Trading
+EclecticIQ
+Electrify America
+Emerson Collective
+Exiger
+Experian
+EY
+Figma
+First Eagle Investments
+Five Rings
+Fizz
+Forvis Mazars
+Galileo
+Garage
+Garner Health
+Geico
+GitHub
+Glydways
+Google
+GPTZero
+Greater New York Insurance Companies
+Greek Learners
+Gusto
+Hireshire
+Hiscope Enterprises
+Honeywell
+Hudson River Trading
+IBM
+ICE
+ICF
+IEX
+Intuit
+IQ Storage
+iRocket
+Jane Street
+JMP
+JPMorgan Chase
+Kensho Technologies
+Keysight
+KnitWell Group
+L3Harris
+Laserfiche
+Lazard
+Leidos
+Link
+Lockheed Martin
+LSEG
+Lumen
+M Science
+Macquarie Group
+Manifold AI
+MarketAxess
+Marshall Wace
+MEMX
+Mercury Insurance
+Meta
+ModMed
+Moelis
+MongoDB
+Moody's
+Morgan Stanley
+Motorola
+MTA
+mthree
+narb
+NBA
+NBCUniversal
+NetSuite
+New Harbor
+New York Life Insurance
+New York Times
+Ninth Wave
+NIS
+Nintendo
+Nucleus Security
+Octaura
+Olami
+Olive
+OneStream
+OpenSesame
+Oracle
+Orange Tail
+Palantir
+Paramount
+Patreon
+PDT Partners
+Pegasystems
+Persistent Systems
+Pinterest
+Podium Automation
+Point72
+Princeton Biopartners
+Protiviti
+PTC
+Qualcomm
+QuickSlot Health
+Rakuten
+Ramp
+Research Innovations
+Rilla
+Riot Games
+Ripple
+RippleMatch
+Roblox
+Roku
+SailPoint
+SalesPilot 365
+Santander
+Schonfeld
+SeatGeek
+Security Innovation
+Syska Hennessy Group
+TheGuarantors
+Trillium
+Trumid
+VanEck
+VSP Vision
+Walleye Capital
+West Monroe
+WEX
+Whatnot
+Wurl
+Zebra Technologies
+Zus HealthWorkhelio
+Warner Bros
+Wealth.com
+Virtu
+Visionary Integration Professionals
+Versana
+Viam Robotics
+Veeam
+U.S. Hunger
+Vallera
+Twilio
+Ubie
+UBS
+Tower Research Capital
+The Trade Desk
+The Riverside Company
+Tapestry
+Tessera Labs
+Tata Consultancy Services
+Shee Atika Government Services
+SupplyHouse
+Steampunk
+Somos
+Southern Poverty Law Center
+Societe Generale
+SMBC
+Snowflake
+SnackPass

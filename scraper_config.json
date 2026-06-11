@@ -23,9 +23,10 @@
     "privacy",
     "data",
     "automation",
-    "Artificial Intelligence",
+    "AI",
     "LLM",
     "machine learning",
+    "ML",
     "scraping"
   ],
   "exclude_keywords": [
@@ -95,6 +96,390 @@
       "url": "https://hn.algolia.com/api/v1/",
       "enabled": true,
       "_note": "Auto-finds the latest monthly thread via Algolia"
+    },
+    {
+      "name": "Company watchlist",
+      "type": "watchlist",
+      "enabled": true,
+      "_note": "Verified 2026-06; rerun verify_watchlist.py if results look odd",
+      "companies": [
+        {
+          "platform": "greenhouse",
+          "slug": "abacusinsights",
+          "label": "Abacus Insights"
+        },
+        {
+          "platform": "ashby",
+          "slug": "acorns",
+          "label": "Acorns"
+        },
+        {
+          "platform": "ashby",
+          "slug": "auctor",
+          "label": "Auctor"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "bandwidth",
+          "label": "Bandwidth"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "bedrockrobotics",
+          "label": "Bedrock Robotics"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "braze",
+          "label": "Braze"
+        },
+        {
+          "platform": "lever",
+          "slug": "brilliant",
+          "label": "Brilliant"
+        },
+        {
+          "platform": "lever",
+          "slug": "certik",
+          "label": "CertiK"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "clear",
+          "label": "CLEAR"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "coinbase",
+          "label": "Coinbase"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "datadog",
+          "label": "Datadog"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "dominodatalab",
+          "label": "Domino Data Lab"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "drivewealth",
+          "label": "DriveWealth"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "dropbox",
+          "label": "Dropbox"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "dvtrading",
+          "label": "DV Trading"
+        },
+        {
+          "platform": "lever",
+          "slug": "emersoncollective",
+          "label": "Emerson Collective"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "exiger",
+          "label": "Exiger"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "figma",
+          "label": "Figma"
+        },
+        {
+          "platform": "ashby",
+          "slug": "fizz",
+          "label": "Fizz"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "forvismazars",
+          "label": "Forvis Mazars"
+        },
+        {
+          "platform": "ashby",
+          "slug": "garage",
+          "label": "Garage"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "garnerhealth",
+          "label": "Garner Health"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "glydways",
+          "label": "Glydways"
+        },
+        {
+          "platform": "ashby",
+          "slug": "gptzero",
+          "label": "GPTZero"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "gusto",
+          "label": "Gusto"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "iex",
+          "label": "IEX"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "janestreet",
+          "label": "Jane Street"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "manifoldai",
+          "label": "Manifold AI"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "marshallwace",
+          "label": "Marshall Wace"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "memx",
+          "label": "MEMX"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "mongodb",
+          "label": "MongoDB"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "mthree",
+          "label": "mthree"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "nintendo",
+          "label": "Nintendo"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "octaura",
+          "label": "Octaura"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "opensesame",
+          "label": "OpenSesame"
+        },
+        {
+          "platform": "lever",
+          "slug": "palantir",
+          "label": "Palantir"
+        },
+        {
+          "platform": "ashby",
+          "slug": "patreon",
+          "label": "Patreon"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "pdtpartners",
+          "label": "PDT Partners"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "pinterest",
+          "label": "Pinterest"
+        },
+        {
+          "platform": "ashby",
+          "slug": "podium-automation",
+          "label": "Podium Automation"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "point72",
+          "label": "Point72"
+        },
+        {
+          "platform": "ashby",
+          "slug": "ramp",
+          "label": "Ramp"
+        },
+        {
+          "platform": "ashby",
+          "slug": "rilla",
+          "label": "Rilla"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "riotgames",
+          "label": "Riot Games"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "ripple",
+          "label": "Ripple"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "ripplematch",
+          "label": "RippleMatch"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "roblox",
+          "label": "Roblox"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "roku",
+          "label": "Roku"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "schonfeld",
+          "label": "Schonfeld"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "seatgeek",
+          "label": "SeatGeek"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "trillium",
+          "label": "Trillium"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "trumid",
+          "label": "Trumid"
+        },
+        {
+          "platform": "ashby",
+          "slug": "wealth-com",
+          "label": "Wealth.com"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "virtu",
+          "label": "Virtu"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "viamrobotics",
+          "label": "Viam Robotics"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "twilio",
+          "label": "Twilio"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "towerresearchcapital",
+          "label": "Tower Research Capital"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "thetradedesk",
+          "label": "The Trade Desk"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "supplyhouse",
+          "label": "SupplyHouse"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "southernpovertylawcenter",
+          "label": "Southern Poverty Law Center"
+        },
+        {
+          "platform": "ashby",
+          "slug": "snowflake",
+          "label": "Snowflake"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "snackpass",
+          "label": "SnackPass"
+        }
+      ]
     }
-  ]
+  ],
+  "location_include": [
+    "new york",
+    "ny",
+    "nyc",
+    "long island",
+    "brooklyn",
+    "manhattan",
+    "queens",
+    "remote",
+    "united states",
+    "usa",
+    "us",
+    "u.s.",
+    "hybrid",
+    "florida",
+    "virginia",
+    "boston",
+    "colorado",
+    "switzerland",
+    "spain",
+    "zurich",
+    "fl",
+    "va",
+    "ma",
+    "co",
+    "basel",
+    "denver",
+    "miami",
+    "jacksonville"
+  ],
+  "location_exclude": [
+    "canada",
+    "mexico",
+    "india",
+    "brazil",
+    "sao paulo",
+    "são paulo",
+    "london",
+    "uk",
+    "united kingdom",
+    "germany",
+    "berlin",
+    "dusseldorf",
+    "düsseldorf",
+    "japan",
+    "tokyo",
+    "singapore",
+    "australia",
+    "sydney",
+    "france",
+    "paris",
+    "ireland",
+    "dublin",
+    "netherlands",
+    "poland",
+    "warsaw",
+    "philippines",
+    "sri lanka",
+    "uzbekistan",
+    "hong kong",
+    "korea",
+    "seoul",
+    "montreal",
+    "portugal"
+  ],
+  "require_keywords": []
 }
