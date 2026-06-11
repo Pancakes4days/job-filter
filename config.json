@@ -1,5 +1,5 @@
 {
-  "model": "gemma4:e2b",
+  "model": "gemma4:e4b",
   "ollama_url": "http://localhost:11434",
   "temperature": 0.1,
   "num_ctx": 4096,
@@ -10,18 +10,45 @@
       "Python",
       "Linux",
       "web scraping",
-      "REPLACE THESE with your real skills"
+      "Java",
+      "JavaScript",
+      "TypeScript",
+      "Node.js",
+      "React",
+      "React Native",
+      "C#",
+      "ASP.NET Core",
+      "SQL",
+      "Bash",
+      "Terraform",
+      "Docker",
+      "Azure",
+      "REST APIs",
+      "Git",
+      "Prometheus",
+      "Grafana",
+      "RAG pipelines",
+      "vector embeddings",
+      "Ollama",
+      "pandas",
+      "JUnit",
+      "pytest",
+      "Qdrant"
     ],
     "preferences": [
-      "Remote or hybrid work",
-      "Junior to mid-level roles",
-      "REPLACE with what you actually want"
+      "Full-time or internship",
+      "Medium to Large company",
+      "Cybersecurity or AI/ML focus",
+      "Onsite preferred, but remote and hybrid are acceptable",
+      "Junior to mid-level roles"
     ],
     "dealbreakers": [
+      "Requires Active Security Clearance",
+      "Senior-level only",
       "Requires 5+ years of experience",
       "Requires relocation",
-      "Unpaid or commission-only",
-      "REPLACE with your real dealbreakers"
+      "TS/SCI required",
+      "Unpaid or commission-only"
     ]
   }
 }

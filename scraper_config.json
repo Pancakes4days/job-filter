@@ -2,16 +2,45 @@
   "delay_between_sources": 2,
   "include_keywords": [
     "python",
-    "scraping",
-    "automation",
+    "javascript",
+    "typescript",
+    "node",
+    "react",
     "junior",
-    "data"
+    "entry",
+    "intern",
+    "backend",
+    "fullstack",
+    "full-stack",
+    "devops",
+    "cloud",
+    "azure",
+    "terraform",
+    "docker",
+    "linux",
+    "cybersecurity",
+    "security",
+    "privacy",
+    "data",
+    "automation",
+    "Artificial Intelligence",
+    "LLM",
+    "machine learning",
+    "scraping"
   ],
   "exclude_keywords": [
     "senior",
-    "staff engineer",
     "10+ years",
-    "director"
+    "director",
+    "principal",
+    "manager",
+    "9+ years",
+    "8+ years",
+    "7+ years",
+    "6+ years",
+    "5+ years",
+    "unpaid",
+    "commission"
   ],
   "sources": [
     {
@@ -30,7 +59,40 @@
       "name": "WWR - DevOps/SysAdmin",
       "type": "wwr_rss",
       "url": "https://weworkremotely.com/categories/remote-devops-sysadmin-jobs.rss",
+      "enabled": true
+    },
+    {
+      "name": "WWR - Frontend",
+      "type": "wwr_rss",
+      "url": "https://weworkremotely.com/categories/remote-front-end-programming-jobs.rss",
+      "enabled": true
+    },
+    {
+      "name": "WWR - All Remote Jobs",
+      "type": "wwr_rss",
+      "url": "https://weworkremotely.com/remote-jobs.rss",
       "enabled": false
+    },
+    {
+      "name": "Remotive",
+      "type": "remotive",
+      "url": "https://remotive.com/api/remote-jobs",
+      "enabled": false,
+      "_note": "Requires remotive scraper function in scraper.py — not yet implemented"
+    },
+    {
+      "name": "Arbeitnow",
+      "type": "arbeitnow",
+      "url": "https://www.arbeitnow.com/api/job-board-api",
+      "enabled": false,
+      "_note": "Requires arbeitnow scraper function in scraper.py — not yet implemented"
+    },
+    {
+      "name": "HN Who's Hiring",
+      "type": "hn_hiring",
+      "url": "https://hacker-news.firebaseio.com/v0/item/",
+      "enabled": false,
+      "_note": "Requires hn_hiring scraper function in scraper.py — not yet implemented"
     }
   ]
 }
