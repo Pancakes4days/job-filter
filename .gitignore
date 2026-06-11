@@ -1,0 +1,4 @@
+seen_jobs.txt
+*.csv
+scraped_jobs.json
+*.log

@@ -1,0 +1,36 @@
+{
+  "jobs": [
+    {
+      "title": "Junior Python Developer",
+      "company": "Acme Data Co",
+      "location": "Remote (US)",
+      "salary": "$65,000 - $80,000",
+      "url": "https://example.com/jobs/junior-python-dev",
+      "description": "We're looking for a junior developer comfortable with Python, Linux environments, and basic data pipelines. You'll build internal tooling, automate reporting, and maintain web scrapers. 0-2 years experience. Fully remote."
+    },
+    {
+      "title": "Senior Staff iOS Engineer",
+      "company": "BigPhone Inc",
+      "location": "Cupertino, CA (on-site)",
+      "salary": "$220,000+",
+      "url": "https://example.com/jobs/senior-ios",
+      "description": "8+ years of Swift and Objective-C required. Lead a team of 12 iOS engineers. Must relocate to the Bay Area. Deep expertise in Core Animation and Metal required."
+    },
+    {
+      "title": "Data Automation Specialist",
+      "company": "GreenLeaf Analytics",
+      "location": "Hybrid - Richmond, VA",
+      "salary": "$70,000 - $90,000",
+      "url": "https://example.com/jobs/data-automation",
+      "description": "Automate data collection and cleaning workflows using Python. Experience with web scraping (BeautifulSoup, Scrapy, or similar), cron scheduling, and Linux servers is a plus. Hybrid: 2 days/week in office."
+    },
+    {
+      "title": "Sales Development Representative",
+      "company": "HustleCorp",
+      "location": "Remote",
+      "salary": "Commission only",
+      "url": "https://example.com/jobs/sdr",
+      "description": "High-energy sales role. Cold call 100+ prospects daily. Uncapped commission, no base salary. No technical skills needed."
+    }
+  ]
+}

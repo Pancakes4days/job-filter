@@ -1,0 +1,36 @@
+{
+  "delay_between_sources": 2,
+  "include_keywords": [
+    "python",
+    "scraping",
+    "automation",
+    "junior",
+    "data"
+  ],
+  "exclude_keywords": [
+    "senior",
+    "staff engineer",
+    "10+ years",
+    "director"
+  ],
+  "sources": [
+    {
+      "name": "RemoteOK (all)",
+      "type": "remoteok",
+      "url": "https://remoteok.com/api",
+      "enabled": true
+    },
+    {
+      "name": "WWR - Programming",
+      "type": "wwr_rss",
+      "url": "https://weworkremotely.com/categories/remote-programming-jobs.rss",
+      "enabled": true
+    },
+    {
+      "name": "WWR - DevOps/SysAdmin",
+      "type": "wwr_rss",
+      "url": "https://weworkremotely.com/categories/remote-devops-sysadmin-jobs.rss",
+      "enabled": false
+    }
+  ]
+}

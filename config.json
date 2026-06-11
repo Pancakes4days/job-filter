@@ -1,0 +1,27 @@
+{
+  "model": "gemma4:e2b",
+  "ollama_url": "http://localhost:11434",
+  "temperature": 0.1,
+  "num_ctx": 4096,
+  "timeout_seconds": 300,
+  "profile": {
+    "threshold": 6,
+    "skills": [
+      "Python",
+      "Linux",
+      "web scraping",
+      "REPLACE THESE with your real skills"
+    ],
+    "preferences": [
+      "Remote or hybrid work",
+      "Junior to mid-level roles",
+      "REPLACE with what you actually want"
+    ],
+    "dealbreakers": [
+      "Requires 5+ years of experience",
+      "Requires relocation",
+      "Unpaid or commission-only",
+      "REPLACE with your real dealbreakers"
+    ]
+  }
+}
