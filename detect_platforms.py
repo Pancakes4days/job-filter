@@ -45,8 +45,6 @@ def probe(url, validate):
     try:
         req = urllib.request.Request(url, headers=UA)
         with urllib.request.urlopen(req, timeout=10) as resp:
-            if resp.status != 200:
-                return False
             return validate(json.loads(resp.read().decode("utf-8", errors="replace")))
     except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError,
             json.JSONDecodeError, ValueError):

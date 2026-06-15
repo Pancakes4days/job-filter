@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Job filter pipeline for Raspberry Pi 5 + Gemma 4 E2B (via Ollama).
+Job filter pipeline for Raspberry Pi 5 + gemma3:4b (via Ollama).
 
 Reads job listings from a JSON file (produced by your scraper), asks the
 local LLM to score each one against your profile in config.json, and

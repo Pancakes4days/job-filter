@@ -1,4 +1,4 @@
-# Job Filter Pipeline — Raspberry Pi 5 + Gemma 4 E2B
+# Job Filter Pipeline — Raspberry Pi 5 + gemma3:4b
 
 Scores job listings against your skills/preferences using a local LLM and
 writes matches to a CSV you can open in Excel. No cloud, no API keys, no
@@ -19,10 +19,10 @@ Python packages to install.
 curl -fsSL https://ollama.com/install.sh | sh
 
 # Pull the model (~1.5 GB download)
-ollama pull gemma4:e2b
+ollama pull gemma3:4b
 
 # Sanity check
-ollama run gemma4:e2b "Say hello in five words."
+ollama run gemma3:4b "Say hello in five words."
 ```
 
 ## Usage
