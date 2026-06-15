@@ -146,11 +146,15 @@ def call_ollama(config, system_prompt, user_prompt):
     return json.loads(content)
 
 
-def validate_result(result):
-    """Belt-and-braces validation even though the schema is enforced."""
+def validate_result(result, threshold=6):
+    """Belt-and-braces validation even though the schema is enforced.
+    NOTE: small models set `suitable` inconsistently with their own `score`
+    (e.g. score 3 but suitable=true). The score is the more considered value,
+    so we DERIVE suitable from it rather than trusting the model's boolean."""
+    score = max(0, min(10, int(result.get("score", 0))))
     out = {
-        "suitable": bool(result.get("suitable", False)),
-        "score": max(0, min(10, int(result.get("score", 0)))),
+        "suitable": score >= threshold,
+        "score": score,
         "matched_skills": "; ".join(str(s) for s in result.get("matched_skills", [])),
         "concerns": "; ".join(str(c) for c in result.get("concerns", [])),
         "reason": str(result.get("reason", "")).strip(),
@@ -206,7 +210,7 @@ def main():
                           "reason": "Dry run — no model called."}
             else:
                 result = call_ollama(config, system_prompt, build_user_prompt(job))
-            r = validate_result(result)
+            r = validate_result(result, profile.get("threshold", 6))
         except (urllib.error.URLError, TimeoutError) as e:
             errors += 1
             print(f"OLLAMA ERROR ({e}) — is the Ollama service running?")

@@ -95,93 +95,298 @@ Intuit
 IQ Storage
 iRocket
 Jane Street
+Airtable
+Linear
+Miro
+Retool
+Monday.com
+Postman
+ClickUp
 JMP
+Contentful
+Calendly
+Zapier
+Webflow
+Notion
+Pendo
+Loom
+Lattice
+Rippling
+Okta
 JPMorgan Chase
 Kensho Technologies
+Stytch
+Mixpanel
+Asana
+Segment
+Klaviyo
+Iterable
+Intercom
+Amplitude
+Brainware
 Keysight
 KnitWell Group
 L3Harris
+Benchling
+Harness
+HubSpot
+Zendesk
+
 Laserfiche
+
+# --- Consumer / E-commerce ---
+# --- B2B SaaS / Productivity ---
+Shopify
+Wayfair
 Lazard
 Leidos
+Instacart
+Grubhub
+Redis
+Akamai
 Link
 Lockheed Martin
+Airbnb
+Lyft
+Cockroach Labs
+SingleStore
 LSEG
 Lumen
+Uber
+Etsy
+Squarespace
+Harness
+Buildkite
 M Science
 Macquarie Group
+Warby Parker
+Peloton
+dbt Labs
+Temporal
 Manifold AI
+DoorDash
+Doordash Merchant
 MarketAxess
 Marshall Wace
+Elastic
+Confluent
+Noom
+Calm
+Databricks
 MEMX
 Mercury Insurance
+
+# --- Gaming / Media ---
+PagerDuty
+Grafana Labs
+Epic Games
+Unity
 Meta
 ModMed
 Moelis
+Electronic Arts
+Niantic
+Sentry
+Honeycomb
+Kabam
+Duolingo
 MongoDB
+Discord
+Reddit
 Moody's
+PlanetScale
+Spotify
+SoundCloud
+Neon
+Twitch
+Coursera
+Pulumi
 Morgan Stanley
+Khan Academy
+
 Motorola
 MTA
+Netlify
+# --- Healthcare / Bio ---
+Vercel
+Render
+Tempus
+Flatiron Health
 mthree
 narb
+Komodo Health
+Spring Health
 NBA
+Cloudflare
+Cityblock Health
+HashiCorp
+Fastly
 NBCUniversal
+Color Health
 NetSuite
 New Harbor
+
+Headspace
+Veeva
+Clover Health
+# --- Cloud / DevOps / Infra ---
 New York Life Insurance
 New York Times
+
+Flutterwave
+Payoneer
+Nuvei
+# --- Robotics / Hardware / Defense ---
 Ninth Wave
 NIS
 Nintendo
+Anduril
 Nucleus Security
 Octaura
+Shield AI
+Figure
 Olami
+Stash
+Gecko Robotics
+Current
 Olive
 OneStream
+Uniswap Labs
+Signifyd
+M1 Finance
+ConsenSys
+Path Robotics
+Sarcos
+Booz Allen Hamilton
 OpenSesame
+QuickNode
 Oracle
+Nansen
+Riskified
+Forter
+SAIC
+Raytheon
+Polymarket
+Dune Analytics
+Kraken
+Alchemy
+Northrop Grumman
+General Dynamics
 Orange Tail
 Palantir
 Paramount
+Gemini
 Patreon
+MITRE
+
 PDT Partners
+Betterment
+SoFi
 Pegasystems
+# --- Ad Tech / Data ---
+LiveRamp
 Persistent Systems
+Wealthfront
 Pinterest
 Podium Automation
+DoubleVerify
+Integral Ad Science
+PubMatic
 Point72
+Anchorage Digital
 Princeton Biopartners
+Fireblocks
+Paxos
+OpenX
+Yotpo
 Protiviti
 PTC
+Chainalysis
 Qualcomm
+
+# --- NYC-heavy / Financial Services ---
+Two Sigma
+Five Rings
 QuickSlot Health
 Rakuten
 Ramp
+Mercury
+Akuna Capital
+Wolverine Trading
+Marqeta
 Research Innovations
+Brex
+Carta
+Susquehanna International Group
+IMC Trading
 Rilla
 Riot Games
+Robinhood
+Optiver
+Voleon
+Affirm
 Ripple
 RippleMatch
+Plaid
+Hudson River Trading
+D. E. Shaw
+Chime
+Renaissance Technologies
+Squarepoint Capital
 Roblox
 Roku
+# --- Fintech / Crypto ---
+Stripe
+Man Group
 SailPoint
 SalesPilot 365
+
+# --- Other Notable Tech ---
 Santander
+LinkedIn
+Salesforce
+Credo AI
+ServiceNow
+
+Workday
 Schonfeld
 SeatGeek
+Splunk
 Security Innovation
+Okta
+Samsara
 Syska Hennessy Group
+Verkada
+Locus Robotics
 TheGuarantors
+Glassdoor
+Handshake
 Trillium
+ZipRecruiter
+Arize AI
+Twilio
+Vonage
+Fiddler AI
+Telnyx
+Cloudinary
+Truera
+Gantry
+Lob
 Trumid
+Flatiron School
 VanEck
+Netsuite
 VSP Vision
 Walleye Capital
+New Relic
+Dynatrace
 West Monroe
-WEX
+AppDynamicsWEX
 Whatnot
 Wurl
+Gretel
+Harvey
+Vanta
 Zebra Technologies
 Zus HealthWorkhelio
 Warner Bros
@@ -189,14 +394,21 @@ Wealth.com
 Virtu
 Visionary Integration Professionals
 Versana
+Jasper
+Writer
+Glean
 Viam Robotics
 Veeam
 U.S. Hunger
 Vallera
+OpenAI
+Typeface
 Twilio
 Ubie
 UBS
 Tower Research Capital
+Adept
+Mistral
 The Trade Desk
 The Riverside Company
 Tapestry
@@ -205,9 +417,120 @@ Tata Consultancy Services
 Shee Atika Government Services
 SupplyHouse
 Steampunk
+Baseten
+Character AI
+Together AI
+Replicate
+Perplexity
 Somos
 Southern Poverty Law Center
 Societe Generale
 SMBC
 Snowflake
 SnackPass
+
+# --- Cybersecurity ---
+Palo Alto Networks
+Runway
+Deepgram
+AssemblyAI
+ElevenLabs
+SentinelOne
+Rapid7
+Tenable
+Cohere
+Anthropic
+CyberArk
+Recorded Future
+SecurityScorecard
+Snyk
+Lacework
+Orca Security
+Wiz
+Huntress
+Arctic Wolf
+KnowBe4
+Pentera
+Orca Security
+
+Hugging Face
+Scale AI
+Weights and Biases
+Push Security
+# --- AI / ML ---
+Devo
+Varonis
+Abnormal Security
+Axonius
+Illumio
+Cyolo
+Telos
+Secureworks
+Nozomi Networks
+Torq
+Claroty
+Dragos
+Dragos
+Armis
+Armis
+Nozomi Networks
+Claroty
+Torq
+Cyolo
+Push Security
+Secureworks
+Devo
+Pentera
+Telos
+Orca Security
+
+Illumio
+Abnormal Security
+Axonius
+# --- AI / ML ---
+Hugging Face
+Scale AI
+Varonis
+Weights and Biases
+Cohere
+Anthropic
+Huntress
+Arctic Wolf
+KnowBe4
+Runway
+ElevenLabs
+Orca Security
+Wiz
+Deepgram
+AssemblyAI
+Baseten
+CyberArk
+SecurityScorecard
+Snyk
+Lacework
+Recorded Future
+Perplexity
+Character AI
+Rapid7
+Tenable
+Together AI
+Replicate
+Adept
+Mistral
+OpenAI
+# --- Cybersecurity ---
+Palo Alto Networks
+SentinelOne
+Typeface
+Jasper
+Writer
+Glean
+Harvey
+Vanta
+Gretel
+SnackPass
+
+SMBC
+Snowflake
+Gantry
+Arize AI

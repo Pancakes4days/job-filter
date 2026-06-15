@@ -56,13 +56,22 @@ def probe(url, validate):
 PROBES = [
     ("greenhouse",
      "https://boards-api.greenhouse.io/v1/boards/{slug}/jobs",
-     lambda d: isinstance(d, dict) and "jobs" in d),
+     lambda d: isinstance(d, dict) and len(d.get("jobs") or []) > 0),
     ("lever",
      "https://api.lever.co/v0/postings/{slug}?mode=json",
-     lambda d: isinstance(d, list)),
+     lambda d: isinstance(d, list) and len(d) > 0),
     ("ashby",
      "https://api.ashbyhq.com/posting-api/job-board/{slug}",
-     lambda d: isinstance(d, dict) and "jobs" in d),
+     lambda d: isinstance(d, dict) and len(d.get("jobs") or []) > 0),
+    ("smartrecruiters",
+     "https://api.smartrecruiters.com/v1/companies/{slug}/postings?limit=1",
+     lambda d: isinstance(d, dict) and d.get("totalFound", 0) > 0),
+    ("workable",
+     "https://apply.workable.com/api/v1/widget/accounts/{slug}?details=true",
+     lambda d: isinstance(d, dict) and len(d.get("jobs") or []) > 0),
+    ("recruitee",
+     "https://{slug}.recruitee.com/api/offers/",
+     lambda d: isinstance(d, dict) and len(d.get("offers") or []) > 0),
 ]
 
 
@@ -123,13 +132,28 @@ def main():
 
     Path("watchlist_found.json").write_text(
         json.dumps(found, indent=2), encoding="utf-8")
+
+    # Misses: write both a plain list and a fill-in-the-blank template so you
+    # can look up real slugs by hand (open the company's careers page, click a
+    # job, read the slug from the URL) and paste straight into the watchlist.
     Path("watchlist_misses.txt").write_text(
         "\n".join(missed), encoding="utf-8")
+    template = [
+        {"label": name,
+         "platform": "FILL_IN: greenhouse | lever | ashby | smartrecruiters | workable | recruitee",
+         "slug": "FILL_IN: from the careers-page URL, e.g. boards.greenhouse.io/THIS"}
+        for name in missed
+    ]
+    Path("watchlist_manual.json").write_text(
+        json.dumps(template, indent=2), encoding="utf-8")
 
     print(f"\n{len(found)} detected -> watchlist_found.json")
-    print(f"{len(missed)} not found -> watchlist_misses.txt")
+    print(f"{len(missed)} not found -> watchlist_misses.txt (names)")
+    print(f"{len(missed)} not found -> watchlist_manual.json (fill-in template)")
     print("\nPaste the contents of watchlist_found.json into the \"companies\" array")
     print("of the watchlist source in scraper_config.json.")
+    print("For misses you care about: find the real slug in their careers-page URL,")
+    print("fill in watchlist_manual.json, delete the rows you don't want, and add those too.")
 
 
 if __name__ == "__main__":

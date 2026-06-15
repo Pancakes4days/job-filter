@@ -266,10 +266,77 @@ def _fetch_ashby(slug):
     return jobs
 
 
+def _fetch_smartrecruiters(slug):
+    raw = fetch(f"https://api.smartrecruiters.com/v1/companies/{slug}/postings?limit=100")
+    data = json.loads(raw)
+    jobs = []
+    for item in data.get("content", []):
+        loc = item.get("location") or {}
+        loc_str = ", ".join(filter(None, [loc.get("city"), loc.get("region"),
+                                           loc.get("country")]))
+        if loc.get("remote"):
+            loc_str = f"{loc_str} (Remote)" if loc_str else "Remote"
+        jobs.append({
+            "title": item.get("name", ""),
+            "company": slug,
+            "location": loc_str,
+            "salary": "",
+            "url": f"https://jobs.smartrecruiters.com/{slug}/{item.get('id','')}",
+            "description": strip_html(((item.get("jobAd") or {}).get("sections")
+                                       or {}).get("jobDescription", {}).get("text", "")),
+            "source": f"smartrecruiters:{slug}",
+        })
+    return jobs
+
+
+def _fetch_workable(slug):
+    raw = fetch(f"https://apply.workable.com/api/v1/widget/accounts/{slug}?details=true")
+    data = json.loads(raw)
+    jobs = []
+    for item in data.get("jobs", []):
+        loc = item.get("location") or {}
+        loc_str = ", ".join(filter(None, [loc.get("city"), loc.get("region"),
+                                           loc.get("country")]))
+        if item.get("remote") or loc.get("workplace") == "remote":
+            loc_str = f"{loc_str} (Remote)" if loc_str else "Remote"
+        jobs.append({
+            "title": item.get("title", ""),
+            "company": slug,
+            "location": loc_str,
+            "salary": "",
+            "url": item.get("url") or item.get("shortlink", ""),
+            "description": strip_html(item.get("description", "")),
+            "source": f"workable:{slug}",
+        })
+    return jobs
+
+
+def _fetch_recruitee(slug):
+    raw = fetch(f"https://{slug}.recruitee.com/api/offers/")
+    data = json.loads(raw)
+    jobs = []
+    for item in data.get("offers", []):
+        loc_str = item.get("location") or ", ".join(
+            filter(None, [item.get("city"), item.get("country_code")]))
+        jobs.append({
+            "title": item.get("title", ""),
+            "company": slug,
+            "location": loc_str,
+            "salary": "",
+            "url": item.get("careers_url") or item.get("url", ""),
+            "description": strip_html(item.get("description", "")),
+            "source": f"recruitee:{slug}",
+        })
+    return jobs
+
+
 PLATFORM_FETCHERS = {
     "greenhouse": _fetch_greenhouse,
     "lever": _fetch_lever,
     "ashby": _fetch_ashby,
+    "smartrecruiters": _fetch_smartrecruiters,
+    "workable": _fetch_workable,
+    "recruitee": _fetch_recruitee,
 }
 
 

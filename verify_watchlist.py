@@ -63,6 +63,26 @@ def main():
                 info = sample(jobs, "title",
                               lambda j: j.get("location") or j.get("locationName"))
                 print(f"{line}{len(jobs)} jobs | {info}")
+            elif platform == "smartrecruiters":
+                jobs = get_json(
+                    f"https://api.smartrecruiters.com/v1/companies/{slug}/postings"
+                ).get("content", [])
+                info = sample(jobs, "name",
+                              lambda j: (j.get("location") or {}).get("city"))
+                print(f"{line}{len(jobs)} jobs | {info}")
+            elif platform == "workable":
+                jobs = get_json(
+                    f"https://apply.workable.com/api/v1/widget/accounts/{slug}?details=true"
+                ).get("jobs", [])
+                info = sample(jobs, "title",
+                              lambda j: (j.get("location") or {}).get("city"))
+                print(f"{line}{len(jobs)} jobs | {info}")
+            elif platform == "recruitee":
+                jobs = get_json(
+                    f"https://{slug}.recruitee.com/api/offers/"
+                ).get("offers", [])
+                info = sample(jobs, "title", lambda j: j.get("location"))
+                print(f"{line}{len(jobs)} jobs | {info}")
             else:
                 print(f"{line}unknown platform")
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError,
