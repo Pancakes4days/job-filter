@@ -37,7 +37,9 @@
     ],
     "preferences": [
       "TOP PRIORITY: roles located in New York City or Long Island (onsite or hybrid)",
+      "REQUIRED: role must be a technical/engineering position — software engineering, cybersecurity, AI/ML, data engineering, or similar. Non-technical roles do not qualify regardless of company or location.",
       "Also acceptable: fully remote roles anywhere in the US",
+      "Also acceptable: fintech roles/financial technology roles",
       "Also acceptable: onsite/hybrid roles in Florida, Virginia, Boston, Colorado, Switzerland (Zurich/Basel), or Spain",
       "Full-time or internship",
       "Medium to Large company",
@@ -50,7 +52,8 @@
       "Senior-level only",
       "Requires 5+ years of experience",
       "TS/SCI required",
-      "Unpaid or commission-only"
+      "Unpaid or commission-only",
+      "Role is non-technical: sales, account executive, business development, legal, counsel, recruiting, product design, finance, marketing, operations, or other non-engineering functions"
     ]
   }
 }
