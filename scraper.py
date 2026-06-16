@@ -26,6 +26,7 @@ import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
+from html.parser import HTMLParser
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -43,14 +44,52 @@ TAG_RE = re.compile(r"<[^>]+>")
 WS_RE = re.compile(r"\s+")
 
 
+class _HTMLTextExtractor(HTMLParser):
+    """Stdlib HTML-to-text — tolerates malformed markup better than regexes."""
+    _NEWLINE_ON_OPEN = {"br", "hr"}
+    _NEWLINE_ON_CLOSE = {"p", "li", "div", "tr", "h1", "h2", "h3", "h4", "h5", "h6"}
+    _SKIP = {"script", "style", "head"}
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self._buf = []
+        self._depth = 0
+
+    def handle_starttag(self, tag, attrs):
+        if tag in self._SKIP:
+            self._depth += 1
+        if tag in self._NEWLINE_ON_OPEN:
+            self._buf.append("\n")
+
+    def handle_endtag(self, tag):
+        if tag in self._SKIP:
+            self._depth = max(0, self._depth - 1)
+        if tag in self._NEWLINE_ON_CLOSE:
+            self._buf.append("\n")
+
+    def handle_data(self, data):
+        if not self._depth:
+            self._buf.append(data)
+
+    def text(self):
+        lines = [WS_RE.sub(" ", ln).strip() for ln in "".join(self._buf).splitlines()]
+        return "\n".join(ln for ln in lines if ln)
+
+
 def strip_html(text):
-    """Crude but dependency-free HTML -> text."""
-    text = html.unescape(text or "")
-    text = re.sub(r"<br\s*/?>|</p>|</li>|</div>", "\n", text, flags=re.I)
-    text = TAG_RE.sub(" ", text)
-    text = re.sub(r"\s+([.,;:!?])", r"\1", text)  # tidy ' .' artifacts from inline tags
-    lines = [WS_RE.sub(" ", ln).strip() for ln in text.splitlines()]
-    return "\n".join(ln for ln in lines if ln)[:MAX_DESC_CHARS]
+    """Dependency-free HTML -> plain text via stdlib HTMLParser."""
+    extractor = _HTMLTextExtractor()
+    try:
+        extractor.feed(text or "")
+        extractor.close()
+    except Exception:
+        # Severely broken markup — fall back to regex
+        text = html.unescape(text or "")
+        text = re.sub(r"<br\s*/?>|</p>|</li>|</div>", "\n", text, flags=re.I)
+        text = TAG_RE.sub(" ", text)
+        lines = [WS_RE.sub(" ", ln).strip() for ln in text.splitlines()]
+        return "\n".join(ln for ln in lines if ln)[:MAX_DESC_CHARS]
+    return extractor.text()[:MAX_DESC_CHARS]
 
 
 def fetch(url, timeout=30):
@@ -178,6 +217,7 @@ def scrape_hn_hiring(source_cfg):
     if thread is None:
         raise ValueError("Could not locate a 'Who is hiring?' thread")
     story_id = thread.get("story_id") or thread.get("objectID")
+    time.sleep(source_cfg.get("request_delay", 1))
     item = json.loads(fetch(f"https://hn.algolia.com/api/v1/items/{story_id}"))
 
     jobs = []
@@ -443,15 +483,18 @@ def dedupe(jobs):
 def main():
     parser = argparse.ArgumentParser(description="Scrape job listings to JSON.")
     parser.add_argument("--out", default=str(SCRIPT_DIR / "scraped_jobs.json"))
+    parser.add_argument("--config", default=str(CONFIG_PATH),
+                        help="Path to scraper config JSON (default: scraper_config.json)")
     parser.add_argument("--no-prefilter", action="store_true",
                         help="Skip keyword filtering; pass everything to the LLM")
     parser.add_argument("--include-seen", action="store_true",
                         help="Also emit jobs the filter has already evaluated")
     args = parser.parse_args()
 
-    if not CONFIG_PATH.exists():
-        sys.exit(f"Missing {CONFIG_PATH} — create it (see README).")
-    with open(CONFIG_PATH, encoding="utf-8") as f:
+    cfg_path = Path(args.config)
+    if not cfg_path.exists():
+        sys.exit(f"Missing {cfg_path} — create it (see README).")
+    with open(cfg_path, encoding="utf-8") as f:
         cfg = json.load(f)
 
     all_jobs = []

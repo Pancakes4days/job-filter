@@ -26,6 +26,11 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
+try:
+    import fcntl as _fcntl  # Linux/Mac only; silently unavailable on Windows
+except ImportError:
+    _fcntl = None
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 CONFIG_PATH = SCRIPT_DIR / "config.json"
 SEEN_PATH = SCRIPT_DIR / "seen_jobs.txt"
@@ -166,10 +171,13 @@ def append_csv(csv_path, row):
     csv_path = Path(csv_path)
     is_new = not csv_path.exists()
     with open(csv_path, "a", newline="", encoding="utf-8-sig") as f:
+        if _fcntl is not None:
+            _fcntl.flock(f, _fcntl.LOCK_EX)
         writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
         if is_new:
             writer.writeheader()
         writer.writerow(row)
+        # lock released automatically on file close
 
 
 def main():
@@ -211,9 +219,17 @@ def main():
             else:
                 result = call_ollama(config, system_prompt, build_user_prompt(job))
             r = validate_result(result, profile.get("threshold", 6))
-        except (urllib.error.URLError, TimeoutError) as e:
+        except urllib.error.URLError as e:
             errors += 1
-            print(f"OLLAMA ERROR ({e}) — is the Ollama service running?")
+            reason = str(getattr(e, "reason", e))
+            if "refused" in reason.lower():
+                print(f"OLLAMA OFFLINE — start Ollama and retry ({reason})")
+            else:
+                print(f"OLLAMA NETWORK ERROR ({reason})")
+            continue
+        except TimeoutError:
+            errors += 1
+            print(f"OLLAMA TIMEOUT — model too slow or num_ctx={config.get('num_ctx', 4096)} too large for this job")
             continue
         except (json.JSONDecodeError, KeyError, ValueError) as e:
             errors += 1

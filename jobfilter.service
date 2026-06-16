@@ -1,20 +1,26 @@
 [Unit]
-Description=Job Filter Run (one-shot until all jobs scored)
-After=ollama.service
-Wants=ollama.service
+Description=Job Filter Pipeline Orchestrator
+# Wait for network and Ollama before starting
+After=network-online.target ollama.service
+Wants=network-online.target ollama.service
 
 [Service]
 Type=simple
 User=bluke
-WorkingDirectory=/home/bluke/job_filter
-# Re-runs the filter; the seen-list makes each restart resume where it stopped.
-# Exits 0 (success, no restart) only when the whole batch completes cleanly.
-ExecStart=/usr/bin/python3 /home/bluke/job_filter/filter_jobs.py scraped_jobs.json --all
-# If it dies for ANY reason (crash, Ollama 500 cascade, killed), wait and retry.
+WorkingDirectory=/home/bluke/job-filter
+
+ExecStart=/usr/bin/python3 /home/bluke/job-filter/orchestrator.py
+
+# Restart on crash, OOM, or watchdog kill — but NOT on a clean systemctl stop.
+# The orchestrator exits with code 0 on SIGTERM, so manual stops won't trigger a restart.
 Restart=on-failure
 RestartSec=15
-StandardOutput=append:/home/bluke/job_filter/filter.log
-StandardError=append:/home/bluke/job_filter/filter.log
+
+# Caps CPU to 3 cores so the watchdog doesn't kill the process
+CPUQuota=300%
+
+StandardOutput=append:/home/bluke/job-filter/filter.log
+StandardError=append:/home/bluke/job-filter/filter.log
 
 [Install]
 WantedBy=multi-user.target
