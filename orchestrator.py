@@ -48,7 +48,7 @@ REMOTE_DIR  = "C:/Users/lbrug/job_data"             # Destination path
 # the Pi to America/New_York (`sudo timedatectl set-timezone America/New_York`)
 # and DST is handled automatically — 6 and 13 always mean 6 AM and 1 PM Eastern.
 SCRAPE_HOURS_LOCAL   = [6, 13]   # 6 AM and 1 PM local
-COPY_RETRY_INTERVAL  = 900       # seconds between copy retries while laptop is offline
+COPY_RETRY_INTERVAL  = 60        # seconds between copy retries while laptop is offline
 DETECT_DELAY         = 0.5       # seconds between ATS probes when detecting new companies
 
 # ── paths ─────────────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ signal.signal(signal.SIGINT,  _on_signal)
 # ── logging ────────────────────────────────────────────────────────────────────
 
 def log(msg):
-    ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S EST")/' ~/job_filter/orchestrator.py
     print(f"[{ts}] {msg}", flush=True)
 
 # ── singleton lock (no overlapping runs) ───────────────────────────────────────
