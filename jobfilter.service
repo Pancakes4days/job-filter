@@ -7,9 +7,9 @@ Wants=network-online.target ollama.service
 [Service]
 Type=simple
 User=bluke
-WorkingDirectory=/home/bluke/job-filter
+WorkingDirectory=/home/bluke/job_filter
 
-ExecStart=/usr/bin/python3 /home/bluke/job-filter/orchestrator.py
+ExecStart=/usr/bin/python3 /home/bluke/job_filter/orchestrator.py
 
 # Restart on crash, OOM, or watchdog kill — but NOT on a clean systemctl stop.
 # The orchestrator exits with code 0 on SIGTERM, so manual stops won't trigger a restart.
@@ -19,8 +19,8 @@ RestartSec=15
 # Caps CPU to 3 cores so the watchdog doesn't kill the process
 CPUQuota=300%
 
-StandardOutput=append:/home/bluke/job-filter/filter.log
-StandardError=append:/home/bluke/job-filter/filter.log
+StandardOutput=append:/home/bluke/job_filter/filter.log
+StandardError=append:/home/bluke/job_filter/filter.log
 
 [Install]
 WantedBy=multi-user.target

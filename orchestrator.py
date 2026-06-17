@@ -40,9 +40,9 @@ from detect_platforms import detect as detect_platform, load_names  # noqa: E402
 
 # ── settings — edit before deploying ──────────────────────────────────────────
 
-REMOTE_HOST = "100.64.0.1"                      # Tailscale IP of your laptop (placeholder)
-REMOTE_USER = "yourusername"                     # SSH user on your laptop   (placeholder)
-REMOTE_DIR  = "/Users/yourusername/Downloads/jobs/"  # Destination path       (placeholder)
+REMOTE_HOST = "100.107.150.87"                      # Tailscale IP of your laptop
+REMOTE_USER = "lbrug"                               # SSH user on your laptop
+REMOTE_DIR  = "C:/Users/lbrug/job_data"             # Destination path
 
 # Local-time hours to fire the pipeline. Uses the Pi's system timezone, so set
 # the Pi to America/New_York (`sudo timedatectl set-timezone America/New_York`)
@@ -61,6 +61,7 @@ COMPANIES_TXT  = SCRIPT_DIR / "companies.txt"
 MISSES_TXT     = SCRIPT_DIR / "watchlist_misses.txt"
 SCRAPED_JOBS   = SCRIPT_DIR / "scraped_jobs.json"
 CSV_PATH       = SCRIPT_DIR / "matched_jobs.csv"
+FOUND_JSON  = SCRIPT_DIR / "watchlist_found.json"
 
 PYTHON = sys.executable   # same interpreter this script was launched with
 
@@ -230,7 +231,10 @@ def detect_new_companies(state):
         return
 
     names = load_names(str(COMPANIES_TXT), None)
-    known = {c.get("label", "").strip().lower() for c in watchlist_companies()}
+    known = {(c.get("label") or c.get("name") or c.get("slug") or "").strip().lower() for c in watchlist_companies()}
+    if FOUND_JSON.exists():
+        found_data = json.loads(FOUND_JSON.read_text(encoding="utf-8"))
+        known |= {(c.get("label") or c.get("name") or c.get("slug") or "").strip().lower() for c in found_data}
     attempted = {n.strip().lower() for n in state.get("detect_attempted", [])}
     new_names = [n for n in names
                  if n.strip().lower() not in known
