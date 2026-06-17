@@ -85,7 +85,7 @@ signal.signal(signal.SIGINT,  _on_signal)
 # ── logging ────────────────────────────────────────────────────────────────────
 
 def log(msg):
-    ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S EST")/' ~/job_filter/orchestrator.py
+    ts = datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
     print(f"[{ts}] {msg}", flush=True)
 
 # ── singleton lock (no overlapping runs) ───────────────────────────────────────
@@ -236,19 +236,22 @@ def detect_new_companies(state):
         found_data = json.loads(FOUND_JSON.read_text(encoding="utf-8"))
         known |= {(c.get("label") or c.get("name") or c.get("slug") or "").strip().lower() for c in found_data}
     attempted = {n.strip().lower() for n in state.get("detect_attempted", [])}
-    new_names = [n for n in names
-                 if n.strip().lower() not in known
-                 and n.strip().lower() not in attempted]
-
-    if not new_names:
-        log("No new companies in companies.txt.")
-        return
-
+    # Companies already recorded as misses (no supported ATS / bad slug) are a
+    # stable fact now that detection tests for ATS presence, not job count — so
+    # skip re-probing them every cycle.
     recorded_misses = set()
     if MISSES_TXT.exists():
         recorded_misses = {ln.strip().lower()
                            for ln in MISSES_TXT.read_text(encoding="utf-8").splitlines()
                            if ln.strip()}
+    new_names = [n for n in names
+                 if n.strip().lower() not in known
+                 and n.strip().lower() not in attempted
+                 and n.strip().lower() not in recorded_misses]
+
+    if not new_names:
+        log("No new companies in companies.txt.")
+        return
 
     log(f"Detecting platforms for {len(new_names)} new compan(y/ies)...")
     for name in new_names:

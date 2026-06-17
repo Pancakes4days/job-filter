@@ -97,8 +97,9 @@ DETECT_DELAY        = 0.5       # seconds between ATS probes during auto-detecti
 ```
 
 `REMOTE_HOST` can be the Tailscale IP (`tailscale ip -4` on the laptop) or its
-MagicDNS name. macOS destinations are `/Users/...`; Windows via OpenSSH looks
-like `/C:/Users/...`.
+MagicDNS name. macOS destinations are `/Users/...`; Windows via OpenSSH uses a
+drive-letter path like `C:/Users/youruser/job_data` (forward slashes, no leading
+slash) — that's what the tested setup copies to.
 
 ## Install as a service
 

@@ -51,25 +51,29 @@ def probe(url, validate):
         return False
 
 
+# Detection tests for ATS *presence*, not open-job count: a valid board returns
+# a 200 with the expected JSON shape even when it has zero current openings, while
+# a wrong slug 404s or returns junk (caught as False by probe()). This keeps
+# companies that simply have no openings right now from being logged as misses.
 PROBES = [
     ("greenhouse",
      "https://boards-api.greenhouse.io/v1/boards/{slug}/jobs",
-     lambda d: isinstance(d, dict) and len(d.get("jobs") or []) > 0),
+     lambda d: isinstance(d, dict) and "jobs" in d),
     ("lever",
      "https://api.lever.co/v0/postings/{slug}?mode=json",
-     lambda d: isinstance(d, list) and len(d) > 0),
+     lambda d: isinstance(d, list)),
     ("ashby",
      "https://api.ashbyhq.com/posting-api/job-board/{slug}",
-     lambda d: isinstance(d, dict) and len(d.get("jobs") or []) > 0),
+     lambda d: isinstance(d, dict) and "jobs" in d),
     ("smartrecruiters",
      "https://api.smartrecruiters.com/v1/companies/{slug}/postings?limit=1",
-     lambda d: isinstance(d, dict) and d.get("totalFound", 0) > 0),
+     lambda d: isinstance(d, dict) and "totalFound" in d),
     ("workable",
      "https://apply.workable.com/api/v1/widget/accounts/{slug}?details=true",
-     lambda d: isinstance(d, dict) and len(d.get("jobs") or []) > 0),
+     lambda d: isinstance(d, dict) and "jobs" in d),
     ("recruitee",
      "https://{slug}.recruitee.com/api/offers/",
-     lambda d: isinstance(d, dict) and len(d.get("offers") or []) > 0),
+     lambda d: isinstance(d, dict) and "offers" in d),
 ]
 
 
