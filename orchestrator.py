@@ -7,7 +7,8 @@ Pipeline (fires on SCRAPE_HOURS_LOCAL schedule, twice daily):
   2. verify   — probe each watchlist company's ATS for live job count
   3. scrape   — scraper.py: public sources + verified watchlist, single pass
   4. filter   — filter_jobs.py scores jobs via local Ollama LLM
-  5. copy     — scp matched_jobs.csv to laptop over Tailscale (retries if offline)
+  5. sync     — pull the laptop's tracker, append new matches (export_workbook.py),
+                push the .xlsx + .csv back over Tailscale (retries if offline)
 
 Phase is written to orchestrator_state.json before every transition, so a
 crash or systemd restart resumes from the last checkpoint automatically.
@@ -18,6 +19,7 @@ Manual run:     python3 orchestrator.py
 
 import json
 import os
+import shutil
 import signal
 import socket
 import subprocess
@@ -61,13 +63,19 @@ COMPANIES_TXT  = SCRIPT_DIR / "companies.txt"
 MISSES_TXT     = SCRIPT_DIR / "watchlist_misses.txt"
 SCRAPED_JOBS   = SCRIPT_DIR / "scraped_jobs.json"
 CSV_PATH       = SCRIPT_DIR / "matched_jobs.csv"
+XLSX_PATH      = SCRIPT_DIR / "matched_jobs.xlsx"
 FOUND_JSON  = SCRIPT_DIR / "watchlist_found.json"
+
+# Local backup on the Pi: each sync drops a copy of the latest workbook + CSV
+# here before pushing to the laptop, so the Pi always retains its own copy.
+# Set to None to disable.
+LOCAL_COPY_DIR = SCRIPT_DIR / "job_data"
 
 PYTHON = sys.executable   # same interpreter this script was launched with
 
 # Pipeline phase order — state is saved at the start of each phase so a
 # restart can skip phases that already finished.
-PHASES = ["detect", "verify", "scrape", "filter", "copy"]
+PHASES = ["detect", "verify", "scrape", "filter", "sync"]
 N_PHASES = len(PHASES)
 
 # ── graceful shutdown ──────────────────────────────────────────────────────────
@@ -120,6 +128,7 @@ def _default_state():
         "detect_attempted": [],   # company names already probed (resumable detect)
         "copy_pending": False,
         "last_copy_attempt": None,
+        "workbook_initialized": False,  # have we ever pushed a workbook to the laptop?
     }
 
 def load_state():
@@ -328,39 +337,87 @@ def make_scrape_config(verified_companies):
                 s["enabled"] = False
     return _write_temp_config(cfg)
 
-# ── copy CSV ───────────────────────────────────────────────────────────────────
+# ── sync results to the laptop (pull → append → push) ───────────────────────────
 
-def copy_csv(state):
-    """SCP the CSV to the laptop. Returns True on success, False if unreachable."""
+def _scp(args):
+    """Run scp with the standard non-interactive options."""
+    return subprocess.run(
+        ["scp", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=10", *args])
+
+
+def _mark_copy_pending(state):
+    state["copy_pending"] = True
+    state["last_copy_attempt"] = datetime.now(timezone.utc).isoformat()
+    save_state(state)
+
+
+def _save_local_copy():
+    """Keep a local backup of the latest workbook + CSV on the Pi."""
+    if LOCAL_COPY_DIR is None:
+        return
+    LOCAL_COPY_DIR.mkdir(parents=True, exist_ok=True)
+    for src in (XLSX_PATH, CSV_PATH):
+        if src.exists():
+            shutil.copy2(src, LOCAL_COPY_DIR / src.name)
+    log(f"Saved a local copy of the workbook + CSV to {LOCAL_COPY_DIR}")
+
+
+def sync_to_laptop(state):
+    """Pull the laptop's workbook, append new matches, push it (and the CSV) back.
+
+    The laptop's job_data/matched_jobs.xlsx is the copy you hand-edit, so we pull
+    it FIRST and only ever add rows — your Status/Notes survive every cycle.
+    matched_jobs.csv is cumulative and the append dedupes by URL, so a cycle
+    skipped while the laptop is offline is caught up on the next successful sync.
+    Returns True on success, False if it should be retried later."""
     if not CSV_PATH.exists():
-        log("No CSV to copy yet.")
+        log("No matches yet — nothing to sync.")
         return True
 
     if not laptop_online():
         log(f"Laptop ({REMOTE_HOST}) not reachable on Tailscale — "
             f"will retry in {COPY_RETRY_INTERVAL // 60} min.")
-        state["copy_pending"] = True
-        state["last_copy_attempt"] = datetime.now(timezone.utc).isoformat()
-        save_state(state)
+        _mark_copy_pending(state)
         return False
 
-    dest = f"{REMOTE_USER}@{REMOTE_HOST}:{REMOTE_DIR}"
-    log(f"Copying {CSV_PATH.name} → {dest}")
-    result = subprocess.run(
-        ["scp", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=10",
-         str(CSV_PATH), dest]
-    )
-    if result.returncode == 0:
-        log("CSV copied successfully.")
+    remote_dir  = f"{REMOTE_USER}@{REMOTE_HOST}:{REMOTE_DIR}/"
+    remote_xlsx = f"{REMOTE_USER}@{REMOTE_HOST}:{REMOTE_DIR}/{XLSX_PATH.name}"
+
+    # 1. Pull the laptop's current workbook so its manual edits are preserved.
+    #    Start clean so we never append onto a stale local copy.
+    XLSX_PATH.unlink(missing_ok=True)
+    log(f"Pulling {XLSX_PATH.name} from laptop to preserve manual edits…")
+    pulled = _scp([remote_xlsx, str(XLSX_PATH)]).returncode == 0
+    if not pulled:
+        if state.get("workbook_initialized"):
+            # The workbook should exist on the laptop, but we couldn't read it —
+            # most likely it's open in Excel. Do NOT overwrite it with a fresh
+            # one; defer and retry so hand-typed columns are never lost.
+            log("  couldn't pull the workbook (likely open in Excel) — deferring "
+                "so your edits aren't overwritten; will retry.")
+            _mark_copy_pending(state)
+            return False
+        log("  no workbook on the laptop yet — creating the first one.")
+
+    # 2. Append new matches (export_workbook.py is append-only + idempotent).
+    run_step([PYTHON, SCRIPT_DIR / "export_workbook.py",
+              "--csv", str(CSV_PATH), "--out", str(XLSX_PATH)])
+
+    # 2b. Keep a local backup on the Pi *before* pushing to the laptop.
+    _save_local_copy()
+
+    # 3. Push the workbook + the (rewritten) CSV back into job_data.
+    log(f"Pushing {XLSX_PATH.name} + {CSV_PATH.name} → {remote_dir}")
+    if _scp([str(XLSX_PATH), str(CSV_PATH), remote_dir]).returncode == 0:
+        log("Synced workbook + CSV to the laptop.")
+        state["workbook_initialized"] = True
         state["copy_pending"] = False
         state["last_copy_attempt"] = datetime.now(timezone.utc).isoformat()
         save_state(state)
         return True
 
-    log("SCP failed — will retry later.")
-    state["copy_pending"] = True
-    state["last_copy_attempt"] = datetime.now(timezone.utc).isoformat()
-    save_state(state)
+    log("Push failed (laptop may have the workbook open) — will retry later.")
+    _mark_copy_pending(state)
     return False
 
 # ── pipeline ───────────────────────────────────────────────────────────────────
@@ -418,10 +475,10 @@ def run_pipeline(state):
             run_step([PYTHON, SCRIPT_DIR / "filter_jobs.py", str(SCRAPED_JOBS),
                       "--csv", str(CSV_PATH)])
 
-        # ── copy ──────────────────────────────────────────────────────────────
-        elif phase == "copy":
-            log(f"=== {tag}: Copy CSV to laptop ===")
-            copy_csv(state)
+        # ── sync (pull tracker → append new matches → push xlsx + csv) ────────
+        elif phase == "sync":
+            log(f"=== {tag}: Sync tracker to laptop ===")
+            sync_to_laptop(state)
 
     log("=== Pipeline complete ===")
     state["verified_companies"] = []   # clear stale data
@@ -445,7 +502,7 @@ def idle_until(state, next_run_dt):
                 if last else COPY_RETRY_INTERVAL
             )
             if since >= COPY_RETRY_INTERVAL:
-                copy_csv(state)
+                sync_to_laptop(state)
 
         # sleep in 60-second ticks so SIGTERM is handled promptly
         sleep_for = min(60, max(1, (next_run_dt - now_local).total_seconds()))

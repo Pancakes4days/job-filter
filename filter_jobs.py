@@ -49,7 +49,7 @@ RESULT_SCHEMA = {
 }
 
 CSV_COLUMNS = [
-    "date_processed", "title", "company", "location", "salary", "url",
+    "date_processed", "title", "company", "location", "salary", "url", "source",
     "score", "suitable", "matched_skills", "concerns", "reason",
 ]
 
@@ -247,6 +247,7 @@ def main():
                 "location": job.get("location", ""),
                 "salary": job.get("salary", ""),
                 "url": job.get("url", ""),
+                "source": job.get("source", ""),
                 **r,
             })
             kept += 1

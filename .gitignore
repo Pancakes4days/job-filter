@@ -1,4 +1,5 @@
 seen_jobs.txt
 *.csv
+*.xlsx
 scraped_jobs.json
 *.log

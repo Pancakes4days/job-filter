@@ -1,9 +1,10 @@
 # Job Filter Pipeline — Raspberry Pi 5 + gemma3:4b
 
 Scrapes job listings from multiple sources, scores them against your
-skills/preferences with a local LLM, writes matches to a CSV, and copies that
-CSV to your laptop over Tailscale. Runs unattended as a systemd service so you
-just open your laptop to a fresh list. No cloud, no API keys, no Python packages.
+skills/preferences with a local LLM, keeps an Excel tracker of the matches, and
+syncs it to your laptop over Tailscale. Runs unattended as a systemd service so
+you just open your laptop to a fresh list. No cloud, no API keys, and one
+optional Python package (`openpyxl`, only for the Excel export).
 
 ## How it runs
 
@@ -15,8 +16,14 @@ fires a 5-phase pipeline:
 2. verify   — probe each watchlist company's job board for live openings
 3. scrape   — scraper.py: public sources + verified watchlist, single pass
 4. filter   — filter_jobs.py scores each job via the local Ollama LLM
-5. copy     — scp matched_jobs.csv to your laptop over Tailscale
+5. sync     — pull the laptop's tracker, append new matches (export_workbook.py),
+              push the .xlsx + .csv back to job_data over Tailscale
 ```
+
+The workbook you hand-edit lives on the **laptop** (`job_data/matched_jobs.xlsx`).
+The sync phase pulls it first, appends only jobs it doesn't already contain, and
+pushes it back — so the columns you fill in (Status, Notes, dates) are never
+overwritten. `matched_jobs.csv` rides along as a full rewrite each time.
 
 Default schedule is **6 AM and 1 PM** local time. On first launch it runs one
 cycle immediately, then settles into the schedule.
@@ -31,8 +38,13 @@ cycle immediately, then settles into the schedule.
   runs; phases run sequentially; a long run never stacks a second cycle on top.
 - **Only stops when you say so.** It exits cleanly on `systemctl stop` (no
   restart). Any other exit is treated as a failure and restarted.
-- **Tolerates an offline laptop.** If your laptop isn't on the Tailnet, the copy
+- **Tolerates an offline laptop.** If your laptop isn't on the Tailnet, the sync
   step is skipped (not failed) and retried every 15 minutes until it succeeds.
+  Because `matched_jobs.csv` is cumulative and the append dedupes by URL, a
+  skipped cycle is caught up on the next successful sync.
+- **Never clobbers your edits.** If the workbook can't be pulled from the laptop
+  when it should exist (e.g. you have it open in Excel), the sync is deferred and
+  retried rather than overwriting it with a fresh copy.
 
 ## Files
 
@@ -40,6 +52,7 @@ cycle immediately, then settles into the schedule.
 - `orchestrator.py` — the daemon that drives everything (run this via systemd)
 - `scraper.py` — pulls listings from job sources into `scraped_jobs.json`
 - `filter_jobs.py` — scores jobs with the LLM, writes `matched_jobs.csv`
+- `export_workbook.py` — appends new matches to `matched_jobs.xlsx` (needs `openpyxl`)
 - `detect_platforms.py` — one-time/manual full ATS detection from a company list
 - `verify_watchlist.py` — manual helper to spot-check detected watchlist entries
 
@@ -51,7 +64,16 @@ cycle immediately, then settles into the schedule.
 
 **Created automatically**
 - `scraped_jobs.json` — latest scrape output
-- `matched_jobs.csv` — the results you open in Excel
+- `matched_jobs.csv` — flat results log (the machine record + dedup source);
+  pushed to `job_data` as a full rewrite each cycle
+- `matched_jobs.xlsx` — the styled tracker. The copy you open and edit lives on
+  the laptop in `job_data`; the Pi keeps a transient working copy during sync.
+  New matches are appended as rows; your hand-typed columns (Status, Notes,
+  dates) are preserved
+- `job_data/` — a local backup on the Pi. Each sync drops the latest
+  `matched_jobs.xlsx` + `matched_jobs.csv` here *before* pushing to the laptop, so
+  the Pi always keeps its own copy (set `LOCAL_COPY_DIR = None` in `orchestrator.py`
+  to disable)
 - `seen_jobs.txt` — fingerprints of already-scored jobs (dedup across runs)
 - `orchestrator_state.json` — pipeline checkpoint for crash recovery
 - `orchestrator.lock` — single-instance guard
@@ -66,13 +88,20 @@ curl -fsSL https://ollama.com/install.sh | sh
 ollama pull gemma3:4b
 ollama run gemma3:4b "Say hello in five words."   # sanity check
 
-# 2. Set the Pi's timezone so the schedule means local time (DST-safe)
+# 2. Install openpyxl (the only non-stdlib dependency, used by the export phase)
+pip install openpyxl       # or: sudo apt install python3-openpyxl
+
+# 3. Set the Pi's timezone so the schedule means local time (DST-safe)
 sudo timedatectl set-timezone America/New_York
 
-# 3. Passwordless SSH from the Pi to your laptop (needed for the copy step,
+# 4. Passwordless SSH from the Pi to your laptop (needed for the copy step,
 #    which runs non-interactively under systemd)
 ssh-copy-id youruser@<laptop-tailscale-ip>
 ```
+
+> The systemd unit runs `orchestrator.py` with `/usr/bin/python3`, so install
+> `openpyxl` for that interpreter (a plain `pip install openpyxl`, the apt
+> package, or a venv the unit points at — just keep them consistent).
 
 ## Configuration
 
@@ -89,7 +118,7 @@ Then edit the settings block at the top of `orchestrator.py`:
 ```python
 REMOTE_HOST = "100.64.0.1"                          # your laptop's Tailscale IP
 REMOTE_USER = "youruser"                             # SSH user on the laptop
-REMOTE_DIR  = "/Users/youruser/Downloads/jobs/"      # destination folder
+REMOTE_DIR  = "C:/Users/youruser/job_data"           # job_data folder on the laptop
 
 SCRAPE_HOURS_LOCAL  = [6, 13]   # 6 AM and 1 PM local (Pi timezone)
 COPY_RETRY_INTERVAL = 900       # seconds between copy retries when laptop is offline
@@ -97,9 +126,11 @@ DETECT_DELAY        = 0.5       # seconds between ATS probes during auto-detecti
 ```
 
 `REMOTE_HOST` can be the Tailscale IP (`tailscale ip -4` on the laptop) or its
-MagicDNS name. macOS destinations are `/Users/...`; Windows via OpenSSH uses a
-drive-letter path like `C:/Users/youruser/job_data` (forward slashes, no leading
-slash) — that's what the tested setup copies to.
+MagicDNS name. `REMOTE_DIR` must be an existing folder (the sync pulls
+`matched_jobs.xlsx` from it and pushes both files back). macOS paths look like
+`/Users/youruser/job_data`; Windows via OpenSSH uses a drive-letter path like
+`C:/Users/youruser/job_data` (forward slashes, no leading slash) — that's what
+the tested setup syncs to. Create it once on the laptop before first run.
 
 ## Install as a service
 
@@ -152,6 +183,10 @@ python3 scraper.py --config scraper_config.json --out scraped_jobs.json
 
 # Score a scrape into the CSV
 python3 filter_jobs.py scraped_jobs.json
+
+# Append the CSV's matches into the Excel tracker (idempotent — re-running
+# adds only jobs not already in the workbook; never touches existing rows)
+python3 export_workbook.py
 ```
 
 `filter_jobs.py` flags:
