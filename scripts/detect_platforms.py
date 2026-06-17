@@ -25,6 +25,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from paths import DATA_DIR  # noqa: E402
+
 UA = {"User-Agent": "JobFilterBot/1.0 (platform detection for personal job search)"}
 
 
@@ -132,13 +134,13 @@ def main():
             print("not found")
             missed.append(name)
 
-    Path("watchlist_found.json").write_text(
+    (DATA_DIR / "watchlist_found.json").write_text(
         json.dumps(found, indent=2), encoding="utf-8")
 
     # Misses: write both a plain list and a fill-in-the-blank template so you
     # can look up real slugs by hand (open the company's careers page, click a
     # job, read the slug from the URL) and paste straight into the watchlist.
-    Path("watchlist_misses.txt").write_text(
+    (DATA_DIR / "watchlist_misses.txt").write_text(
         "\n".join(missed), encoding="utf-8")
     template = [
         {"label": name,
@@ -146,7 +148,7 @@ def main():
          "slug": "FILL_IN: from the careers-page URL, e.g. boards.greenhouse.io/THIS"}
         for name in missed
     ]
-    Path("watchlist_manual.json").write_text(
+    (DATA_DIR / "watchlist_manual.json").write_text(
         json.dumps(template, indent=2), encoding="utf-8")
 
     print(f"\n{len(found)} detected -> watchlist_found.json")

@@ -46,31 +46,41 @@ cycle immediately, then settles into the schedule.
   when it should exist (e.g. you have it open in Excel), the sync is deferred and
   retried rather than overwriting it with a fresh copy.
 
-## Files
+## Layout
 
-**Scripts**
+```
+job_filter/
+├── scripts/   the .py files + paths.py (shared directory layout)
+├── config/    config.json, scraper_config.json, companies.txt  (you edit these)
+├── data/      runtime state + outputs (auto-created, mostly git-ignored)
+├── docs/      README.md, CHANGES.md
+└── jobfilter.service
+```
+
+**Scripts** (`scripts/`)
 - `orchestrator.py` — the daemon that drives everything (run this via systemd)
-- `scraper.py` — pulls listings from job sources into `scraped_jobs.json`
-- `filter_jobs.py` — scores jobs with the LLM, writes `matched_jobs.csv`
+- `scraper.py` — pulls listings from job sources into `data/scraped_jobs.json`
+- `filter_jobs.py` — scores jobs with the LLM, writes `data/matched_jobs.csv`
 - `export_workbook.py` — appends new matches to `matched_jobs.xlsx` (needs `openpyxl`)
 - `detect_platforms.py` — one-time/manual full ATS detection from a company list
 - `verify_watchlist.py` — manual helper to spot-check detected watchlist entries
+- `paths.py` — defines `CONFIG_DIR` / `DATA_DIR`; the one place paths are set
 
-**You edit these**
+**You edit these** (`config/`)
 - `config.json` — your skills, preferences, dealbreakers, LLM settings
 - `scraper_config.json` — job sources, keyword/location filters, watchlist
 - `companies.txt` — company names you want watched (one per line; `#` comments ok)
-- top of `orchestrator.py` — laptop address, schedule (see **Configuration**)
+- top of `scripts/orchestrator.py` — laptop address, schedule (see **Configuration**)
 
-**Created automatically**
+**Created automatically** (`data/`)
 - `scraped_jobs.json` — latest scrape output
 - `matched_jobs.csv` — flat results log (the machine record + dedup source);
-  pushed to `job_data` as a full rewrite each cycle
+  pushed to the laptop's `job_data` as a full rewrite each cycle
 - `matched_jobs.xlsx` — the styled tracker. The copy you open and edit lives on
   the laptop in `job_data`; the Pi keeps a transient working copy during sync.
   New matches are appended as rows; your hand-typed columns (Status, Notes,
   dates) are preserved
-- `job_data/` — a local backup on the Pi. Each sync drops the latest
+- `data/job_data/` — a local backup on the Pi. Each sync drops the latest
   `matched_jobs.xlsx` + `matched_jobs.csv` here *before* pushing to the laptop, so
   the Pi always keeps its own copy (set `LOCAL_COPY_DIR = None` in `orchestrator.py`
   to disable)
@@ -108,12 +118,12 @@ ssh-copy-id youruser@<laptop-tailscale-ip>
 Edit your profile and sources:
 
 ```bash
-nano config.json            # skills, preferences, dealbreakers, threshold
-nano scraper_config.json    # which sources to use, keyword/location filters
-nano companies.txt          # company names to watch
+nano config/config.json            # skills, preferences, dealbreakers, threshold
+nano config/scraper_config.json    # which sources to use, keyword/location filters
+nano config/companies.txt          # company names to watch
 ```
 
-Then edit the settings block at the top of `orchestrator.py`:
+Then edit the settings block at the top of `scripts/orchestrator.py`:
 
 ```python
 REMOTE_HOST = "100.64.0.1"                          # your laptop's Tailscale IP
@@ -142,7 +152,7 @@ sudo systemctl enable jobfilter
 sudo systemctl start jobfilter
 
 # Watch it work
-tail -f filter.log
+tail -f data/filter.log
 
 # Stop it (clean shutdown, no restart)
 sudo systemctl stop jobfilter
@@ -166,8 +176,8 @@ careers page, read the slug from a job URL, and add it to the watchlist by hand.
 (spot-check detected entries) remain available for manual use:
 
 ```bash
-python3 detect_platforms.py companies.txt   # writes watchlist_found.json
-python3 verify_watchlist.py                  # sanity-check the detected boards
+python3 scripts/detect_platforms.py config/companies.txt   # writes data/watchlist_found.json
+python3 scripts/verify_watchlist.py                         # sanity-check the detected boards
 ```
 
 ## Running pieces by hand
@@ -176,17 +186,17 @@ Each script still works standalone — handy for testing:
 
 ```bash
 # Test the filter without the model (instant)
-python3 filter_jobs.py sample_jobs.json --dry-run --all
+python3 scripts/filter_jobs.py sample_jobs.json --dry-run --all
 
 # Scrape once with a given config
-python3 scraper.py --config scraper_config.json --out scraped_jobs.json
+python3 scripts/scraper.py --config config/scraper_config.json --out data/scraped_jobs.json
 
 # Score a scrape into the CSV
-python3 filter_jobs.py scraped_jobs.json
+python3 scripts/filter_jobs.py data/scraped_jobs.json
 
 # Append the CSV's matches into the Excel tracker (idempotent — re-running
 # adds only jobs not already in the workbook; never touches existing rows)
-python3 export_workbook.py
+python3 scripts/export_workbook.py
 ```
 
 `filter_jobs.py` flags:

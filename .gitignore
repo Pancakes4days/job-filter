@@ -1,5 +1,13 @@
+# Python bytecode cache
+__pycache__/
+*.pyc
+
+# Runtime state + outputs (live under data/)
 seen_jobs.txt
+scraped_jobs.json
 *.csv
 *.xlsx
-scraped_jobs.json
 *.log
+orchestrator_state.json
+orchestrator.lock
+job_data/

@@ -29,8 +29,9 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-CONFIG_PATH = SCRIPT_DIR / "scraper_config.json"
+from paths import CONFIG_DIR, DATA_DIR  # noqa: E402
+
+CONFIG_PATH = CONFIG_DIR / "scraper_config.json"
 
 # Reuse the filter's fingerprint + seen-list so "seen" means "already
 # evaluated by the LLM", not merely "already scraped". A job that gets
@@ -482,7 +483,7 @@ def dedupe(jobs):
 
 def main():
     parser = argparse.ArgumentParser(description="Scrape job listings to JSON.")
-    parser.add_argument("--out", default=str(SCRIPT_DIR / "scraped_jobs.json"))
+    parser.add_argument("--out", default=str(DATA_DIR / "scraped_jobs.json"))
     parser.add_argument("--config", default=str(CONFIG_PATH),
                         help="Path to scraper config JSON (default: scraper_config.json)")
     parser.add_argument("--no-prefilter", action="store_true",

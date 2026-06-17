@@ -39,6 +39,7 @@ except ImportError:
 # Reuse the standalone detector's logic for incremental auto-detection of
 # companies newly added to companies.txt.
 from detect_platforms import detect as detect_platform, load_names  # noqa: E402
+from paths import SCRIPTS_DIR, CONFIG_DIR, DATA_DIR  # noqa: E402
 
 # ── settings — edit before deploying ──────────────────────────────────────────
 
@@ -55,21 +56,20 @@ DETECT_DELAY         = 0.5       # seconds between ATS probes when detecting new
 
 # ── paths ─────────────────────────────────────────────────────────────────────
 
-SCRIPT_DIR     = Path(__file__).resolve().parent
-STATE_PATH     = SCRIPT_DIR / "orchestrator_state.json"
-LOCK_PATH      = SCRIPT_DIR / "orchestrator.lock"
-SCRAPER_CFG    = SCRIPT_DIR / "scraper_config.json"
-COMPANIES_TXT  = SCRIPT_DIR / "companies.txt"
-MISSES_TXT     = SCRIPT_DIR / "watchlist_misses.txt"
-SCRAPED_JOBS   = SCRIPT_DIR / "scraped_jobs.json"
-CSV_PATH       = SCRIPT_DIR / "matched_jobs.csv"
-XLSX_PATH      = SCRIPT_DIR / "matched_jobs.xlsx"
-FOUND_JSON  = SCRIPT_DIR / "watchlist_found.json"
+STATE_PATH     = DATA_DIR / "orchestrator_state.json"
+LOCK_PATH      = DATA_DIR / "orchestrator.lock"
+SCRAPER_CFG    = CONFIG_DIR / "scraper_config.json"
+COMPANIES_TXT  = CONFIG_DIR / "companies.txt"
+MISSES_TXT     = DATA_DIR / "watchlist_misses.txt"
+SCRAPED_JOBS   = DATA_DIR / "scraped_jobs.json"
+CSV_PATH       = DATA_DIR / "matched_jobs.csv"
+XLSX_PATH      = DATA_DIR / "matched_jobs.xlsx"
+FOUND_JSON     = DATA_DIR / "watchlist_found.json"
 
 # Local backup on the Pi: each sync drops a copy of the latest workbook + CSV
 # here before pushing to the laptop, so the Pi always retains its own copy.
 # Set to None to disable.
-LOCAL_COPY_DIR = SCRIPT_DIR / "job_data"
+LOCAL_COPY_DIR = DATA_DIR / "job_data"
 
 PYTHON = sys.executable   # same interpreter this script was launched with
 
@@ -315,8 +315,8 @@ def verify_watchlist():
 # ── temp config builders ───────────────────────────────────────────────────────
 
 def _write_temp_config(cfg_dict):
-    """Write cfg_dict to a temp file in SCRIPT_DIR and return its path."""
-    fd, path = tempfile.mkstemp(suffix=".json", dir=SCRIPT_DIR)
+    """Write cfg_dict to a temp file in DATA_DIR and return its path."""
+    fd, path = tempfile.mkstemp(suffix=".json", dir=DATA_DIR)
     os.close(fd)
     Path(path).write_text(json.dumps(cfg_dict, indent=2), encoding="utf-8")
     return path
@@ -400,7 +400,7 @@ def sync_to_laptop(state):
         log("  no workbook on the laptop yet — creating the first one.")
 
     # 2. Append new matches (export_workbook.py is append-only + idempotent).
-    run_step([PYTHON, SCRIPT_DIR / "export_workbook.py",
+    run_step([PYTHON, SCRIPTS_DIR / "export_workbook.py",
               "--csv", str(CSV_PATH), "--out", str(XLSX_PATH)])
 
     # 2b. Keep a local backup on the Pi *before* pushing to the laptop.
@@ -464,7 +464,7 @@ def run_pipeline(state):
             log(f"=== {tag}: Scrape public sources + {len(verified)} verified companies ===")
             tmp = make_scrape_config(verified)
             try:
-                run_step([PYTHON, SCRIPT_DIR / "scraper.py",
+                run_step([PYTHON, SCRIPTS_DIR / "scraper.py",
                           "--config", tmp, "--out", str(SCRAPED_JOBS)])
             finally:
                 Path(tmp).unlink(missing_ok=True)
@@ -472,7 +472,7 @@ def run_pipeline(state):
         # ── filter ────────────────────────────────────────────────────────────
         elif phase == "filter":
             log(f"=== {tag}: Filter with LLM ===")
-            run_step([PYTHON, SCRIPT_DIR / "filter_jobs.py", str(SCRAPED_JOBS),
+            run_step([PYTHON, SCRIPTS_DIR / "filter_jobs.py", str(SCRAPED_JOBS),
                       "--csv", str(CSV_PATH)])
 
         # ── sync (pull tracker → append new matches → push xlsx + csv) ────────

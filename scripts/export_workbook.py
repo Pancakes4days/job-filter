@@ -35,9 +35,10 @@ try:
 except ImportError:
     sys.exit("export_workbook.py needs openpyxl — run: pip install openpyxl")
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-CSV_PATH = SCRIPT_DIR / "matched_jobs.csv"
-XLSX_PATH = SCRIPT_DIR / "matched_jobs.xlsx"
+from paths import DATA_DIR  # noqa: E402
+
+CSV_PATH = DATA_DIR / "matched_jobs.csv"
+XLSX_PATH = DATA_DIR / "matched_jobs.xlsx"
 
 TABLE_NAME = "JobMatches"
 TABLE_STYLE = "TableStyleMedium2"   # blue accent (blue/white header + light-blue stripes)

@@ -31,9 +31,10 @@ try:
 except ImportError:
     _fcntl = None
 
-SCRIPT_DIR = Path(__file__).resolve().parent
-CONFIG_PATH = SCRIPT_DIR / "config.json"
-SEEN_PATH = SCRIPT_DIR / "seen_jobs.txt"
+from paths import CONFIG_DIR, DATA_DIR  # noqa: E402
+
+CONFIG_PATH = CONFIG_DIR / "config.json"
+SEEN_PATH = DATA_DIR / "seen_jobs.txt"
 
 # JSON schema the model is forced to follow (Ollama structured outputs).
 RESULT_SCHEMA = {
@@ -183,7 +184,7 @@ def append_csv(csv_path, row):
 def main():
     parser = argparse.ArgumentParser(description="Filter job listings with a local LLM.")
     parser.add_argument("jobs_file", help="JSON file of job listings from your scraper")
-    parser.add_argument("--csv", default=str(SCRIPT_DIR / "matched_jobs.csv"),
+    parser.add_argument("--csv", default=str(DATA_DIR / "matched_jobs.csv"),
                         help="Output CSV path (default: matched_jobs.csv)")
     parser.add_argument("--all", action="store_true",
                         help="Write every job to the CSV, not just suitable ones")

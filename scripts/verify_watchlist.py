@@ -17,6 +17,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from paths import DATA_DIR  # noqa: E402
+
 UA = {"User-Agent": "JobFilterBot/1.0 (watchlist verification)"}
 
 
@@ -34,7 +36,7 @@ def sample(jobs, title_key, loc_fn, n=3):
 
 
 def main():
-    path = sys.argv[1] if len(sys.argv) > 1 else "watchlist_found.json"
+    path = sys.argv[1] if len(sys.argv) > 1 else str(DATA_DIR / "watchlist_found.json")
     entries = json.loads(Path(path).read_text(encoding="utf-8"))
     print(f"Verifying {len(entries)} boards...\n")
 
