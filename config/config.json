@@ -5,7 +5,7 @@
   "num_ctx": 4096,
   "timeout_seconds": 300,
   "profile": {
-    "threshold": 6,
+    "threshold": 7,
     "skills": [
       "Python",
       "Linux",
@@ -37,23 +37,29 @@
     ],
     "preferences": [
       "TOP PRIORITY: roles located in New York City or Long Island (onsite or hybrid)",
-      "REQUIRED: role must be a technical/engineering position — software engineering, cybersecurity, AI/ML, data engineering, or similar. Non-technical roles do not qualify regardless of company or location.",
+      "REQUIRED: role must be a technical/engineering position where writing or reviewing code is the primary function — software engineering, cybersecurity, AI/ML, data engineering, or similar. Non-technical roles do not qualify regardless of company or location.",
+      "REQUIRED: candidate is a May 2027 college graduate seeking new grad full-time roles starting Summer/Fall 2027, or Summer 2027 internships. Roles requiring prior full-time experience or a 2026 or earlier start date are not suitable.",
+      "REQUIRED: Full-time new grad or Summer 2027 internship",
       "Also acceptable: fully remote roles anywhere in the US",
-      "Also acceptable: fintech roles/financial technology roles",
-      "Also acceptable: onsite/hybrid roles in Florida, Virginia, Boston, Colorado, Switzerland (Zurich/Basel), or Spain",
-      "Full-time or internship",
-      "Medium to Large company",
-      "Cybersecurity or AI/ML focus",
-      "Junior to mid-level roles"
+      "Also acceptable: SRE, DevOps, platform engineering, and infrastructure engineering roles",
+      "Also acceptable: fintech or financial technology roles",
+      "Also acceptable: onsite/hybrid roles in Florida, Virginia, Boston, Colorado, Switzerland (Zurich/Basel/Laussane/Lucerne), or Spain",
+      "Medium to large company",
+      "Cybersecurity or AI/ML focus is a strong positive signal",
+      "Junior, entry-level, or new grad roles only"
     ],
     "dealbreakers": [
       "Onsite or hybrid role located outside ALL of these areas: New York metro, Florida, Virginia, Boston, Colorado, Switzerland, Spain",
       "Requires Active Security Clearance",
-      "Senior-level only",
-      "Requires 5+ years of experience",
+      "Senior-level, staff, or principal-level role",
+      "Requires 2+ years of full-time professional experience",
       "TS/SCI required",
       "Unpaid or commission-only",
-      "Role is non-technical: sales, account executive, business development, legal, counsel, recruiting, product design, finance, marketing, operations, or other non-engineering functions"
+      "Role is non-technical — title contains any of: Account Executive, Account Manager, Sales, Business Development, Counsel, Attorney, Legal, Recruiter, HR, Designer, Architect (non-software), Marketing, Finance Analyst, Operations, Customer Success, Customer Experience — score must be 1 regardless of company or location",
+      "Internship with a 2026 or earlier start date — already past, not suitable",
+      "Requires graduation before May 2027",
+      "Quantitative trading, quantitative research, or quantitative finance roles — not suitable regardless of company or location",
+      "MS/PhD required"
     ]
   }
 }

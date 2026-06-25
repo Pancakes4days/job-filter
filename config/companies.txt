@@ -534,3 +534,40 @@ SMBC
 Snowflake
 Gantry
 Arize AI
+Cognition AI
+Sierra
+Groq
+Fireworks AI
+Modal
+Replit
+Cursor
+Codeium
+Letta
+Anyscale
+Cerebras
+Julius AI
+Northslope
+Lightning AI
+Hex
+Prefect
+Dagster
+Horizon3 AI
+Expel
+Red Canary
+Vectra AI
+Darktrace
+Censys
+Bitsight
+Tines
+Sublime Security
+Material Security
+Bishop Fox
+Synack
+Cobalt
+GreyNoise
+Cyera
+Upwind Security
+SimSpace
+Dazz
+Sweet Security
+Metomic

@@ -174,7 +174,7 @@ def append_csv(csv_path, row):
     with open(csv_path, "a", newline="", encoding="utf-8-sig") as f:
         if _fcntl is not None:
             _fcntl.flock(f, _fcntl.LOCK_EX)
-        writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
+        writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS, quoting=csv.QUOTE_ALL)
         if is_new:
             writer.writeheader()
         writer.writerow(row)

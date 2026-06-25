@@ -87,7 +87,7 @@
       "url": "https://www.arbeitnow.com/api/job-board-api",
       "pages": 2,
       "enabled": false,
-      "_note": "Implemented, but listings skew Europe/Germany \u2014 enable if that's of interest"
+      "_note": "Implemented, but listings skew Europe/Germany — enable if that's of interest"
     },
     {
       "name": "HN Who's Hiring",
@@ -1171,6 +1171,191 @@
           "platform": "greenhouse",
           "slug": "dragos",
           "label": "Dragos"
+        },
+        {
+          "platform": "smartrecruiters",
+          "slug": "cognitionai",
+          "label": "Cognition AI"
+        },
+        {
+          "platform": "ashby",
+          "slug": "sierra",
+          "label": "Sierra"
+        },
+        {
+          "platform": "smartrecruiters",
+          "slug": "groq",
+          "label": "Groq"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "fireworksai",
+          "label": "Fireworks AI"
+        },
+        {
+          "platform": "ashby",
+          "slug": "modal",
+          "label": "Modal"
+        },
+        {
+          "platform": "ashby",
+          "slug": "replit",
+          "label": "Replit"
+        },
+        {
+          "platform": "ashby",
+          "slug": "cursor",
+          "label": "Cursor"
+        },
+        {
+          "platform": "smartrecruiters",
+          "slug": "codeium",
+          "label": "Codeium"
+        },
+        {
+          "platform": "ashby",
+          "slug": "letta",
+          "label": "Letta"
+        },
+        {
+          "platform": "lever",
+          "slug": "anyscale",
+          "label": "Anyscale"
+        },
+        {
+          "platform": "ashby",
+          "slug": "cerebras",
+          "label": "Cerebras"
+        },
+        {
+          "platform": "smartrecruiters",
+          "slug": "juliusai",
+          "label": "Julius AI"
+        },
+        {
+          "platform": "smartrecruiters",
+          "slug": "northslope",
+          "label": "Northslope"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "lightningai",
+          "label": "Lightning AI"
+        },
+        {
+          "platform": "smartrecruiters",
+          "slug": "hex",
+          "label": "Hex"
+        },
+        {
+          "platform": "ashby",
+          "slug": "prefect",
+          "label": "Prefect"
+        },
+        {
+          "platform": "smartrecruiters",
+          "slug": "dagster",
+          "label": "Dagster"
+        },
+        {
+          "platform": "ashby",
+          "slug": "horizon3ai",
+          "label": "Horizon3 AI"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "expel",
+          "label": "Expel"
+        },
+        {
+          "platform": "smartrecruiters",
+          "slug": "redcanary",
+          "label": "Red Canary"
+        },
+        {
+          "platform": "smartrecruiters",
+          "slug": "vectraai",
+          "label": "Vectra AI"
+        },
+        {
+          "platform": "smartrecruiters",
+          "slug": "darktrace",
+          "label": "Darktrace"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "censys",
+          "label": "Censys"
+        },
+        {
+          "platform": "smartrecruiters",
+          "slug": "bitsight",
+          "label": "Bitsight"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "tines",
+          "label": "Tines"
+        },
+        {
+          "platform": "smartrecruiters",
+          "slug": "sublimesecurity",
+          "label": "Sublime Security"
+        },
+        {
+          "platform": "ashby",
+          "slug": "materialsecurity",
+          "label": "Material Security"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "bishopfox",
+          "label": "Bishop Fox"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "synack",
+          "label": "Synack"
+        },
+        {
+          "platform": "smartrecruiters",
+          "slug": "cobalt",
+          "label": "Cobalt"
+        },
+        {
+          "platform": "smartrecruiters",
+          "slug": "greynoise",
+          "label": "GreyNoise"
+        },
+        {
+          "platform": "smartrecruiters",
+          "slug": "cyera",
+          "label": "Cyera"
+        },
+        {
+          "platform": "smartrecruiters",
+          "slug": "upwindsecurity",
+          "label": "Upwind Security"
+        },
+        {
+          "platform": "smartrecruiters",
+          "slug": "simspace",
+          "label": "SimSpace"
+        },
+        {
+          "platform": "smartrecruiters",
+          "slug": "dazz",
+          "label": "Dazz"
+        },
+        {
+          "platform": "greenhouse",
+          "slug": "sweetsecurity",
+          "label": "Sweet Security"
+        },
+        {
+          "platform": "smartrecruiters",
+          "slug": "metomic",
+          "label": "Metomic"
         }
       ]
     }
@@ -1196,11 +1381,8 @@
     "switzerland",
     "spain",
     "zurich",
-    "fl",
-    "va",
-    "ma",
-    "co",
     "basel",
+    "lausanne",
     "denver",
     "miami",
     "jacksonville"
@@ -1211,14 +1393,14 @@
     "india",
     "brazil",
     "sao paulo",
-    "s\u00e3o paulo",
+    "são paulo",
     "london",
     "uk",
     "united kingdom",
     "germany",
     "berlin",
     "dusseldorf",
-    "d\u00fcsseldorf",
+    "düsseldorf",
     "japan",
     "tokyo",
     "singapore",
