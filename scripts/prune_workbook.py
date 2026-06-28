@@ -18,7 +18,7 @@ Design notes:
 
 Candidate profile baked into the rules: Luke Brugger, Virginia Tech CS, graduates
 May 2027 → targets Summer 2027 internships / new-grad roles starting 2027. Strength
-order: Applied AI/ML > backend/full-stack > DevOps/SRE/infra > security. Cuts
+order: security > Applied AI/ML > DevOps/SRE/infra > backend/full-stack. Cuts
 senior/2+yr/PhD/quant/non-engineering and unacceptable-location rows. Edit the
 keyword lists below to retune.
 """
@@ -81,7 +81,7 @@ SWE_OK = re.compile(r"software engineer|design engineer|full[- ]?stack|backend|"
 QUANT = re.compile(r"quantitative (trader|researcher|analyst)|quant researcher", re.I)
 EXPLICIT_2027 = re.compile(r"2027|summer 2027|2027 grad", re.I)
 
-# ── fit tiers (lower = better; editable to resurface security/infra over SWE) ──
+# ── fit tiers (lower = better) ───────────────────────────────────────────────
 T_AI  = re.compile(r"applied ai|ai engineer|machine learning|\bml\b|ml ops|mlops|"
                    r"\bnlp\b|\bllm\b|gen ?ai|ai platform", re.I)
 T_SWE = re.compile(r"software engineer|full[- ]?stack|backend|front[- ]?end|"
@@ -116,7 +116,7 @@ def _hard_excluded(title, location, why, concerns):
     if WRONGCYCLE.search(blob): return "wrong cycle"
     if PHD_TITLE.search(title): return "PhD role"
     if _is_senior(title) and not ng: return "too senior"
-    m = YEARS.search(title) or YEARS.search(blob)
+    m = YEARS.search(title)
     if m and int(m.group(1)) >= 2 and not ng: return "needs 2+ yrs"
     if DEGREE.search(blob): return "advanced degree required"
     if HARD_NONENG.search(title): return "non-engineering"

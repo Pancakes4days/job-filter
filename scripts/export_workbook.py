@@ -29,9 +29,11 @@ except ImportError:
     sys.exit("export_workbook.py needs openpyxl — run: pip install openpyxl")
 
 from paths import DATA_DIR
+from prune_workbook import prune_workbook
 
-CSV_PATH  = DATA_DIR / "matched_jobs.csv"
-XLSX_PATH = DATA_DIR / "matched_jobs.xlsx"
+CSV_PATH    = DATA_DIR / "matched_jobs.csv"
+XLSX_PATH   = DATA_DIR / "matched_jobs.xlsx"
+PRUNED_PATH = DATA_DIR / "pruned_keys.txt"
 
 MAX_VALIDATION_ROW = 5000
 
@@ -227,6 +229,19 @@ def _apply_score_color(ws):
 
 # ── main ──────────────────────────────────────────────────────────────────────
 
+def _load_pruned_keys():
+    if not PRUNED_PATH.exists():
+        return set()
+    with open(PRUNED_PATH, encoding="utf-8") as f:
+        return {line.strip() for line in f if line.strip()}
+
+
+def _append_pruned_keys(new_keys):
+    with open(PRUNED_PATH, "a", encoding="utf-8") as f:
+        for k in new_keys:
+            f.write(k + "\n")
+
+
 def main():
     ap = argparse.ArgumentParser(
         description="Build/append the job-tracker .xlsx from matched_jobs.csv.")
@@ -240,6 +255,8 @@ def main():
         print(f"No rows in {args.csv} — nothing to export.")
         return
 
+    pruned = _load_pruned_keys()
+
     out = Path(args.out)
     if out.exists():
         wb   = load_workbook(out)
@@ -248,6 +265,8 @@ def main():
     else:
         wb, ws = create_workbook(use_color=not args.no_color)
         seen   = set()
+
+    seen |= pruned  # don't re-add jobs that were previously pruned
 
     added = 0
     for row in matches:
@@ -263,9 +282,13 @@ def main():
     last_col = get_column_letter(len(COLUMNS))
     ws.auto_filter.ref = f"A1:{last_col}1"
 
+    deleted_keys, kept = prune_workbook(ws, row_key)
+    if deleted_keys:
+        _append_pruned_keys(deleted_keys)
+
     wb.save(out)
-    print(f"{added} new row(s) added; workbook now has {ws.max_row - 1} "
-          f"matches -> {out}")
+    print(f"{added} new row(s) added; {len(deleted_keys)} pruned; "
+          f"workbook now has {kept} matches -> {out}")
 
 
 if __name__ == "__main__":
