@@ -40,6 +40,7 @@ except ImportError:
 # companies newly added to companies.txt.
 from detect_platforms import detect as detect_platform, load_names  # noqa: E402
 from paths import SCRIPTS_DIR, CONFIG_DIR, DATA_DIR  # noqa: E402
+from recruitment_watch import check_recruitment_pulse  # noqa: E402
 
 # ── settings ──────────────────────────────────────────────────────────────────
 # Deployment-specific settings live in config/local.json (gitignored).
@@ -479,6 +480,13 @@ def run_pipeline(state):
                           "--config", tmp, "--out", str(SCRAPED_JOBS)])
             finally:
                 Path(tmp).unlink(missing_ok=True)
+            # Detect watchlist companies newly posting new-grad / internship roles
+            new_alerts = check_recruitment_pulse(SCRAPED_JOBS)
+            for a in new_alerts:
+                roles = "; ".join(a["sample_roles"][:2])
+                log(f"  [RECRUITMENT ALERT] {a['company']} is posting "
+                    f"new-grad/intern roles ({a['count']} found, "
+                    f"alert active until {a['expires']}): {roles}")
 
         # ── filter ────────────────────────────────────────────────────────────
         elif phase == "filter":

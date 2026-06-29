@@ -12,6 +12,7 @@ import csv
 import hashlib
 import json
 from collections import Counter, defaultdict
+from datetime import date
 from pathlib import Path
 
 BASE    = Path(__file__).resolve().parent.parent
@@ -23,6 +24,7 @@ SEEN      = DATA / "seen_jobs.txt"
 MATCHES   = DATA / "matched_jobs.csv"
 STATE     = DATA / "orchestrator_state.json"
 CFG       = BASE / "config" / "config.json"
+ALERTS    = DATA / "recruitment_alerts.json"
 
 CSV_FIELDS = [
     "date_processed", "title", "company", "location", "salary", "url", "source",
@@ -72,6 +74,19 @@ def load_threshold():
         return 6
     return json.loads(CFG.read_text()).get("profile", {}).get("threshold", 6)
 
+def load_active_alerts():
+    if not ALERTS.exists():
+        return []
+    try:
+        today = date.today()
+        raw   = json.loads(ALERTS.read_text(encoding="utf-8"))
+        return sorted(
+            [a for a in raw if date.fromisoformat(a["expires"]) >= today],
+            key=lambda a: a["first_seen"], reverse=True,
+        )
+    except Exception:
+        return []
+
 def bar(n, total, width=20):
     filled = int(width * n / total) if total else 0
     return "█" * filled + "░" * (width - filled)
@@ -91,6 +106,20 @@ def main():
     ap.add_argument("--top",     type=int, default=15, help="Rows to show in rankings")
     ap.add_argument("--company", type=str, default=None, help="Filter to one company")
     args = ap.parse_args()
+
+    alerts = load_active_alerts()
+    if alerts:
+        today = date.today()
+        section("RECRUITMENT ALERTS  — watchlist companies posting new-grad / intern roles")
+        for a in alerts:
+            days_left = (date.fromisoformat(a["expires"]) - today).days
+            first     = date.fromisoformat(a["first_seen"]).strftime("%b %-d")
+            label     = f"  !! {a['company']}"
+            meta      = f"first seen {first}  ({days_left}d left,  {a['count']} role{'s' if a['count'] != 1 else ''})"
+            print(f"{label:<34} {meta}")
+            for role in a["sample_roles"][:3]:
+                print(f"       -> {role}")
+        print()
 
     jobs      = load_jobs()
     seen      = load_seen()

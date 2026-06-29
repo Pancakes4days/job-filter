@@ -13,4 +13,5 @@ scraped_jobs.json
 *.log
 orchestrator_state.json
 orchestrator.lock
+recruitment_alerts.json
 job_data/
