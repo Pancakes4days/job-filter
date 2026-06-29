@@ -16,11 +16,10 @@ Design notes:
   * Rows with a real user value in any PROTECT column are never deleted. The
     pipeline auto-fills "Application ID" with "." as a spacer, so "." counts as empty.
 
-Candidate profile baked into the rules: Luke Brugger, Virginia Tech CS, graduates
-May 2027 → targets Summer 2027 internships / new-grad roles starting 2027. Strength
-order: security > Applied AI/ML > DevOps/SRE/infra > backend/full-stack. Cuts
-senior/2+yr/PhD/quant/non-engineering and unacceptable-location rows. Edit the
-keyword lists below to retune.
+Candidate profile baked into the rules: May 2027 grad targeting Summer 2027
+internships and new-grad roles. Strength order: security > Applied AI/ML >
+DevOps/SRE/infra > backend/full-stack. Cuts senior/2+yr/PhD/quant/non-engineering
+and unacceptable-location rows. Edit the keyword lists below to retune.
 """
 import re
 from collections import defaultdict

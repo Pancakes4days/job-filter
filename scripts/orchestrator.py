@@ -41,18 +41,27 @@ except ImportError:
 from detect_platforms import detect as detect_platform, load_names  # noqa: E402
 from paths import SCRIPTS_DIR, CONFIG_DIR, DATA_DIR  # noqa: E402
 
-# ── settings — edit before deploying ──────────────────────────────────────────
+# ── settings ──────────────────────────────────────────────────────────────────
+# Deployment-specific settings live in config/local.json (gitignored).
+# Copy config/local.example.json → config/local.json and fill in your values.
 
-REMOTE_HOST = "100.107.150.87"                      # Tailscale IP of your laptop
-REMOTE_USER = "lbrug"                               # SSH user on your laptop
-REMOTE_DIR  = "C:/Users/lbrug/job_data"             # Destination path
+_local_path = CONFIG_DIR / "local.json"
+if not _local_path.exists():
+    sys.exit(
+        f"Missing {_local_path}\n"
+        f"Copy config/local.example.json → config/local.json and fill in your Tailscale details."
+    )
+_local = json.loads(_local_path.read_text(encoding="utf-8"))
 
+REMOTE_HOST          = _local["remote_host"]        # Tailscale IP of your laptop
+REMOTE_USER          = _local["remote_user"]        # SSH user on your laptop
+REMOTE_DIR           = _local["remote_dir"]         # job_data folder on your laptop
 # Local-time hours to fire the pipeline. Uses the Pi's system timezone, so set
 # the Pi to America/New_York (`sudo timedatectl set-timezone America/New_York`)
 # and DST is handled automatically — 6 and 13 always mean 6 AM and 1 PM Eastern.
-SCRAPE_HOURS_LOCAL   = [6, 13]   # 6 AM and 1 PM local
-COPY_RETRY_INTERVAL  = 60        # seconds between copy retries while laptop is offline
-DETECT_DELAY         = 0.5       # seconds between ATS probes when detecting new companies
+SCRAPE_HOURS_LOCAL   = _local.get("scrape_hours_local",  [6, 13])
+COPY_RETRY_INTERVAL  = _local.get("copy_retry_interval", 60)
+DETECT_DELAY         = _local.get("detect_delay",        0.5)
 
 # ── paths ─────────────────────────────────────────────────────────────────────
 
@@ -239,41 +248,43 @@ def detect_new_companies(state):
         log("No companies.txt — skipping auto-detection.")
         return
 
-    names = load_names(str(COMPANIES_TXT), None)
+    # load_names returns [(name, extra_slugs), ...]; extra_slugs come from
+    # pipe-separated hints in companies.txt, e.g. "Acme Corp | acme | acmecorp"
+    entries = load_names(str(COMPANIES_TXT), None)
     known = {(c.get("label") or c.get("name") or c.get("slug") or "").strip().lower() for c in watchlist_companies()}
     if FOUND_JSON.exists():
         found_data = json.loads(FOUND_JSON.read_text(encoding="utf-8"))
         known |= {(c.get("label") or c.get("name") or c.get("slug") or "").strip().lower() for c in found_data}
     attempted = {n.strip().lower() for n in state.get("detect_attempted", [])}
-    # Companies already recorded as misses (no supported ATS / bad slug) are a
-    # stable fact now that detection tests for ATS presence, not job count — so
-    # skip re-probing them every cycle.
+    # Companies already recorded as misses are skipped — unless they now have
+    # explicit slug hints (pipe syntax), which means the user wants a retry.
     recorded_misses = set()
     if MISSES_TXT.exists():
         recorded_misses = {ln.strip().lower()
                            for ln in MISSES_TXT.read_text(encoding="utf-8").splitlines()
                            if ln.strip()}
-    new_names = [n for n in names
-                 if n.strip().lower() not in known
-                 and n.strip().lower() not in attempted
-                 and n.strip().lower() not in recorded_misses]
+    new_entries = [(n, slugs) for n, slugs in entries
+                   if n.strip().lower() not in known
+                   and n.strip().lower() not in attempted
+                   and (slugs or n.strip().lower() not in recorded_misses)]
 
-    if not new_names:
+    if not new_entries:
         log("No new companies in companies.txt.")
         return
 
-    log(f"Detecting platforms for {len(new_names)} new compan(y/ies)...")
-    for name in new_names:
+    log(f"Detecting platforms for {len(new_entries)} new compan(y/ies)...")
+    for name, extra_slugs in new_entries:
         if _shutdown:
             log("Shutdown requested mid-detection — progress saved, will resume.")
             return
-        hit = detect_platform(name, DETECT_DELAY)
+        hit = detect_platform(name, DETECT_DELAY, extra_slugs)
         if hit:
             added = add_to_watchlist(hit)
             log(f"  + {name}: {hit['platform']} ({hit['slug']})"
                 + ("" if added else " [already present]"))
         else:
-            log(f"  - {name}: no ATS found — add a slug manually (see watchlist_misses.txt)")
+            log(f"  - {name}: no ATS found — add slug hints after a pipe, e.g.:"
+                f" '{name} | {name.lower().replace(' ', '')}' (see watchlist_misses.txt)")
             if name.strip().lower() not in recorded_misses:
                 with open(MISSES_TXT, "a", encoding="utf-8") as f:
                     f.write(name + "\n")

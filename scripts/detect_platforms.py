@@ -79,8 +79,20 @@ PROBES = [
 ]
 
 
-def detect(name, delay):
-    for slug in slug_variants(name):
+def detect(name, delay, extra_slugs=()):
+    """Probe ATS platforms for `name`. `extra_slugs` are tried first (before the
+    auto-generated variants), useful when the company name doesn't map cleanly to
+    its board slug. Specify them via the pipe syntax in companies.txt:
+        Acme Corp | acme | acme-careers
+    """
+    candidates = list(extra_slugs) + slug_variants(name)
+    # dedupe while preserving order
+    seen_s, unique = set(), []
+    for s in candidates:
+        if s not in seen_s:
+            seen_s.add(s)
+            unique.append(s)
+    for slug in unique:
         for platform, url_tpl, validate in PROBES:
             if probe(url_tpl.format(slug=slug), validate):
                 return {"platform": platform, "slug": slug, "label": name.strip()}
@@ -89,6 +101,14 @@ def detect(name, delay):
 
 
 def load_names(path, column):
+    """Return a list of (display_name, extra_slugs) tuples.
+
+    Text-file format (one entry per line, # comments ok):
+        Company Name
+        Company Name | slug1 | slug2   <- extra slugs tried before auto-variants
+
+    CSV format: column must be specified; extra-slug syntax not supported in CSV.
+    """
     p = Path(path)
     if p.suffix.lower() == ".csv":
         if not column:
@@ -97,17 +117,22 @@ def load_names(path, column):
             reader = csv.DictReader(f)
             if column not in (reader.fieldnames or []):
                 sys.exit(f"Column '{column}' not found. Columns: {reader.fieldnames}")
-            names = [row[column] for row in reader if (row.get(column) or "").strip()]
+            entries = [(row[column], []) for row in reader if (row.get(column) or "").strip()]
     else:
-        names = [ln for ln in p.read_text(encoding="utf-8").splitlines()
-                 if ln.strip() and not ln.lstrip().startswith("#")]
-    # dedupe, preserve order, case-insensitive
+        entries = []
+        for ln in p.read_text(encoding="utf-8").splitlines():
+            ln = ln.strip()
+            if not ln or ln.startswith("#"):
+                continue
+            parts = [p.strip() for p in ln.split("|")]
+            entries.append((parts[0], [s for s in parts[1:] if s]))
+    # dedupe by name, preserve order, case-insensitive
     seen, out = set(), []
-    for n in names:
-        key = n.strip().lower()
+    for name, extra_slugs in entries:
+        key = name.strip().lower()
         if key not in seen:
             seen.add(key)
-            out.append(n.strip())
+            out.append((name.strip(), extra_slugs))
     return out
 
 
@@ -119,14 +144,15 @@ def main():
                     help="Seconds between probes (default 0.5; be polite)")
     args = ap.parse_args()
 
-    names = load_names(args.input, args.column)
-    print(f"Probing {len(names)} companies (up to ~6 requests each; "
-          f"worst case ~{int(len(names) * 6 * args.delay / 60) + 1} min)...\n")
+    entries = load_names(args.input, args.column)
+    print(f"Probing {len(entries)} companies (up to ~6 requests each; "
+          f"worst case ~{int(len(entries) * 6 * args.delay / 60) + 1} min)...\n")
 
     found, missed = [], []
-    for i, name in enumerate(names, 1):
-        print(f"[{i}/{len(names)}] {name} ... ", end="", flush=True)
-        hit = detect(name, args.delay)
+    for i, (name, extra_slugs) in enumerate(entries, 1):
+        hint = f" [hints: {', '.join(extra_slugs)}]" if extra_slugs else ""
+        print(f"[{i}/{len(entries)}] {name}{hint} ... ", end="", flush=True)
+        hit = detect(name, args.delay, extra_slugs)
         if hit:
             print(f"{hit['platform']} ({hit['slug']})")
             found.append(hit)

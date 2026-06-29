@@ -123,20 +123,27 @@ nano config/scraper_config.json    # which sources to use, keyword/location filt
 nano config/companies.txt          # company names to watch
 ```
 
-Then edit the settings block at the top of `scripts/orchestrator.py`:
+Then create `config/local.json` (gitignored) from the template:
 
-```python
-REMOTE_HOST = "100.64.0.1"                          # your laptop's Tailscale IP
-REMOTE_USER = "youruser"                             # SSH user on the laptop
-REMOTE_DIR  = "C:/Users/youruser/job_data"           # job_data folder on the laptop
-
-SCRAPE_HOURS_LOCAL  = [6, 13]   # 6 AM and 1 PM local (Pi timezone)
-COPY_RETRY_INTERVAL = 900       # seconds between copy retries when laptop is offline
-DETECT_DELAY        = 0.5       # seconds between ATS probes during auto-detection
+```bash
+cp config/local.example.json config/local.json
+nano config/local.json
 ```
 
-`REMOTE_HOST` can be the Tailscale IP (`tailscale ip -4` on the laptop) or its
-MagicDNS name. `REMOTE_DIR` must be an existing folder (the sync pulls
+```json
+{
+  "remote_host": "100.x.y.z",
+  "remote_user": "youruser",
+  "remote_dir":  "C:/Users/youruser/job_data",
+
+  "scrape_hours_local":  [6, 13],
+  "copy_retry_interval": 60,
+  "detect_delay":        0.5
+}
+```
+
+`remote_host` can be the Tailscale IP (`tailscale ip -4` on the laptop) or its
+MagicDNS name. `remote_dir` must be an existing folder (the sync pulls
 `matched_jobs.xlsx` from it and pushes both files back). macOS paths look like
 `/Users/youruser/job_data`; Windows via OpenSSH uses a drive-letter path like
 `C:/Users/youruser/job_data` (forward slashes, no leading slash) — that's what
@@ -169,8 +176,21 @@ The watchlist scrapes specific companies' job boards directly via their ATS APIs
 **You don't run `detect_platforms.py` manually anymore** — just add company names
 to `companies.txt`. On the next cycle the `detect` phase probes each new name,
 finds its ATS, and adds it to `scraper_config.json` automatically. Names it can't
-resolve are logged to `watchlist_misses.txt`; for those, open the company's
-careers page, read the slug from a job URL, and add it to the watchlist by hand.
+resolve are logged to `watchlist_misses.txt`.
+
+If auto-detection misses a company, look up its slug from a job URL on their
+careers page and add it as a hint using the pipe syntax:
+
+```
+# companies.txt
+Stripe                         ← auto-detected fine
+Weird Corp | weirdcorp         ← try "weirdcorp" as the slug first
+Odd Inc | odd-inc | oddinc     ← try multiple slugs in order
+```
+
+Slug hints are tried before the auto-generated variants. If a company was
+previously logged as a miss, adding a hint causes it to be re-probed on the
+next cycle.
 
 `detect_platforms.py` (full rebuild from a list) and `verify_watchlist.py`
 (spot-check detected entries) remain available for manual use:

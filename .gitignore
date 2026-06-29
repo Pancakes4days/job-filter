@@ -2,6 +2,9 @@
 __pycache__/
 *.pyc
 
+# Deployment-specific settings (Tailscale IP, SSH user, paths) — never commit
+config/local.json
+
 # Runtime state + outputs (live under data/)
 seen_jobs.txt
 scraped_jobs.json
