@@ -127,8 +127,14 @@ PROBES = [
 ]
 
 
-def detect(name, delay):
-    for slug in slug_variants(name):
+def detect(name, delay, extra_slugs=None):
+    # Try any hand-supplied slugs first (from "Company | slug1 | slug2" input),
+    # then fall back to auto-generated variants. Dedupe, preserve order.
+    slugs = []
+    for s in list(extra_slugs or []) + slug_variants(name):
+        if s and s not in slugs:
+            slugs.append(s)
+    for slug in slugs:
         for platform, check in PROBES:
             if check(slug):
                 return {"platform": platform, "slug": slug, "label": name.strip()}

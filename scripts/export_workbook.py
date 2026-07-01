@@ -248,19 +248,6 @@ def _apply_score_color(ws):
 
 # ── main ──────────────────────────────────────────────────────────────────────
 
-def _load_pruned_keys():
-    if not PRUNED_PATH.exists():
-        return set()
-    with open(PRUNED_PATH, encoding="utf-8") as f:
-        return {line.strip() for line in f if line.strip()}
-
-
-def _append_pruned_keys(new_keys):
-    with open(PRUNED_PATH, "a", encoding="utf-8") as f:
-        for k in new_keys:
-            f.write(k + "\n")
-
-
 def main():
     ap = argparse.ArgumentParser(
         description="Build/append the job-tracker .xlsx from matched_jobs.csv.")
@@ -275,8 +262,6 @@ def main():
     if not matches:
         print(f"No rows in {args.csv} — nothing to export.")
         return
-
-    pruned = _load_pruned_keys()
 
     out = Path(args.out)
     if out.exists():
@@ -312,10 +297,6 @@ def main():
     # Update auto_filter range to cover all data rows
     last_col = get_column_letter(len(COLUMNS))
     ws.auto_filter.ref = f"A1:{last_col}1"
-
-    deleted_keys, kept = prune_workbook(ws, row_key)
-    if deleted_keys:
-        _append_pruned_keys(deleted_keys)
 
     wb.save(out)
     print(f"{added} new row(s) added; {pruned} pruned; workbook now has "
