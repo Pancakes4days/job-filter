@@ -308,25 +308,33 @@ def _fetch_ashby(slug):
 
 
 def _fetch_smartrecruiters(slug):
-    raw = fetch(f"https://api.smartrecruiters.com/v1/companies/{slug}/postings?limit=100")
-    data = json.loads(raw)
     jobs = []
-    for item in data.get("content", []):
-        loc = item.get("location") or {}
-        loc_str = ", ".join(filter(None, [loc.get("city"), loc.get("region"),
-                                           loc.get("country")]))
-        if loc.get("remote"):
-            loc_str = f"{loc_str} (Remote)" if loc_str else "Remote"
-        jobs.append({
-            "title": item.get("name", ""),
-            "company": slug,
-            "location": loc_str,
-            "salary": "",
-            "url": f"https://jobs.smartrecruiters.com/{slug}/{item.get('id','')}",
-            "description": strip_html(((item.get("jobAd") or {}).get("sections")
-                                       or {}).get("jobDescription", {}).get("text", "")),
-            "source": f"smartrecruiters:{slug}",
-        })
+    limit, offset = 100, 0
+    while True:
+        raw = fetch(f"https://api.smartrecruiters.com/v1/companies/{slug}/postings"
+                    f"?limit={limit}&offset={offset}")
+        data = json.loads(raw)
+        page = data.get("content", [])
+        for item in page:
+            loc = item.get("location") or {}
+            loc_str = ", ".join(filter(None, [loc.get("city"), loc.get("region"),
+                                               loc.get("country")]))
+            if loc.get("remote"):
+                loc_str = f"{loc_str} (Remote)" if loc_str else "Remote"
+            jobs.append({
+                "title": item.get("name", ""),
+                "company": slug,
+                "location": loc_str,
+                "salary": "",
+                "url": f"https://jobs.smartrecruiters.com/{slug}/{item.get('id','')}",
+                "description": strip_html(((item.get("jobAd") or {}).get("sections")
+                                           or {}).get("jobDescription", {}).get("text", "")),
+                "source": f"smartrecruiters:{slug}",
+            })
+        offset += len(page)
+        if offset >= data.get("totalFound", 0) or not page:
+            break
+        time.sleep(1)
     return jobs
 
 

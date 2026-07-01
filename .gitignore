@@ -2,6 +2,9 @@
 __pycache__/
 *.pyc
 
+# Deployment-specific settings (Tailscale IP, SSH user, paths) — never commit
+config/local.json
+
 # Runtime state + outputs (live under data/)
 seen_jobs.txt
 pruned_keys.txt
@@ -11,4 +14,5 @@ scraped_jobs.json
 *.log
 orchestrator_state.json
 orchestrator.lock
+recruitment_alerts.json
 job_data/

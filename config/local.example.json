@@ -1,0 +1,11 @@
+{
+  "_comment": "Copy this file to local.json and fill in your values. local.json is gitignored.",
+
+  "remote_host": "100.x.y.z",
+  "remote_user": "youruser",
+  "remote_dir":  "C:/Users/youruser/job_data",
+
+  "scrape_hours_local":  [6, 13],
+  "copy_retry_interval": 60,
+  "detect_delay":        0.5
+}
