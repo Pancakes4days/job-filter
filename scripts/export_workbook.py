@@ -29,9 +29,14 @@ except ImportError:
     sys.exit("export_workbook.py needs openpyxl — run: pip install openpyxl")
 
 from paths import DATA_DIR
+from prune_workbook import prune_workbook
 
 CSV_PATH  = DATA_DIR / "matched_jobs.csv"
 XLSX_PATH = DATA_DIR / "matched_jobs.xlsx"
+# Dedup keys of rows pruned by prune_workbook(). Skipped on future appends so the
+# cumulative matched_jobs.csv never re-adds a row we've intentionally trimmed.
+# Delete this file if you want previously-pruned listings to be reconsidered.
+PRUNED_KEYS_PATH = DATA_DIR / "pruned_keys.txt"
 
 MAX_VALIDATION_ROW = 5000
 
@@ -170,6 +175,22 @@ def existing_keys(ws):
     return keys
 
 
+def load_pruned_keys():
+    """Dedup keys of rows previously trimmed by prune_workbook()."""
+    if not PRUNED_KEYS_PATH.exists():
+        return set()
+    with open(PRUNED_KEYS_PATH, encoding="utf-8") as f:
+        return {ln.strip() for ln in f if ln.strip()}
+
+
+def append_pruned_keys(keys):
+    if not keys:
+        return
+    with open(PRUNED_KEYS_PATH, "a", encoding="utf-8") as f:
+        for k in keys:
+            f.write(k + "\n")
+
+
 # ── workbook creation ─────────────────────────────────────────────────────────
 
 def create_workbook(use_color):
@@ -233,6 +254,8 @@ def main():
     ap.add_argument("--csv",      default=str(CSV_PATH))
     ap.add_argument("--out",      default=str(XLSX_PATH))
     ap.add_argument("--no-color", action="store_true")
+    ap.add_argument("--no-prune", action="store_true",
+                    help="Skip trimming to the best 1–2 roles per company")
     args = ap.parse_args()
 
     matches = read_matches(Path(args.csv))
@@ -249,6 +272,10 @@ def main():
         wb, ws = create_workbook(use_color=not args.no_color)
         seen   = set()
 
+    # Don't re-add rows we've already pruned (the CSV is cumulative).
+    if not args.no_prune:
+        seen |= load_pruned_keys()
+
     added = 0
     for row in matches:
         key = row_key(row.get("url"), row.get("title"), row.get("company"))
@@ -259,13 +286,21 @@ def main():
         style_website_cell(ws.cell(row=ws.max_row, column=WEBSITE_COL))
         added += 1
 
+    # Trim to the best 1–2 roles per company (protecting hand-edited rows), and
+    # remember what we cut so the cumulative CSV never re-adds it.
+    pruned = 0
+    if not args.no_prune:
+        deleted_keys, _kept = prune_workbook(ws, row_key)
+        append_pruned_keys(deleted_keys)
+        pruned = len(deleted_keys)
+
     # Update auto_filter range to cover all data rows
     last_col = get_column_letter(len(COLUMNS))
     ws.auto_filter.ref = f"A1:{last_col}1"
 
     wb.save(out)
-    print(f"{added} new row(s) added; workbook now has {ws.max_row - 1} "
-          f"matches -> {out}")
+    print(f"{added} new row(s) added; {pruned} pruned; workbook now has "
+          f"{ws.max_row - 1} matches -> {out}")
 
 
 if __name__ == "__main__":

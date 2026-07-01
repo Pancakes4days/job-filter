@@ -28,6 +28,9 @@ from pathlib import Path
 from paths import DATA_DIR  # noqa: E402
 
 UA = {"User-Agent": "JobFilterBot/1.0 (platform detection for personal job search)"}
+# SmartRecruiters' public careers page is served like a normal browser page;
+# use a browser-style UA when probing it (the JSON API accepts the bot UA fine).
+BROWSER_UA = {"User-Agent": "Mozilla/5.0 (compatible; JobFilterBot/1.0)"}
 
 
 def slug_variants(name):
@@ -43,46 +46,91 @@ def slug_variants(name):
     return variants
 
 
-def probe(url, validate):
+def _get_json(url, timeout=10):
+    """GET url and parse JSON; return None on any network/parse error."""
     try:
         req = urllib.request.Request(url, headers=UA)
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            return validate(json.loads(resp.read().decode("utf-8", errors="replace")))
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read().decode("utf-8", errors="replace"))
     except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError,
             json.JSONDecodeError, ValueError):
-        return False
+        return None
 
 
-# Detection tests for ATS *presence*, not open-job count: a valid board returns
-# a 200 with the expected JSON shape even when it has zero current openings, while
-# a wrong slug 404s or returns junk (caught as False by probe()). This keeps
-# companies that simply have no openings right now from being logged as misses.
+def _get_text(url, timeout=10):
+    """GET url with a browser UA and return the body text; None on any error."""
+    try:
+        req = urllib.request.Request(url, headers=BROWSER_UA)
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.read().decode("utf-8", errors="replace")
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError):
+        return None
+
+
+# Detection tests for ATS *presence*, not open-job count: a valid board answers
+# even with zero current openings, so a company that simply isn't hiring right now
+# is still detected (and re-scraped later when it posts). A wrong slug is rejected.
+#
+# For greenhouse/lever/ashby/workable/recruitee a bogus slug 404s (caught as None
+# by _get_json), so "the expected JSON shape came back" is a sound presence signal.
+#
+# SmartRecruiters is the exception and the reason this file was rewritten: its
+# public postings endpoint returns 200 {"totalFound": 0, "content": []} for ANY
+# slug, real or bogus, so the JSON shape proves nothing (the old probe matched
+# every slug and produced false positives). We treat SmartRecruiters as present
+# only if it currently has postings (totalFound > 0) OR its public careers page
+# renders a real company page: a bogus slug renders the generic "SmartRecruiters
+# Job Search" landing page with no og:title, while a real board renders
+# "Careers at <Company>" and includes an og:title meta tag.
+def check_greenhouse(slug):
+    d = _get_json(f"https://boards-api.greenhouse.io/v1/boards/{slug}/jobs")
+    return isinstance(d, dict) and "jobs" in d
+
+
+def check_lever(slug):
+    d = _get_json(f"https://api.lever.co/v0/postings/{slug}?mode=json")
+    return isinstance(d, list)
+
+
+def check_ashby(slug):
+    d = _get_json(f"https://api.ashbyhq.com/posting-api/job-board/{slug}")
+    return isinstance(d, dict) and "jobs" in d
+
+
+def check_smartrecruiters(slug):
+    d = _get_json(
+        f"https://api.smartrecruiters.com/v1/companies/{slug}/postings?limit=1")
+    if isinstance(d, dict) and d.get("totalFound", 0) > 0:
+        return True
+    html = _get_text(f"https://careers.smartrecruiters.com/{slug}")
+    return bool(html) and 'property="og:title"' in html
+
+
+def check_workable(slug):
+    d = _get_json(
+        f"https://apply.workable.com/api/v1/widget/accounts/{slug}?details=true")
+    return isinstance(d, dict) and "jobs" in d
+
+
+def check_recruitee(slug):
+    d = _get_json(f"https://{slug}.recruitee.com/api/offers/")
+    return isinstance(d, dict) and "offers" in d
+
+
 PROBES = [
-    ("greenhouse",
-     "https://boards-api.greenhouse.io/v1/boards/{slug}/jobs",
-     lambda d: isinstance(d, dict) and "jobs" in d),
-    ("lever",
-     "https://api.lever.co/v0/postings/{slug}?mode=json",
-     lambda d: isinstance(d, list)),
-    ("ashby",
-     "https://api.ashbyhq.com/posting-api/job-board/{slug}",
-     lambda d: isinstance(d, dict) and "jobs" in d),
-    ("smartrecruiters",
-     "https://api.smartrecruiters.com/v1/companies/{slug}/postings?limit=1",
-     lambda d: isinstance(d, dict) and "totalFound" in d),
-    ("workable",
-     "https://apply.workable.com/api/v1/widget/accounts/{slug}?details=true",
-     lambda d: isinstance(d, dict) and "jobs" in d),
-    ("recruitee",
-     "https://{slug}.recruitee.com/api/offers/",
-     lambda d: isinstance(d, dict) and "offers" in d),
+    ("greenhouse", check_greenhouse),
+    ("lever", check_lever),
+    ("ashby", check_ashby),
+    ("smartrecruiters", check_smartrecruiters),
+    ("workable", check_workable),
+    ("recruitee", check_recruitee),
 ]
 
 
 def detect(name, delay):
     for slug in slug_variants(name):
-        for platform, url_tpl, validate in PROBES:
-            if probe(url_tpl.format(slug=slug), validate):
+        for platform, check in PROBES:
+            if check(slug):
                 return {"platform": platform, "slug": slug, "label": name.strip()}
             time.sleep(delay)
     return None

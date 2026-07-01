@@ -4,6 +4,7 @@ __pycache__/
 
 # Runtime state + outputs (live under data/)
 seen_jobs.txt
+pruned_keys.txt
 scraped_jobs.json
 *.csv
 *.xlsx

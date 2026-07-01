@@ -1,0 +1,18 @@
+# Companies on ATS platforms the scraper does NOT support (Greenhouse/Lever/Ashby/SmartRecruiters/Workable/Recruitee)
+# — these can't be auto-scraped; check manually.
+
+Groq             -> Gem        (jobs.gem.com/groq)
+Cyera            -> Comeet      (comeet.com/jobs/cyera)
+Upwind Security  -> Comeet      (embedded comeet board on upwind.io/careers)
+Bitsight         -> Workday     (bitsight.wd1.myworkdayjobs.com/Bitsight)
+Darktrace        -> Workday
+
+# Acquired / folded into a parent company's board (no independent slug):
+Codeium          -> renamed Windsurf, now redirects to Cognition's board (ashby:cognition) — duplicate of Cognition AI
+Red Canary       -> acquired by Zscaler (zscaler.com/careers)
+Dazz             -> acquired by Wiz (dazz.wiz.io/careers)
+
+# Note: Sublime Security IS on Ashby (ashby:sublime-security) but its public posting-API
+# feed currently returns 0 jobs (feed disabled) even though the HTML board has openings.
+# Metomic's Workable account is valid but has 0 open roles right now.
+# Both are included in watchlist_manual.json — the scraper will pick up postings when they appear.

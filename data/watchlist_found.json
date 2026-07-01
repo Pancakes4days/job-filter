@@ -16,33 +16,8 @@
   },
   {
     "platform": "smartrecruiters",
-    "slug": "acx",
-    "label": "ACX"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "acuityinsurance",
-    "label": "Acuity Insurance"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "adp",
-    "label": "ADP"
-  },
-  {
-    "platform": "smartrecruiters",
     "slug": "adobe",
     "label": "Adobe"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "aig",
-    "label": "AIG"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "alterasf",
-    "label": "AlteraSF"
   },
   {
     "platform": "smartrecruiters",
@@ -50,39 +25,14 @@
     "label": "American Express"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "arcesium",
-    "label": "Arcesium"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "asti",
-    "label": "ASTi"
-  },
-  {
     "platform": "lever",
     "slug": "atlassian",
     "label": "Atlassian"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "atlasquo",
-    "label": "AtlasQuo"
-  },
-  {
     "platform": "ashby",
     "slug": "auctor",
     "label": "Auctor"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "auzmor",
-    "label": "Auzmor"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "balyasny",
-    "label": "Balyasny"
   },
   {
     "platform": "greenhouse",
@@ -96,21 +46,6 @@
   },
   {
     "platform": "smartrecruiters",
-    "slug": "bechtel",
-    "label": "Bechtel"
-  },
-  {
-    "platform": "greenhouse",
-    "slug": "bedrockrobotics",
-    "label": "Bedrock Robotics"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "beli",
-    "label": "Beli"
-  },
-  {
-    "platform": "smartrecruiters",
     "slug": "bgcgroup",
     "label": "BGC Group"
   },
@@ -118,11 +53,6 @@
     "platform": "smartrecruiters",
     "slug": "blackrock",
     "label": "BlackRock"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "blackstone",
-    "label": "Blackstone"
   },
   {
     "platform": "smartrecruiters",
@@ -146,18 +76,8 @@
   },
   {
     "platform": "smartrecruiters",
-    "slug": "broadridge",
-    "label": "Broadridge"
-  },
-  {
-    "platform": "smartrecruiters",
     "slug": "caa",
     "label": "CAA"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "cadent",
-    "label": "Cadent"
   },
   {
     "platform": "smartrecruiters",
@@ -166,18 +86,8 @@
   },
   {
     "platform": "smartrecruiters",
-    "slug": "capstone",
-    "label": "Capstone"
-  },
-  {
-    "platform": "smartrecruiters",
     "slug": "caresource",
     "label": "CareSource"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "careyayahealthtech",
-    "label": "Careyaya Health Tech"
   },
   {
     "platform": "lever",
@@ -186,28 +96,13 @@
   },
   {
     "platform": "smartrecruiters",
-    "slug": "cboe",
-    "label": "Cboe"
-  },
-  {
-    "platform": "smartrecruiters",
     "slug": "cisco",
     "label": "Cisco"
   },
   {
     "platform": "smartrecruiters",
-    "slug": "citadel",
-    "label": "Citadel"
-  },
-  {
-    "platform": "smartrecruiters",
     "slug": "citi",
     "label": "Citi"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "clarityinnovations",
-    "label": "Clarity Innovations"
   },
   {
     "platform": "greenhouse",
@@ -223,26 +118,6 @@
     "platform": "smartrecruiters",
     "slug": "comcast",
     "label": "Comcast"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "convergent",
-    "label": "Convergent"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "coursicle",
-    "label": "Coursicle"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "creativespiritus",
-    "label": "Creative Spirit US"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "crowe",
-    "label": "Crowe"
   },
   {
     "platform": "smartrecruiters",
@@ -305,16 +180,6 @@
     "label": "DV Trading"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "eclecticiq",
-    "label": "EclecticIQ"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "electrifyamerica",
-    "label": "Electrify America"
-  },
-  {
     "platform": "lever",
     "slug": "emersoncollective",
     "label": "Emerson Collective"
@@ -338,16 +203,6 @@
     "platform": "greenhouse",
     "slug": "figma",
     "label": "Figma"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "firsteagleinvestments",
-    "label": "First Eagle Investments"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "fiverings",
-    "label": "Five Rings"
   },
   {
     "platform": "ashby",
@@ -400,29 +255,9 @@
     "label": "GPTZero"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "greaternewyorkinsurancecompanies",
-    "label": "Greater New York Insurance Companies"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "greeklearners",
-    "label": "Greek Learners"
-  },
-  {
     "platform": "greenhouse",
     "slug": "gusto",
     "label": "Gusto"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "hireshire",
-    "label": "Hireshire"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "hiscopeenterprises",
-    "label": "Hiscope Enterprises"
   },
   {
     "platform": "smartrecruiters",
@@ -431,43 +266,8 @@
   },
   {
     "platform": "smartrecruiters",
-    "slug": "hudsonrivertrading",
-    "label": "Hudson River Trading"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "ibm",
-    "label": "IBM"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "ice",
-    "label": "ICE"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "icf",
-    "label": "ICF"
-  },
-  {
-    "platform": "greenhouse",
-    "slug": "iex",
-    "label": "IEX"
-  },
-  {
-    "platform": "smartrecruiters",
     "slug": "intuit",
     "label": "Intuit"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "iqstorage",
-    "label": "IQ Storage"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "irocket",
-    "label": "iRocket"
   },
   {
     "platform": "greenhouse",
@@ -490,16 +290,6 @@
     "label": "Miro"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "retool",
-    "label": "Retool"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "mondaycom",
-    "label": "Monday.com"
-  },
-  {
     "platform": "greenhouse",
     "slug": "postman",
     "label": "Postman"
@@ -508,11 +298,6 @@
     "platform": "ashby",
     "slug": "clickup",
     "label": "ClickUp"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "jmp",
-    "label": "JMP"
   },
   {
     "platform": "greenhouse",
@@ -565,16 +350,6 @@
     "label": "Okta"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "jpmorganchase",
-    "label": "JPMorgan Chase"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "kensho",
-    "label": "Kensho Technologies"
-  },
-  {
     "platform": "ashby",
     "slug": "stytch",
     "label": "Stytch"
@@ -588,16 +363,6 @@
     "platform": "greenhouse",
     "slug": "asana",
     "label": "Asana"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "segment",
-    "label": "Segment"
-  },
-  {
-    "platform": "greenhouse",
-    "slug": "klaviyo",
-    "label": "Klaviyo"
   },
   {
     "platform": "greenhouse",
@@ -621,16 +386,6 @@
   },
   {
     "platform": "smartrecruiters",
-    "slug": "keysight",
-    "label": "Keysight"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "knitwellgroup",
-    "label": "KnitWell Group"
-  },
-  {
-    "platform": "smartrecruiters",
     "slug": "l3harris",
     "label": "L3Harris"
   },
@@ -638,11 +393,6 @@
     "platform": "ashby",
     "slug": "benchling",
     "label": "Benchling"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "harness",
-    "label": "Harness"
   },
   {
     "platform": "greenhouse",
@@ -653,11 +403,6 @@
     "platform": "smartrecruiters",
     "slug": "zendesk",
     "label": "Zendesk"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "laserfiche",
-    "label": "Laserfiche"
   },
   {
     "platform": "smartrecruiters",
@@ -695,11 +440,6 @@
     "label": "Redis"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "akamai",
-    "label": "Akamai"
-  },
-  {
     "platform": "greenhouse",
     "slug": "link",
     "label": "Link"
@@ -720,19 +460,9 @@
     "label": "Lyft"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "cockroach",
-    "label": "Cockroach Labs"
-  },
-  {
     "platform": "greenhouse",
     "slug": "singlestore",
     "label": "SingleStore"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "lseg",
-    "label": "LSEG"
   },
   {
     "platform": "ashby",
@@ -761,11 +491,6 @@
   },
   {
     "platform": "smartrecruiters",
-    "slug": "mscience",
-    "label": "M Science"
-  },
-  {
-    "platform": "smartrecruiters",
     "slug": "macquariegroup",
     "label": "Macquarie Group"
   },
@@ -780,29 +505,9 @@
     "label": "Peloton"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "dbt",
-    "label": "dbt Labs"
-  },
-  {
-    "platform": "greenhouse",
-    "slug": "temporal",
-    "label": "Temporal"
-  },
-  {
     "platform": "greenhouse",
     "slug": "manifoldai",
     "label": "Manifold AI"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "doordashmerchant",
-    "label": "Doordash Merchant"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "marketaxess",
-    "label": "MarketAxess"
   },
   {
     "platform": "greenhouse",
@@ -850,34 +555,14 @@
     "label": "PagerDuty"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "grafana",
-    "label": "Grafana Labs"
-  },
-  {
     "platform": "greenhouse",
     "slug": "epicgames",
     "label": "Epic Games"
   },
   {
     "platform": "smartrecruiters",
-    "slug": "unity",
-    "label": "Unity"
-  },
-  {
-    "platform": "smartrecruiters",
     "slug": "meta",
     "label": "Meta"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "modmed",
-    "label": "ModMed"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "moelis",
-    "label": "Moelis"
   },
   {
     "platform": "smartrecruiters",
@@ -940,11 +625,6 @@
     "label": "Spotify"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "soundcloud",
-    "label": "SoundCloud"
-  },
-  {
     "platform": "lever",
     "slug": "neon",
     "label": "Neon"
@@ -958,11 +638,6 @@
     "platform": "greenhouse",
     "slug": "coursera",
     "label": "Coursera"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "pulumi",
-    "label": "Pulumi"
   },
   {
     "platform": "smartrecruiters",
@@ -1000,11 +675,6 @@
     "label": "Render"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "tempus",
-    "label": "Tempus"
-  },
-  {
     "platform": "greenhouse",
     "slug": "flatironhealth",
     "label": "Flatiron Health"
@@ -1015,34 +685,14 @@
     "label": "mthree"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "narb",
-    "label": "narb"
-  },
-  {
     "platform": "greenhouse",
     "slug": "komodohealth",
     "label": "Komodo Health"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "springhealth",
-    "label": "Spring Health"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "nba",
-    "label": "NBA"
-  },
-  {
     "platform": "greenhouse",
     "slug": "cloudflare",
     "label": "Cloudflare"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "cityblockhealth",
-    "label": "Cityblock Health"
   },
   {
     "platform": "smartrecruiters",
@@ -1056,28 +706,8 @@
   },
   {
     "platform": "smartrecruiters",
-    "slug": "nbcuniversal",
-    "label": "NBCUniversal"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "colorhealth",
-    "label": "Color Health"
-  },
-  {
-    "platform": "smartrecruiters",
     "slug": "netsuite",
     "label": "NetSuite"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "newharbor",
-    "label": "New Harbor"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "headspace",
-    "label": "Headspace"
   },
   {
     "platform": "lever",
@@ -1090,34 +720,9 @@
     "label": "Clover Health"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "newyorklifeinsurance",
-    "label": "New York Life Insurance"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "newyorktimes",
-    "label": "New York Times"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "flutterwave",
-    "label": "Flutterwave"
-  },
-  {
     "platform": "greenhouse",
     "slug": "payoneer",
     "label": "Payoneer"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "nuvei",
-    "label": "Nuvei"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "ninthwave",
-    "label": "Ninth Wave"
   },
   {
     "platform": "smartrecruiters",
@@ -1128,16 +733,6 @@
     "platform": "greenhouse",
     "slug": "nintendo",
     "label": "Nintendo"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "anduril",
-    "label": "Anduril"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "nucleussecurity",
-    "label": "Nucleus Security"
   },
   {
     "platform": "greenhouse",
@@ -1155,19 +750,9 @@
     "label": "Figure"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "olami",
-    "label": "Olami"
-  },
-  {
     "platform": "ashby",
     "slug": "stash",
     "label": "Stash"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "geckorobotics",
-    "label": "Gecko Robotics"
   },
   {
     "platform": "greenhouse",
@@ -1180,19 +765,9 @@
     "label": "Olive"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "onestream",
-    "label": "OneStream"
-  },
-  {
     "platform": "ashby",
     "slug": "uniswap",
     "label": "Uniswap Labs"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "signifyd",
-    "label": "Signifyd"
   },
   {
     "platform": "smartrecruiters",
@@ -1208,11 +783,6 @@
     "platform": "greenhouse",
     "slug": "pathrobotics",
     "label": "Path Robotics"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "sarcos",
-    "label": "Sarcos"
   },
   {
     "platform": "smartrecruiters",
@@ -1265,11 +835,6 @@
     "label": "Polymarket"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "duneanalytics",
-    "label": "Dune Analytics"
-  },
-  {
     "platform": "lever",
     "slug": "kraken",
     "label": "Kraken"
@@ -1278,21 +843,6 @@
     "platform": "ashby",
     "slug": "alchemy",
     "label": "Alchemy"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "northropgrumman",
-    "label": "Northrop Grumman"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "generaldynamics",
-    "label": "General Dynamics"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "orangetail",
-    "label": "Orange Tail"
   },
   {
     "platform": "lever",
@@ -1360,19 +910,9 @@
     "label": "Pinterest"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "podiumautomation",
-    "label": "Podium Automation"
-  },
-  {
     "platform": "greenhouse",
     "slug": "doubleverify",
     "label": "DoubleVerify"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "integraladscience",
-    "label": "Integral Ad Science"
   },
   {
     "platform": "greenhouse",
@@ -1383,16 +923,6 @@
     "platform": "greenhouse",
     "slug": "point72",
     "label": "Point72"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "anchoragedigital",
-    "label": "Anchorage Digital"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "princetonbiopartners",
-    "label": "Princeton Biopartners"
   },
   {
     "platform": "greenhouse",
@@ -1426,26 +956,6 @@
   },
   {
     "platform": "smartrecruiters",
-    "slug": "chainalysis",
-    "label": "Chainalysis"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "qualcomm",
-    "label": "Qualcomm"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "twosigma",
-    "label": "Two Sigma"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "quickslothealth",
-    "label": "QuickSlot Health"
-  },
-  {
-    "platform": "smartrecruiters",
     "slug": "rakuten",
     "label": "Rakuten"
   },
@@ -1465,19 +975,9 @@
     "label": "Akuna Capital"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "wolverinetrading",
-    "label": "Wolverine Trading"
-  },
-  {
     "platform": "greenhouse",
     "slug": "marqeta",
     "label": "Marqeta"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "researchinnovations",
-    "label": "Research Innovations"
   },
   {
     "platform": "greenhouse",
@@ -1493,11 +993,6 @@
     "platform": "smartrecruiters",
     "slug": "susquehannainternationalgroup",
     "label": "Susquehanna International Group"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "imctrading",
-    "label": "IMC Trading"
   },
   {
     "platform": "ashby",
@@ -1545,19 +1040,9 @@
     "label": "Plaid"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "deshaw",
-    "label": "D. E. Shaw"
-  },
-  {
     "platform": "greenhouse",
     "slug": "chime",
     "label": "Chime"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "renaissance",
-    "label": "Renaissance Technologies"
   },
   {
     "platform": "greenhouse",
@@ -1586,16 +1071,6 @@
   },
   {
     "platform": "smartrecruiters",
-    "slug": "sailpoint",
-    "label": "SailPoint"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "salespilot365",
-    "label": "SalesPilot 365"
-  },
-  {
-    "platform": "smartrecruiters",
     "slug": "santander",
     "label": "Santander"
   },
@@ -1606,23 +1081,8 @@
   },
   {
     "platform": "smartrecruiters",
-    "slug": "salesforce",
-    "label": "Salesforce"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "credoai",
-    "label": "Credo AI"
-  },
-  {
-    "platform": "smartrecruiters",
     "slug": "servicenow",
     "label": "ServiceNow"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "workday",
-    "label": "Workday"
   },
   {
     "platform": "greenhouse",
@@ -1635,24 +1095,9 @@
     "label": "SeatGeek"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "splunk",
-    "label": "Splunk"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "securityinnovation",
-    "label": "Security Innovation"
-  },
-  {
     "platform": "greenhouse",
     "slug": "samsara",
     "label": "Samsara"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "syskahennessygroup",
-    "label": "Syska Hennessy Group"
   },
   {
     "platform": "greenhouse",
@@ -1663,11 +1108,6 @@
     "platform": "greenhouse",
     "slug": "locusrobotics",
     "label": "Locus Robotics"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "theguarantors",
-    "label": "TheGuarantors"
   },
   {
     "platform": "greenhouse",
@@ -1706,11 +1146,6 @@
   },
   {
     "platform": "smartrecruiters",
-    "slug": "fiddlerai",
-    "label": "Fiddler AI"
-  },
-  {
-    "platform": "smartrecruiters",
     "slug": "telnyx",
     "label": "Telnyx"
   },
@@ -1718,16 +1153,6 @@
     "platform": "lever",
     "slug": "cloudinary",
     "label": "Cloudinary"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "truera",
-    "label": "Truera"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "gantry",
-    "label": "Gantry"
   },
   {
     "platform": "greenhouse",
@@ -1738,21 +1163,6 @@
     "platform": "greenhouse",
     "slug": "trumid",
     "label": "Trumid"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "flatironschool",
-    "label": "Flatiron School"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "vaneck",
-    "label": "VanEck"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "vspvision",
-    "label": "VSP Vision"
   },
   {
     "platform": "greenhouse",
@@ -1771,28 +1181,8 @@
   },
   {
     "platform": "smartrecruiters",
-    "slug": "westmonroe",
-    "label": "West Monroe"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "appdynamicswex",
-    "label": "AppDynamicsWEX"
-  },
-  {
-    "platform": "smartrecruiters",
     "slug": "whatnot",
     "label": "Whatnot"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "wurl",
-    "label": "Wurl"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "gretel",
-    "label": "Gretel"
   },
   {
     "platform": "ashby",
@@ -1805,44 +1195,9 @@
     "label": "Vanta"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "zebra",
-    "label": "Zebra Technologies"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "zushealthworkhelio",
-    "label": "Zus HealthWorkhelio"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "warnerbros",
-    "label": "Warner Bros"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "wealthcom",
-    "label": "Wealth.com"
-  },
-  {
     "platform": "greenhouse",
     "slug": "virtu",
     "label": "Virtu"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "visionaryintegrationprofessionals",
-    "label": "Visionary Integration Professionals"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "versana",
-    "label": "Versana"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "jasper",
-    "label": "Jasper"
   },
   {
     "platform": "ashby",
@@ -1860,21 +1215,6 @@
     "label": "Viam Robotics"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "veeam",
-    "label": "Veeam"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "ushunger",
-    "label": "U.S. Hunger"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "vallera",
-    "label": "Vallera"
-  },
-  {
     "platform": "ashby",
     "slug": "openai",
     "label": "OpenAI"
@@ -1885,24 +1225,9 @@
     "label": "Typeface"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "ubie",
-    "label": "Ubie"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "ubs",
-    "label": "UBS"
-  },
-  {
     "platform": "greenhouse",
     "slug": "towerresearchcapital",
     "label": "Tower Research Capital"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "adept",
-    "label": "Adept"
   },
   {
     "platform": "lever",
@@ -1916,18 +1241,8 @@
   },
   {
     "platform": "smartrecruiters",
-    "slug": "theriverside",
-    "label": "The Riverside Company"
-  },
-  {
-    "platform": "smartrecruiters",
     "slug": "tapestry",
     "label": "Tapestry"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "tessera",
-    "label": "Tessera Labs"
   },
   {
     "platform": "smartrecruiters",
@@ -1935,19 +1250,9 @@
     "label": "Tata Consultancy Services"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "sheeatikagovernmentservices",
-    "label": "Shee Atika Government Services"
-  },
-  {
     "platform": "greenhouse",
     "slug": "supplyhouse",
     "label": "SupplyHouse"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "steampunk",
-    "label": "Steampunk"
   },
   {
     "platform": "ashby",
@@ -1955,29 +1260,14 @@
     "label": "Baseten"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "characterai",
-    "label": "Character AI"
-  },
-  {
     "platform": "greenhouse",
     "slug": "togetherai",
     "label": "Together AI"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "replicate",
-    "label": "Replicate"
-  },
-  {
     "platform": "ashby",
     "slug": "perplexity",
     "label": "Perplexity"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "somos",
-    "label": "Somos"
   },
   {
     "platform": "greenhouse",
@@ -1990,19 +1280,9 @@
     "label": "Societe Generale"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "smbc",
-    "label": "SMBC"
-  },
-  {
     "platform": "ashby",
     "slug": "snowflake",
     "label": "Snowflake"
-  },
-  {
-    "platform": "greenhouse",
-    "slug": "snackpass",
-    "label": "SnackPass"
   },
   {
     "platform": "smartrecruiters",
@@ -2031,18 +1311,8 @@
   },
   {
     "platform": "smartrecruiters",
-    "slug": "sentinelone",
-    "label": "SentinelOne"
-  },
-  {
-    "platform": "smartrecruiters",
     "slug": "rapid7",
     "label": "Rapid7"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "tenable",
-    "label": "Tenable"
   },
   {
     "platform": "ashby",
@@ -2075,11 +1345,6 @@
     "label": "Snyk"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "lacework",
-    "label": "Lacework"
-  },
-  {
     "platform": "greenhouse",
     "slug": "orcasecurity",
     "label": "Orca Security"
@@ -2095,24 +1360,9 @@
     "label": "Huntress"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "arcticwolf",
-    "label": "Arctic Wolf"
-  },
-  {
     "platform": "greenhouse",
     "slug": "knowbe4",
     "label": "KnowBe4"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "pentera",
-    "label": "Pentera"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "huggingface",
-    "label": "Hugging Face"
   },
   {
     "platform": "greenhouse",
@@ -2120,24 +1370,9 @@
     "label": "Scale AI"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "weightsandbiases",
-    "label": "Weights and Biases"
-  },
-  {
     "platform": "lever",
     "slug": "pushsecurity",
     "label": "Push Security"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "devo",
-    "label": "Devo"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "varonis",
-    "label": "Varonis"
   },
   {
     "platform": "greenhouse",
@@ -2155,21 +1390,6 @@
     "label": "Illumio"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "cyolo",
-    "label": "Cyolo"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "telos",
-    "label": "Telos"
-  },
-  {
-    "platform": "smartrecruiters",
-    "slug": "secureworks",
-    "label": "Secureworks"
-  },
-  {
     "platform": "greenhouse",
     "slug": "nozominetworks",
     "label": "Nozomi Networks"
@@ -2180,11 +1400,6 @@
     "label": "Torq"
   },
   {
-    "platform": "smartrecruiters",
-    "slug": "claroty",
-    "label": "Claroty"
-  },
-  {
     "platform": "greenhouse",
     "slug": "dragos",
     "label": "Dragos"
@@ -2193,5 +1408,255 @@
     "platform": "smartrecruiters",
     "slug": "armis",
     "label": "Armis"
+  },
+  {
+    "platform": "ashby",
+    "slug": "cognition",
+    "label": "Cognition AI"
+  },
+  {
+    "platform": "ashby",
+    "slug": "sierra",
+    "label": "Sierra"
+  },
+  {
+    "platform": "ashby",
+    "slug": "modal",
+    "label": "Modal"
+  },
+  {
+    "platform": "ashby",
+    "slug": "replit",
+    "label": "Replit"
+  },
+  {
+    "platform": "ashby",
+    "slug": "cursor",
+    "label": "Cursor"
+  },
+  {
+    "platform": "ashby",
+    "slug": "letta",
+    "label": "Letta"
+  },
+  {
+    "platform": "ashby",
+    "slug": "anyscale",
+    "label": "Anyscale"
+  },
+  {
+    "platform": "ashby",
+    "slug": "cerebras",
+    "label": "Cerebras"
+  },
+  {
+    "platform": "ashby",
+    "slug": "julius",
+    "label": "Julius AI"
+  },
+  {
+    "platform": "ashby",
+    "slug": "lightning",
+    "label": "Lightning AI"
+  },
+  {
+    "platform": "ashby",
+    "slug": "prefect",
+    "label": "Prefect"
+  },
+  {
+    "platform": "ashby",
+    "slug": "horizon3ai",
+    "label": "Horizon3 AI"
+  },
+  {
+    "platform": "ashby",
+    "slug": "materialsecurity",
+    "label": "Material Security"
+  },
+  {
+    "platform": "ashby",
+    "slug": "simspace-corporation",
+    "label": "SimSpace"
+  },
+  {
+    "platform": "ashby",
+    "slug": "northslope-technologies",
+    "label": "Northslope"
+  },
+  {
+    "platform": "ashby",
+    "slug": "sublime-security",
+    "label": "Sublime Security"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "expel",
+    "label": "Expel"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "censys",
+    "label": "Censys"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "tines",
+    "label": "Tines"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "bishopfox",
+    "label": "Bishop Fox"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "synack",
+    "label": "Synack"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "sweetsecurity",
+    "label": "Sweet Security"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "fireworksai",
+    "label": "Fireworks AI"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "hextechnologies",
+    "label": "Hex"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "dagsterlabs",
+    "label": "Dagster"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "vectranetworks",
+    "label": "Vectra AI"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "cobaltio",
+    "label": "Cobalt"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "greynoiseintelligence",
+    "label": "GreyNoise"
+  },
+  {
+    "platform": "workable",
+    "slug": "metomic",
+    "label": "Metomic"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "cockroachlabs",
+    "label": "Cockroach Labs"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "grafanalabs",
+    "label": "Grafana Labs"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "iex",
+    "label": "IEX"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "imc",
+    "label": "IMC Trading"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "klaviyo",
+    "label": "Klaviyo"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "syskahennessy",
+    "label": "Syska Hennessy Group"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "theriversidecompany",
+    "label": "The Riverside Company"
+  },
+  {
+    "platform": "ashby",
+    "slug": "bedrock-robotics",
+    "label": "Bedrock Robotics"
+  },
+  {
+    "platform": "ashby",
+    "slug": "character",
+    "label": "Character AI"
+  },
+  {
+    "platform": "ashby",
+    "slug": "color-health",
+    "label": "Color Health"
+  },
+  {
+    "platform": "ashby",
+    "slug": "fiddler-ai",
+    "label": "Fiddler AI"
+  },
+  {
+    "platform": "ashby",
+    "slug": "gecko-robotics",
+    "label": "Gecko Robotics"
+  },
+  {
+    "platform": "ashby",
+    "slug": "podium-automation",
+    "label": "Podium Automation"
+  },
+  {
+    "platform": "ashby",
+    "slug": "snackpass",
+    "label": "SnackPass"
+  },
+  {
+    "platform": "ashby",
+    "slug": "spring-health",
+    "label": "Spring Health"
+  },
+  {
+    "platform": "ashby",
+    "slug": "temporal",
+    "label": "Temporal"
+  },
+  {
+    "platform": "ashby",
+    "slug": "tessera-labs",
+    "label": "Tessera Labs"
+  },
+  {
+    "platform": "ashby",
+    "slug": "wealth-com",
+    "label": "Wealth.com"
+  },
+  {
+    "platform": "lever",
+    "slug": "anchorage",
+    "label": "Anchorage Digital"
+  },
+  {
+    "platform": "ashby",
+    "slug": "cityblock",
+    "label": "Cityblock Health"
+  },
+  {
+    "platform": "ashby",
+    "slug": "dune",
+    "label": "Dune Analytics"
   }
 ]

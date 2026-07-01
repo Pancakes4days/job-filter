@@ -1,0 +1,1310 @@
+{
+  "summary": {
+    "EMPTY_REAL": 71,
+    "VALID": 203,
+    "BOGUS": 152,
+    "DEAD": 5,
+    "LIVE": 8
+  },
+  "removed": [
+    {
+      "platform": "smartrecruiters",
+      "slug": "acx",
+      "label": "ACX",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "acuityinsurance",
+      "label": "Acuity Insurance",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "adp",
+      "label": "ADP",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "aig",
+      "label": "AIG",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "alterasf",
+      "label": "AlteraSF",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "arcesium",
+      "label": "Arcesium",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "asti",
+      "label": "ASTi",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "atlasquo",
+      "label": "AtlasQuo",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "auzmor",
+      "label": "Auzmor",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "balyasny",
+      "label": "Balyasny",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "bechtel",
+      "label": "Bechtel",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "greenhouse",
+      "slug": "bedrockrobotics",
+      "label": "Bedrock Robotics",
+      "reason": "DEAD"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "beli",
+      "label": "Beli",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "blackstone",
+      "label": "Blackstone",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "broadridge",
+      "label": "Broadridge",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "cadent",
+      "label": "Cadent",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "capstone",
+      "label": "Capstone",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "careyayahealthtech",
+      "label": "Careyaya Health Tech",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "cboe",
+      "label": "Cboe",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "citadel",
+      "label": "Citadel",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "clarityinnovations",
+      "label": "Clarity Innovations",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "convergent",
+      "label": "Convergent",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "coursicle",
+      "label": "Coursicle",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "creativespiritus",
+      "label": "Creative Spirit US",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "crowe",
+      "label": "Crowe",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "eclecticiq",
+      "label": "EclecticIQ",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "electrifyamerica",
+      "label": "Electrify America",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "firsteagleinvestments",
+      "label": "First Eagle Investments",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "fiverings",
+      "label": "Five Rings",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "greaternewyorkinsurancecompanies",
+      "label": "Greater New York Insurance Companies",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "greeklearners",
+      "label": "Greek Learners",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "hireshire",
+      "label": "Hireshire",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "hiscopeenterprises",
+      "label": "Hiscope Enterprises",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "hudsonrivertrading",
+      "label": "Hudson River Trading",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "ibm",
+      "label": "IBM",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "ice",
+      "label": "ICE",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "icf",
+      "label": "ICF",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "greenhouse",
+      "slug": "iex",
+      "label": "IEX",
+      "reason": "DEAD"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "iqstorage",
+      "label": "IQ Storage",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "irocket",
+      "label": "iRocket",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "retool",
+      "label": "Retool",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "mondaycom",
+      "label": "Monday.com",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "jmp",
+      "label": "JMP",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "jpmorganchase",
+      "label": "JPMorgan Chase",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "kensho",
+      "label": "Kensho Technologies",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "segment",
+      "label": "Segment",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "greenhouse",
+      "slug": "klaviyo",
+      "label": "Klaviyo",
+      "reason": "DEAD"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "keysight",
+      "label": "Keysight",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "knitwellgroup",
+      "label": "KnitWell Group",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "harness",
+      "label": "Harness",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "laserfiche",
+      "label": "Laserfiche",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "akamai",
+      "label": "Akamai",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "cockroach",
+      "label": "Cockroach Labs",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "lseg",
+      "label": "LSEG",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "mscience",
+      "label": "M Science",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "dbt",
+      "label": "dbt Labs",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "greenhouse",
+      "slug": "temporal",
+      "label": "Temporal",
+      "reason": "DEAD"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "doordashmerchant",
+      "label": "Doordash Merchant",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "marketaxess",
+      "label": "MarketAxess",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "grafana",
+      "label": "Grafana Labs",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "unity",
+      "label": "Unity",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "modmed",
+      "label": "ModMed",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "moelis",
+      "label": "Moelis",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "soundcloud",
+      "label": "SoundCloud",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "pulumi",
+      "label": "Pulumi",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "tempus",
+      "label": "Tempus",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "narb",
+      "label": "narb",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "springhealth",
+      "label": "Spring Health",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "nba",
+      "label": "NBA",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "cityblockhealth",
+      "label": "Cityblock Health",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "nbcuniversal",
+      "label": "NBCUniversal",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "colorhealth",
+      "label": "Color Health",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "newharbor",
+      "label": "New Harbor",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "headspace",
+      "label": "Headspace",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "newyorklifeinsurance",
+      "label": "New York Life Insurance",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "newyorktimes",
+      "label": "New York Times",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "flutterwave",
+      "label": "Flutterwave",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "nuvei",
+      "label": "Nuvei",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "ninthwave",
+      "label": "Ninth Wave",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "anduril",
+      "label": "Anduril",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "nucleussecurity",
+      "label": "Nucleus Security",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "olami",
+      "label": "Olami",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "geckorobotics",
+      "label": "Gecko Robotics",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "onestream",
+      "label": "OneStream",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "signifyd",
+      "label": "Signifyd",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "sarcos",
+      "label": "Sarcos",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "duneanalytics",
+      "label": "Dune Analytics",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "northropgrumman",
+      "label": "Northrop Grumman",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "generaldynamics",
+      "label": "General Dynamics",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "orangetail",
+      "label": "Orange Tail",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "podiumautomation",
+      "label": "Podium Automation",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "integraladscience",
+      "label": "Integral Ad Science",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "anchoragedigital",
+      "label": "Anchorage Digital",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "princetonbiopartners",
+      "label": "Princeton Biopartners",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "chainalysis",
+      "label": "Chainalysis",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "qualcomm",
+      "label": "Qualcomm",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "twosigma",
+      "label": "Two Sigma",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "quickslothealth",
+      "label": "QuickSlot Health",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "wolverinetrading",
+      "label": "Wolverine Trading",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "researchinnovations",
+      "label": "Research Innovations",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "imctrading",
+      "label": "IMC Trading",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "deshaw",
+      "label": "D. E. Shaw",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "renaissance",
+      "label": "Renaissance Technologies",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "sailpoint",
+      "label": "SailPoint",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "salespilot365",
+      "label": "SalesPilot 365",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "salesforce",
+      "label": "Salesforce",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "credoai",
+      "label": "Credo AI",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "workday",
+      "label": "Workday",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "splunk",
+      "label": "Splunk",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "securityinnovation",
+      "label": "Security Innovation",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "syskahennessygroup",
+      "label": "Syska Hennessy Group",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "theguarantors",
+      "label": "TheGuarantors",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "fiddlerai",
+      "label": "Fiddler AI",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "truera",
+      "label": "Truera",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "gantry",
+      "label": "Gantry",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "flatironschool",
+      "label": "Flatiron School",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "vaneck",
+      "label": "VanEck",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "vspvision",
+      "label": "VSP Vision",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "westmonroe",
+      "label": "West Monroe",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "appdynamicswex",
+      "label": "AppDynamicsWEX",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "wurl",
+      "label": "Wurl",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "gretel",
+      "label": "Gretel",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "zebra",
+      "label": "Zebra Technologies",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "zushealthworkhelio",
+      "label": "Zus HealthWorkhelio",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "warnerbros",
+      "label": "Warner Bros",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "wealthcom",
+      "label": "Wealth.com",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "visionaryintegrationprofessionals",
+      "label": "Visionary Integration Professionals",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "versana",
+      "label": "Versana",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "jasper",
+      "label": "Jasper",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "veeam",
+      "label": "Veeam",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "ushunger",
+      "label": "U.S. Hunger",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "vallera",
+      "label": "Vallera",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "ubie",
+      "label": "Ubie",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "ubs",
+      "label": "UBS",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "adept",
+      "label": "Adept",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "theriverside",
+      "label": "The Riverside Company",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "tessera",
+      "label": "Tessera Labs",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "sheeatikagovernmentservices",
+      "label": "Shee Atika Government Services",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "steampunk",
+      "label": "Steampunk",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "characterai",
+      "label": "Character AI",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "replicate",
+      "label": "Replicate",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "somos",
+      "label": "Somos",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "smbc",
+      "label": "SMBC",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "greenhouse",
+      "slug": "snackpass",
+      "label": "SnackPass",
+      "reason": "DEAD"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "sentinelone",
+      "label": "SentinelOne",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "tenable",
+      "label": "Tenable",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "lacework",
+      "label": "Lacework",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "arcticwolf",
+      "label": "Arctic Wolf",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "pentera",
+      "label": "Pentera",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "huggingface",
+      "label": "Hugging Face",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "weightsandbiases",
+      "label": "Weights and Biases",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "devo",
+      "label": "Devo",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "varonis",
+      "label": "Varonis",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "cyolo",
+      "label": "Cyolo",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "telos",
+      "label": "Telos",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "secureworks",
+      "label": "Secureworks",
+      "reason": "BOGUS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "claroty",
+      "label": "Claroty",
+      "reason": "BOGUS"
+    }
+  ],
+  "empty_real": [
+    {
+      "platform": "smartrecruiters",
+      "slug": "8am",
+      "label": "8am"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "adobe",
+      "label": "Adobe"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "americanexpress",
+      "label": "American Express"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "bankofchina",
+      "label": "Bank of China"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "bgcgroup",
+      "label": "BGC Group"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "blackrock",
+      "label": "BlackRock"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "bloomberg",
+      "label": "Bloomberg"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "boeing",
+      "label": "Boeing"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "caa",
+      "label": "CAA"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "capitalgroup",
+      "label": "Capital Group"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "caresource",
+      "label": "CareSource"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "cisco",
+      "label": "Cisco"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "citi",
+      "label": "Citi"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "comcast",
+      "label": "Comcast"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "crowdstrike",
+      "label": "CrowdStrike"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "deutschebank",
+      "label": "Deutsche Bank"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "dexcom",
+      "label": "Dexcom"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "digitalocean",
+      "label": "DigitalOcean"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "doordash",
+      "label": "DoorDash"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "dowjones",
+      "label": "Dow Jones"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "ey",
+      "label": "EY"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "github",
+      "label": "GitHub"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "google",
+      "label": "Google"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "honeywell",
+      "label": "Honeywell"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "intuit",
+      "label": "Intuit"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "rippling",
+      "label": "Rippling"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "brainware",
+      "label": "Brainware"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "l3harris",
+      "label": "L3Harris"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "zendesk",
+      "label": "Zendesk"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "shopify",
+      "label": "Shopify"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "lazard",
+      "label": "Lazard"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "leidos",
+      "label": "Leidos"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "grubhub",
+      "label": "Grubhub"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "lockheedmartin",
+      "label": "Lockheed Martin"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "etsy",
+      "label": "Etsy"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "macquariegroup",
+      "label": "Macquarie Group"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "warbyparker",
+      "label": "Warby Parker"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "noom",
+      "label": "Noom"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "mercuryinsurance",
+      "label": "Mercury Insurance"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "meta",
+      "label": "Meta"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "electronicarts",
+      "label": "Electronic Arts"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "moodys",
+      "label": "Moody's"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "morganstanley",
+      "label": "Morgan Stanley"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "motorola",
+      "label": "Motorola"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "mta",
+      "label": "MTA"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "hashicorp",
+      "label": "HashiCorp"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "netsuite",
+      "label": "NetSuite"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "nis",
+      "label": "NIS"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "boozallenhamilton",
+      "label": "Booz Allen Hamilton"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "oracle",
+      "label": "Oracle"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "saic",
+      "label": "SAIC"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "raytheon",
+      "label": "Raytheon"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "paramount",
+      "label": "Paramount"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "mitre",
+      "label": "MITRE"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "pegasystems",
+      "label": "Pegasystems"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "liveramp",
+      "label": "LiveRamp"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "persistentsystems",
+      "label": "Persistent Systems"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "protiviti",
+      "label": "Protiviti"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "ptc",
+      "label": "PTC"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "rakuten",
+      "label": "Rakuten"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "susquehannainternationalgroup",
+      "label": "Susquehanna International Group"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "santander",
+      "label": "Santander"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "telnyx",
+      "label": "Telnyx"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "dynatrace",
+      "label": "Dynatrace"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "whatnot",
+      "label": "Whatnot"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "tapestry",
+      "label": "Tapestry"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "tataconsultancyservices",
+      "label": "Tata Consultancy Services"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "societegenerale",
+      "label": "Societe Generale"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "paloaltonetworks",
+      "label": "Palo Alto Networks"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "rapid7",
+      "label": "Rapid7"
+    },
+    {
+      "platform": "smartrecruiters",
+      "slug": "cyberark",
+      "label": "CyberArk"
+    }
+  ]
+}

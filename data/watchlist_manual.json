@@ -1,0 +1,147 @@
+[
+  {
+    "platform": "ashby",
+    "slug": "cognition",
+    "label": "Cognition AI"
+  },
+  {
+    "platform": "ashby",
+    "slug": "sierra",
+    "label": "Sierra"
+  },
+  {
+    "platform": "ashby",
+    "slug": "modal",
+    "label": "Modal"
+  },
+  {
+    "platform": "ashby",
+    "slug": "replit",
+    "label": "Replit"
+  },
+  {
+    "platform": "ashby",
+    "slug": "cursor",
+    "label": "Cursor"
+  },
+  {
+    "platform": "ashby",
+    "slug": "letta",
+    "label": "Letta"
+  },
+  {
+    "platform": "ashby",
+    "slug": "anyscale",
+    "label": "Anyscale"
+  },
+  {
+    "platform": "ashby",
+    "slug": "cerebras",
+    "label": "Cerebras"
+  },
+  {
+    "platform": "ashby",
+    "slug": "julius",
+    "label": "Julius AI"
+  },
+  {
+    "platform": "ashby",
+    "slug": "lightning",
+    "label": "Lightning AI"
+  },
+  {
+    "platform": "ashby",
+    "slug": "prefect",
+    "label": "Prefect"
+  },
+  {
+    "platform": "ashby",
+    "slug": "horizon3ai",
+    "label": "Horizon3 AI"
+  },
+  {
+    "platform": "ashby",
+    "slug": "materialsecurity",
+    "label": "Material Security"
+  },
+  {
+    "platform": "ashby",
+    "slug": "simspace-corporation",
+    "label": "SimSpace"
+  },
+  {
+    "platform": "ashby",
+    "slug": "northslope-technologies",
+    "label": "Northslope"
+  },
+  {
+    "platform": "ashby",
+    "slug": "sublime-security",
+    "label": "Sublime Security"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "expel",
+    "label": "Expel"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "censys",
+    "label": "Censys"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "tines",
+    "label": "Tines"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "bishopfox",
+    "label": "Bishop Fox"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "synack",
+    "label": "Synack"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "sweetsecurity",
+    "label": "Sweet Security"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "fireworksai",
+    "label": "Fireworks AI"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "hextechnologies",
+    "label": "Hex"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "dagsterlabs",
+    "label": "Dagster"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "vectranetworks",
+    "label": "Vectra AI"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "cobaltio",
+    "label": "Cobalt"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "greynoiseintelligence",
+    "label": "GreyNoise"
+  },
+  {
+    "platform": "workable",
+    "slug": "metomic",
+    "label": "Metomic"
+  }
+]
