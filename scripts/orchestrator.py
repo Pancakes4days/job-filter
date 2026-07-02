@@ -190,8 +190,43 @@ def _fetch_json(url, timeout=10):
         return json.loads(resp.read().decode("utf-8", errors="replace"))
 
 
+def _workday_job_count(slug):
+    """Open-job count for a Workday watchlist entry, or -1 on error.
+
+    slug is "host/site" (e.g. "bitsight.wd1.myworkdayjobs.com/Bitsight"); tenant
+    is the host's first label. Workday needs a POST to its cxs jobs endpoint and
+    rejects non-browser UAs. A real tenant returns 200 with a "jobPostings" key
+    even at 0 jobs (bogus tenants 404/422), so an empty-but-valid board reports 0
+    rather than -1 and simply stays in the watchlist for future postings."""
+    try:
+        s = slug.strip()
+        for pre in ("https://", "http://"):
+            if s.startswith(pre):
+                s = s[len(pre):]
+        s = s.strip("/").split("|")[0]
+        host, _, rest = s.partition("/")
+        site = rest.split("/")[0]
+        tenant = host.split(".")[0]
+        if not host or not site:
+            return -1
+        url = f"https://{host}/wday/cxs/{tenant}/{site}/jobs"
+        payload = json.dumps({"appliedFacets": {}, "limit": 1,
+                              "offset": 0, "searchText": ""}).encode("utf-8")
+        req = urllib.request.Request(
+            url, data=payload, method="POST",
+            headers={"Content-Type": "application/json", "Accept": "application/json",
+                     "User-Agent": "Mozilla/5.0 (compatible; JobFilterBot/1.0)"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            d = json.loads(resp.read().decode("utf-8", errors="replace"))
+        return d.get("total", 0) if isinstance(d, dict) and "jobPostings" in d else -1
+    except Exception:
+        return -1
+
+
 def _live_job_count(platform, slug):
     """Return number of open jobs for a watchlist company, or -1 on error."""
+    if platform == "workday":
+        return _workday_job_count(slug)
     routes = {
         "greenhouse":      (f"https://boards-api.greenhouse.io/v1/boards/{slug}/jobs",
                             lambda d: len(d.get("jobs", []))),

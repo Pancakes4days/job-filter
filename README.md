@@ -171,7 +171,7 @@ is less likely to kill it, and restarts on any failure but not on a clean stop.
 ## The watchlist (company career pages)
 
 The watchlist scrapes specific companies' job boards directly via their ATS APIs
-(Greenhouse, Lever, Ashby, SmartRecruiters, Workable, Recruitee).
+(Greenhouse, Lever, Ashby, SmartRecruiters, Workable, Recruitee, Workday).
 
 **You don't run `detect_platforms.py` manually anymore** — just add company names
 to `companies.txt`. On the next cycle the `detect` phase probes each new name,
@@ -199,6 +199,39 @@ next cycle.
 python3 scripts/detect_platforms.py config/companies.txt   # writes data/watchlist_found.json
 python3 scripts/verify_watchlist.py                         # sanity-check the detected boards
 ```
+
+### Workday companies
+
+Large enterprises (IBM-scale) often run **Workday**, which has no single-slug public
+API like the others — each employer lives at `{tenant}.{dc}.myworkdayjobs.com/{site}`
+and is reached via an undocumented `wday/cxs/{tenant}/{site}/jobs` endpoint the hosted
+career site itself calls. The scraper supports it as the `workday` platform, but the
+`companies.txt` auto-`detect` phase can **not** resolve Workday employers (there's no
+name→slug guess that works), so they're added with a dedicated helper.
+
+The watchlist slug encodes the board as **`host/site`**, e.g.
+`bitsight.wd1.myworkdayjobs.com/Bitsight`. The tenant is the host's first label; for
+the rare tenant whose cxs name differs from its subdomain, append `|tenant` to the slug.
+
+Resolve a company from either its Workday URL or its careers-page URL, verified against
+the live API before you trust it (0-job boards are kept — they light up when the company
+posts in a later hiring cycle):
+
+```bash
+# one company (a Workday URL or a careers URL that links to one)
+python3 scripts/detect_workday.py https://www.bitsight.com/careers
+
+# many at once — a file of "Label | careers-or-workday-URL" lines
+python3 scripts/detect_workday.py --batch companies_with_urls.txt
+```
+
+It writes verified entries to `data/watchlist_workday.json`; paste them into the
+watchlist `companies` array in `scraper_config.json`. From there the `verify` and
+`scrape` phases treat Workday like any other platform.
+
+Descriptions: the connector lists jobs (title/location/URL) with one request per 20
+postings by default. To pull each posting's full description for the LLM (one extra
+request per job), set `WORKDAY_FETCH_DESCRIPTIONS = True` in `scraper.py`.
 
 ## Running pieces by hand
 

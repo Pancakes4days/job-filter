@@ -85,6 +85,25 @@ def main():
                 ).get("offers", [])
                 info = sample(jobs, "title", lambda j: j.get("location"))
                 print(f"{line}{len(jobs)} jobs | {info}")
+            elif platform == "workday":
+                # slug is "host/site"; tenant = host's first label. Workday needs a
+                # POST to its cxs endpoint and a browser UA.
+                host, _, rest = slug.partition("/")
+                site = rest.split("/")[0]
+                tenant = host.split(".")[0]
+                body = json.dumps({"appliedFacets": {}, "limit": 3,
+                                   "offset": 0, "searchText": ""}).encode("utf-8")
+                req = urllib.request.Request(
+                    f"https://{host}/wday/cxs/{tenant}/{site}/jobs",
+                    data=body, method="POST",
+                    headers={"Content-Type": "application/json",
+                             "Accept": "application/json",
+                             "User-Agent": "Mozilla/5.0 (compatible; JobFilterBot/1.0)"})
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    data = json.loads(resp.read().decode("utf-8", errors="replace"))
+                jobs = data.get("jobPostings", [])
+                info = sample(jobs, "title", lambda j: j.get("locationsText"))
+                print(f"{line}{data.get('total', len(jobs))} jobs | {info}")
             else:
                 print(f"{line}unknown platform")
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError,

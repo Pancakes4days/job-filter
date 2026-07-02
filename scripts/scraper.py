@@ -379,6 +379,97 @@ def _fetch_recruitee(slug):
     return jobs
 
 
+# Workday has no single-slug public API like the others. Each employer runs a
+# tenant at {tenant}.{dc}.myworkdayjobs.com/{site} and exposes an undocumented
+# JSON endpoint the hosted career site itself calls:
+#     POST https://{host}/wday/cxs/{tenant}/{site}/jobs   (paginated list)
+#     GET  https://{host}/wday/cxs/{tenant}/{site}{path}  (one posting's detail)
+# The watchlist slug encodes host + site as "host/site", e.g.
+#     "bitsight.wd1.myworkdayjobs.com/Bitsight"
+# tenant is the first host label. Workday rejects non-browser UAs, so use a
+# browser one here.
+WORKDAY_UA = "Mozilla/5.0 (compatible; JobFilterBot/1.0; personal job search)"
+WORKDAY_PAGE_LIMIT = 20        # Workday caps the list endpoint at 20 per page
+WORKDAY_MAX_PAGES = 25         # bound per-company requests (~500 most-recent jobs)
+# The list endpoint omits descriptions. Enabling this fetches each posting's
+# detail for a full description — richer for the LLM, but one request per job.
+WORKDAY_FETCH_DESCRIPTIONS = False
+
+
+def _parse_workday_slug(slug):
+    """"host/site" (or a full careers URL) -> (host, tenant, site).
+
+    tenant defaults to the first label of the host; append "|tenant" to the slug
+    to override it for the rare tenant whose cxs name differs from its subdomain.
+    """
+    s = slug.strip()
+    s = re.sub(r"^https?://", "", s).strip("/")
+    s, _, tenant_override = s.partition("|")
+    host, _, rest = s.strip("/").partition("/")
+    site = rest.strip("/").split("/")[0]  # first path segment
+    if not host or not site:
+        raise ValueError(f"bad workday slug {slug!r} (expected 'host/site')")
+    tenant = tenant_override.strip() or host.split(".")[0]
+    return host, tenant, site
+
+
+def _workday_post(url, offset):
+    payload = json.dumps({"appliedFacets": {}, "limit": WORKDAY_PAGE_LIMIT,
+                          "offset": offset, "searchText": ""}).encode("utf-8")
+    req = urllib.request.Request(
+        url, data=payload, method="POST",
+        headers={"Content-Type": "application/json", "Accept": "application/json",
+                 "User-Agent": WORKDAY_UA})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return json.loads(resp.read().decode("utf-8", errors="replace"))
+
+
+def _workday_description(host, tenant, site, external_path):
+    """Fetch one posting's full description (HTML -> text). Best-effort."""
+    url = f"https://{host}/wday/cxs/{tenant}/{site}{external_path}"
+    try:
+        req = urllib.request.Request(
+            url, headers={"Accept": "application/json", "User-Agent": WORKDAY_UA})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            info = json.loads(resp.read().decode("utf-8", errors="replace"))
+        return strip_html((info.get("jobPostingInfo") or {}).get("jobDescription", ""))
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
+        return ""
+
+
+def _fetch_workday(slug):
+    host, tenant, site = _parse_workday_slug(slug)
+    list_url = f"https://{host}/wday/cxs/{tenant}/{site}/jobs"
+    jobs, offset = [], 0
+    for _page in range(WORKDAY_MAX_PAGES):
+        data = _workday_post(list_url, offset)
+        postings = data.get("jobPostings", [])
+        for item in postings:
+            ext = item.get("externalPath", "")
+            loc = item.get("locationsText", "")
+            desc_bits = [b for b in [loc, item.get("postedOn", "")] if b]
+            desc = "\n".join(desc_bits)
+            if WORKDAY_FETCH_DESCRIPTIONS and ext:
+                full = _workday_description(host, tenant, site, ext)
+                if full:
+                    desc = full
+                time.sleep(0.3)  # polite between detail calls
+            jobs.append({
+                "title": item.get("title", ""),
+                "company": slug,
+                "location": loc,
+                "salary": "",
+                "url": f"https://{host}/{site}{ext}" if ext else f"https://{host}/{site}",
+                "description": desc[:MAX_DESC_CHARS],
+                "source": f"workday:{host}/{site}",
+            })
+        offset += len(postings)
+        if not postings or offset >= data.get("total", 0):
+            break
+        time.sleep(1)  # polite between list pages
+    return jobs
+
+
 PLATFORM_FETCHERS = {
     "greenhouse": _fetch_greenhouse,
     "lever": _fetch_lever,
@@ -386,6 +477,7 @@ PLATFORM_FETCHERS = {
     "smartrecruiters": _fetch_smartrecruiters,
     "workable": _fetch_workable,
     "recruitee": _fetch_recruitee,
+    "workday": _fetch_workday,
 }
 
 
@@ -408,7 +500,8 @@ def scrape_watchlist(source_cfg):
             for j in found:
                 j["company"] = label
             jobs.extend(found)
-        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as e:
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError,
+                ValueError) as e:
             print(f"\n  ! {platform}:{slug} failed ({e}) — continuing", end="")
         time.sleep(1)  # be polite across many small requests
     return jobs
