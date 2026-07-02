@@ -104,6 +104,21 @@ def main():
                 jobs = data.get("jobPostings", [])
                 info = sample(jobs, "title", lambda j: j.get("locationsText"))
                 print(f"{line}{data.get('total', len(jobs))} jobs | {info}")
+            elif platform == "oracle":
+                # slug is "host/site"; the list needs the requisitionList expand and
+                # nests jobs under items[0].requisitionList.
+                host = slug.split("/")[0]
+                site = slug.split("/", 1)[1] if "/" in slug else ""
+                url = (f"https://{host}/hcmRestApi/resources/latest/"
+                       f"recruitingCEJobRequisitions?onlyData=true"
+                       f"&expand=requisitionList.secondaryLocations"
+                       f"&finder=findReqs;siteNumber={site},limit=3,offset=0,"
+                       f"sortBy=POSTING_DATES_DESC")
+                items = get_json(url).get("items", [])
+                reqs = items[0].get("requisitionList", []) if items else []
+                total = items[0].get("TotalJobsCount", len(reqs)) if items else 0
+                info = sample(reqs, "Title", lambda j: j.get("PrimaryLocation"))
+                print(f"{line}{total} jobs | {info}")
             else:
                 print(f"{line}unknown platform")
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError,

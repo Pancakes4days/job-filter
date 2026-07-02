@@ -470,6 +470,98 @@ def _fetch_workday(slug):
     return jobs
 
 
+# Oracle Recruiting Cloud (Candidate Experience) — the ATS behind large finance/
+# enterprise careers sites (JPMorgan, Akamai, ...). Each tenant lives at a host
+# like {tenant}.fa.oraclecloud.com or a shared pod fa-ext...saasfaprod1.fa.ocs.
+# oraclecloud.com, and a career-site view identified by a "CX_####" site number.
+# The hosted site calls a public REST endpoint:
+#     GET .../hcmRestApi/resources/latest/recruitingCEJobRequisitions   (list)
+#     GET .../recruitingCEJobRequisitionDetails                          (one job)
+# The watchlist slug encodes host + site as "host/site", e.g.
+#     "jpmc.fa.oraclecloud.com/CX_1001"
+# NB: the list needs expand=requisitionList... or the job array comes back empty,
+# and the payload nests jobs under items[0].requisitionList with the running total
+# at items[0].TotalJobsCount.
+ORACLE_UA = "Mozilla/5.0 (compatible; JobFilterBot/1.0; personal job search)"
+ORACLE_EXPAND = "requisitionList.secondaryLocations,flexFieldsFacet.values"
+ORACLE_PAGE_LIMIT = 200        # the list endpoint honours limits up to 200
+ORACLE_MAX_PAGES = 10          # bound per-company requests (~2000 most-recent jobs)
+ORACLE_FETCH_DESCRIPTIONS = False  # True fetches each posting's detail (1 req/job)
+
+
+def _parse_oracle_slug(slug):
+    """"host/site" (or a full careers URL) -> (host, site).
+
+    site is the CX career-site id, which may be "CX", "CX_1001", "jobsearch", etc.
+    Handles both the canonical "host/site" slug and a full .../sites/<site>/... URL."""
+    s = re.sub(r"^https?://", "", slug.strip()).strip("/")
+    host = s.split("/")[0]
+    m = re.search(r"/sites/([^/?#]+)", s)         # full careers URL form
+    site = m.group(1) if m else (s.split("/", 1)[1] if "/" in s else "")
+    if not host or not site:
+        raise ValueError(f"bad oracle slug {slug!r} (expected 'host/site')")
+    return host, site
+
+
+def _oracle_get(url):
+    req = urllib.request.Request(
+        url, headers={"User-Agent": ORACLE_UA, "Accept": "application/json"})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return json.loads(resp.read().decode("utf-8", errors="replace"))
+
+
+def _oracle_description(host, site, job_id):
+    """Full description (HTML -> text) for one requisition. Best-effort."""
+    url = (f"https://{host}/hcmRestApi/resources/latest/"
+           f"recruitingCEJobRequisitionDetails?expand=all"
+           f'&finder=ById;Id="{job_id}",siteNumber={site}')
+    try:
+        items = _oracle_get(url).get("items", [])
+        if items:
+            return strip_html(items[0].get("ExternalDescriptionStr", ""))
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, KeyError):
+        pass
+    return ""
+
+
+def _fetch_oracle(slug):
+    host, site = _parse_oracle_slug(slug)
+    base = (f"https://{host}/hcmRestApi/resources/latest/recruitingCEJobRequisitions"
+            f"?onlyData=true&expand={ORACLE_EXPAND}")
+    jobs, offset = [], 0
+    for _page in range(ORACLE_MAX_PAGES):
+        url = (f"{base}&finder=findReqs;siteNumber={site},"
+               f"limit={ORACLE_PAGE_LIMIT},offset={offset},sortBy=POSTING_DATES_DESC")
+        items = _oracle_get(url).get("items", [])
+        if not items:
+            break
+        reqs = items[0].get("requisitionList", [])
+        total = items[0].get("TotalJobsCount", 0)
+        for r in reqs:
+            jid = r.get("Id", "")
+            loc = r.get("PrimaryLocation", "")
+            desc = "\n".join(b for b in [loc, r.get("PostedDate", "")] if b)
+            if ORACLE_FETCH_DESCRIPTIONS and jid:
+                full = _oracle_description(host, site, jid)
+                if full:
+                    desc = full
+                time.sleep(0.3)
+            jobs.append({
+                "title": r.get("Title", ""),
+                "company": slug,
+                "location": loc,
+                "salary": "",
+                "url": f"https://{host}/hcmUI/CandidateExperience/en/sites/{site}/job/{jid}",
+                "description": desc[:MAX_DESC_CHARS],
+                "source": f"oracle:{host}/{site}",
+            })
+        offset += len(reqs)
+        if not reqs or offset >= total:
+            break
+        time.sleep(1)
+    return jobs
+
+
 PLATFORM_FETCHERS = {
     "greenhouse": _fetch_greenhouse,
     "lever": _fetch_lever,
@@ -478,6 +570,7 @@ PLATFORM_FETCHERS = {
     "workable": _fetch_workable,
     "recruitee": _fetch_recruitee,
     "workday": _fetch_workday,
+    "oracle": _fetch_oracle,
 }
 
 

@@ -1793,5 +1793,30 @@
     "platform": "greenhouse",
     "slug": "andurilindustries",
     "label": "Anduril"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "wehrtyou",
+    "label": "Hudson River Trading"
+  },
+  {
+    "platform": "oracle",
+    "slug": "jpmc.fa.oraclecloud.com/CX_1001",
+    "label": "JPMorgan Chase"
+  },
+  {
+    "platform": "oracle",
+    "slug": "fa-extu-saasfaprod1.fa.ocs.oraclecloud.com/CX_1",
+    "label": "Akamai"
+  },
+  {
+    "platform": "smartrecruiters",
+    "slug": "NBCUniversal3",
+    "label": "NBCUniversal"
+  },
+  {
+    "platform": "workday",
+    "slug": "nytimes.wd5.myworkdayjobs.com/NYT",
+    "label": "New York Times"
   }
 ]

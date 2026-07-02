@@ -171,7 +171,7 @@ is less likely to kill it, and restarts on any failure but not on a clean stop.
 ## The watchlist (company career pages)
 
 The watchlist scrapes specific companies' job boards directly via their ATS APIs
-(Greenhouse, Lever, Ashby, SmartRecruiters, Workable, Recruitee, Workday).
+(Greenhouse, Lever, Ashby, SmartRecruiters, Workable, Recruitee, Workday, Oracle).
 
 **You don't run `detect_platforms.py` manually anymore** — just add company names
 to `companies.txt`. On the next cycle the `detect` phase probes each new name,
@@ -232,6 +232,29 @@ watchlist `companies` array in `scraper_config.json`. From there the `verify` an
 Descriptions: the connector lists jobs (title/location/URL) with one request per 20
 postings by default. To pull each posting's full description for the LLM (one extra
 request per job), set `WORKDAY_FETCH_DESCRIPTIONS = True` in `scraper.py`.
+
+### Oracle Cloud companies
+
+Large finance/enterprise employers (JPMorgan, Akamai, …) often run **Oracle
+Recruiting Cloud** (Candidate Experience). Like Workday it isn't name→slug
+guessable and the `detect` phase can't resolve it. Each tenant lives at a host like
+`{tenant}.fa.oraclecloud.com` (or a shared pod `fa-ext…saasfaprod1.fa.ocs.oraclecloud.com`)
+with a career-site view identified by a `CX_####` site number, reached via the public
+`recruitingCEJobRequisitions` REST endpoint. The scraper supports it as the `oracle`
+platform; the watchlist slug is **`host/site`**, e.g. `jpmc.fa.oraclecloud.com/CX_1001`.
+
+Resolve with the helper (from a careers URL or a direct Oracle URL). It samples job
+titles so you can confirm identity — **important on shared pods**, where many tenants
+share one host and the `CX_####` is what actually identifies the employer:
+
+```bash
+python3 scripts/detect_oracle.py https://www.jpmorganchase.com/careers
+python3 scripts/detect_oracle.py --batch companies_with_urls.txt
+```
+
+It writes verified entries to `data/watchlist_oracle.json`; paste them into the
+watchlist `companies` array. Descriptions are list-only by default — set
+`ORACLE_FETCH_DESCRIPTIONS = True` in `scraper.py` for full text (one request per job).
 
 ## Running pieces by hand
 

@@ -19,6 +19,7 @@ Manual run:     python3 orchestrator.py
 
 import json
 import os
+import re
 import shutil
 import signal
 import socket
@@ -223,10 +224,43 @@ def _workday_job_count(slug):
         return -1
 
 
+def _oracle_job_count(slug):
+    """Open-job count for an Oracle Recruiting Cloud entry, or -1 on error.
+
+    slug is "host/site" (e.g. "jpmc.fa.oraclecloud.com/CX_1001"). The list endpoint
+    needs the requisitionList expand and reports the running total at
+    items[0].TotalJobsCount; a bogus host fails to connect (-1)."""
+    try:
+        s = slug.strip()
+        for pre in ("https://", "http://"):
+            if s.startswith(pre):
+                s = s[len(pre):]
+        s = s.strip("/")
+        host = s.split("/")[0]
+        m = re.search(r"/sites/([^/?#]+)", s)
+        site = m.group(1) if m else (s.split("/", 1)[1] if "/" in s else "")
+        if not host or not site:
+            return -1
+        url = (f"https://{host}/hcmRestApi/resources/latest/recruitingCEJobRequisitions"
+               f"?onlyData=true&expand=requisitionList.secondaryLocations"
+               f"&finder=findReqs;siteNumber={site},limit=1,offset=0")
+        req = urllib.request.Request(
+            url, headers={"User-Agent": "Mozilla/5.0 (compatible; JobFilterBot/1.0)",
+                          "Accept": "application/json"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            d = json.loads(resp.read().decode("utf-8", errors="replace"))
+        items = d.get("items", [])
+        return items[0].get("TotalJobsCount", 0) if items else -1
+    except Exception:
+        return -1
+
+
 def _live_job_count(platform, slug):
     """Return number of open jobs for a watchlist company, or -1 on error."""
     if platform == "workday":
         return _workday_job_count(slug)
+    if platform == "oracle":
+        return _oracle_job_count(slug)
     routes = {
         "greenhouse":      (f"https://boards-api.greenhouse.io/v1/boards/{slug}/jobs",
                             lambda d: len(d.get("jobs", []))),
