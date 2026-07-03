@@ -82,6 +82,10 @@ SCRAPED_JOBS   = DATA_DIR / "scraped_jobs.json"
 CSV_PATH       = DATA_DIR / "matched_jobs.csv"
 XLSX_PATH      = DATA_DIR / "matched_jobs.xlsx"
 FOUND_JSON     = DATA_DIR / "watchlist_found.json"
+# Sync watermark (see export_workbook.py): export writes the candidate to
+# .pending; we promote it only after the laptop confirms the push.
+MARK_PATH      = DATA_DIR / "export_mark.txt"
+MARK_PENDING   = DATA_DIR / "export_mark.pending"
 
 # Local backup on the Pi: each sync drops a copy of the latest workbook + CSV
 # here before pushing to the laptop, so the Pi always retains its own copy.
@@ -517,6 +521,10 @@ def sync_to_laptop(state):
     log(f"Pushing {XLSX_PATH.name} + {CSV_PATH.name} → {remote_dir}")
     if _scp([str(XLSX_PATH), str(CSV_PATH), remote_dir]).returncode == 0:
         log("Synced workbook + CSV to the laptop.")
+        # The laptop has this batch — commit the sync watermark so rows the
+        # user later deletes from the workbook are never re-added.
+        if MARK_PENDING.exists():
+            MARK_PENDING.replace(MARK_PATH)
         state["workbook_initialized"] = True
         state["copy_pending"] = False
         state["last_copy_attempt"] = datetime.now(timezone.utc).isoformat()

@@ -21,9 +21,12 @@ fires a 5-phase pipeline:
 ```
 
 The workbook you hand-edit lives on the **laptop** (`job_data/matched_jobs.xlsx`).
-The sync phase pulls it first, appends only jobs it doesn't already contain, and
-pushes it back — so the columns you fill in (Status, Notes, dates) are never
-overwritten. `matched_jobs.csv` rides along as a full rewrite each time.
+The sync phase pulls it first, appends only new matches, and pushes it back — so
+the columns you fill in (Status, Notes, dates) are never overwritten, and **rows
+you delete stay deleted**: a sync watermark (`data/export_mark.txt`) tracks the
+newest batch the laptop has confirmed receiving, so an older row missing from
+the workbook is recognized as your deletion, not re-added from the cumulative
+CSV. `matched_jobs.csv` rides along as a full rewrite each time.
 
 Default schedule is **6 AM and 1 PM** local time. On first launch it runs one
 cycle immediately, then settles into the schedule. Missed slots are caught up:
@@ -51,6 +54,10 @@ or idle-loop tick runs the pipeline immediately instead of waiting a day.
 - **Never clobbers your edits.** If the workbook can't be pulled from the laptop
   when it should exist (e.g. you have it open in Excel), the sync is deferred and
   retried rather than overwriting it with a fresh copy.
+- **Deletions are respected.** Rows you remove from the workbook stay removed.
+  The sync watermark separates your deletions (older than the last confirmed
+  sync, missing from the workbook) from new matches (newer), and only advances
+  once the laptop confirms a push — so a failed push never strands new rows.
 
 ## Layout
 
@@ -93,6 +100,9 @@ job_filter/
   the Pi always keeps its own copy (set `LOCAL_COPY_DIR = None` in `orchestrator.py`
   to disable)
 - `seen_jobs.txt` — fingerprints of already-scored jobs (dedup across runs)
+- `export_mark.txt` — sync watermark: the newest batch the laptop confirmed;
+  rows older than it that you delete from the workbook are never re-added
+  (`.pending` is the candidate awaiting push confirmation)
 - `orchestrator_state.json` — pipeline checkpoint for crash recovery
 - `orchestrator.lock` — single-instance guard
 - `watchlist_misses.txt` — companies whose ATS couldn't be auto-detected

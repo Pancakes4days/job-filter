@@ -38,6 +38,17 @@ XLSX_PATH = DATA_DIR / "matched_jobs.xlsx"
 # pruned listings to be reconsidered.
 PRUNED_KEYS_PATH = DATA_DIR / "pruned_keys.txt"
 
+# Sync watermark: the date_processed of the newest CSV row that has made it
+# into a workbook the laptop confirmed receiving. Any OLDER row that is
+# missing from the pulled workbook can only be missing because the user
+# deleted it by hand — so it is never re-added. Newer rows are new matches
+# and are always appended. The export writes the candidate value to
+# MARK_PENDING; the orchestrator promotes it to MARK_PATH only after a
+# successful push, so a failed push never strands unexported rows behind
+# the watermark. Timestamps are "%Y-%m-%d %H:%M" UTC → string compare works.
+MARK_PATH    = DATA_DIR / "export_mark.txt"
+MARK_PENDING = DATA_DIR / "export_mark.pending"
+
 MAX_VALIDATION_ROW = 5000
 
 # Fields written by filter_jobs.py (no header row in CSV output)
@@ -189,6 +200,22 @@ def load_pruned_keys():
 #  writing the suppress list; this module only reads it.)
 
 
+def load_mark():
+    """Committed sync watermark, or None if no sync has been confirmed yet."""
+    if MARK_PATH.exists():
+        return MARK_PATH.read_text(encoding="utf-8").strip()
+    return None
+
+
+def bootstrap_mark(matches, accounted_keys):
+    """First run without a watermark: everything already in the workbook (or
+    already pruned) is accounted for; the newest such timestamp separates
+    hand-deleted history (older, absent) from not-yet-synced matches (newer)."""
+    return max((r.get("date_processed", "") or "" for r in matches
+                if row_key(r.get("url"), r.get("title"), r.get("company"))
+                in accounted_keys), default="")
+
+
 # ── workbook creation ─────────────────────────────────────────────────────────
 
 def create_workbook(use_color):
@@ -260,34 +287,59 @@ def main():
         return
 
     out = Path(args.out)
-    if out.exists():
+    fresh_workbook = not out.exists()
+    if fresh_workbook:
+        wb, ws = create_workbook(use_color=not args.no_color)
+        seen   = set()
+    else:
         wb   = load_workbook(out)
         ws   = wb["Matches"] if "Matches" in wb.sheetnames else wb.active
         seen = existing_keys(ws)
-    else:
-        wb, ws = create_workbook(use_color=not args.no_color)
-        seen   = set()
 
     # Don't re-add rows a manual prune has trimmed (the CSV is cumulative).
     seen |= load_pruned_keys()
 
-    added = 0
+    # Sync watermark: rows older than the last confirmed sync that are missing
+    # from the workbook were deleted by hand — leave them deleted. A fresh
+    # workbook is a full rebuild, so the watermark doesn't apply (the CSV is
+    # the only record we have); pruned keys still suppress.
+    if fresh_workbook:
+        mark = ""
+    else:
+        mark = load_mark()
+        if mark is None:
+            mark = bootstrap_mark(matches, seen)
+            if mark:
+                print(f"No sync watermark yet — CSV rows up to {mark} that are "
+                      f"missing from the workbook stay deleted.")
+
+    added, held = 0, 0
+    new_mark = mark
     for row in matches:
         key = row_key(row.get("url"), row.get("title"), row.get("company"))
+        ts  = (row.get("date_processed") or "").strip()
         if key in seen:
+            new_mark = max(new_mark, ts)   # accounted for (present or pruned)
+            continue
+        if ts and mark and ts <= mark:
+            held += 1                      # pre-watermark and absent → hand-deleted
             continue
         seen.add(key)
         ws.append(csv_row_to_cells(row))
         style_website_cell(ws.cell(row=ws.max_row, column=WEBSITE_COL))
         added += 1
+        new_mark = max(new_mark, ts)
 
     # Update auto_filter range to cover all data rows
     last_col = get_column_letter(len(COLUMNS))
     ws.auto_filter.ref = f"A1:{last_col}1"
 
     wb.save(out)
-    print(f"{added} new row(s) added; workbook now has "
-          f"{ws.max_row - 1} matches -> {out}")
+    # Candidate watermark — committed to MARK_PATH by the orchestrator only
+    # after the laptop confirms the push, so a failed push re-appends next time.
+    MARK_PENDING.write_text(new_mark, encoding="utf-8")
+    print(f"{added} new row(s) added; {held} hand-deleted row(s) left deleted; "
+          f"workbook now has {ws.max_row - 1} matches -> {out}")
 
 
 if __name__ == "__main__":

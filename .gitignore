@@ -8,6 +8,8 @@ config/local.json
 # Runtime state + outputs (live under data/)
 seen_jobs.txt
 pruned_keys.txt
+export_mark.txt
+export_mark.pending
 scraped_jobs.json
 *.csv
 *.xlsx

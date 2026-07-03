@@ -51,6 +51,26 @@ Also done (from the cut-cleanup list): prune CLI imports moved to module top;
 updated for all of the above (`phase_retry_interval`, prune semantics,
 fail-fast filter, in-place phase retry bullet).
 
+## Sync watermark (added after the fixes, user request)
+
+**Hand-deleted workbook rows now stay deleted — as standard pipeline
+behavior.** `export_workbook.py` keeps a sync watermark
+(`data/export_mark.txt`): the `date_processed` of the newest CSV row in a
+batch the laptop confirmed receiving. A CSV row older than the watermark
+that's missing from the pulled workbook was deleted by the user and is never
+re-added; newer rows are new matches and always append. Mechanics:
+- Export writes the candidate to `export_mark.pending`; the orchestrator
+  promotes it to `export_mark.txt` only after a successful push — so a failed
+  push never strands unexported rows behind the watermark.
+- No watermark file yet (first run after deploy): bootstrapped as the newest
+  timestamp among CSV rows already in the workbook or pruned-keys list, so
+  existing hand-deletions are honored immediately.
+- A missing workbook = full rebuild: watermark ignored (pruned keys still
+  suppress), so a lost tracker regenerates completely from the CSV.
+- openpyxl was installed on the dev box; tested end-to-end: fresh build,
+  hand-delete + new match, bootstrap, and rebuild all behave. Prune CLI
+  dry-run also smoke-tested (clean run, file untouched).
+
 ## Still open (optional, low priority)
 
 - **Shared CSV reader:** the quoted-header sniff + `CSV_FIELDS` are still
