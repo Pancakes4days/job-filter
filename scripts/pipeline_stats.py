@@ -53,7 +53,8 @@ def load_matches():
     rows = []
     with open(MATCHES, newline="", encoding="utf-8-sig") as f:
         first = f.readline(); f.seek(0)
-        has_header = first.strip().startswith("date_processed")
+        # filter_jobs.py writes with QUOTE_ALL, so the header may arrive quoted
+        has_header = first.strip().lstrip('"').startswith("date_processed")
         reader = csv.DictReader(f, fieldnames=None if has_header else CSV_FIELDS)
         for row in reader:
             try:
@@ -113,7 +114,8 @@ def main():
         section("RECRUITMENT ALERTS  — watchlist companies posting new-grad / intern roles")
         for a in alerts:
             days_left = (date.fromisoformat(a["expires"]) - today).days
-            first     = date.fromisoformat(a["first_seen"]).strftime("%b %-d")
+            first_d   = date.fromisoformat(a["first_seen"])
+            first     = f"{first_d:%b} {first_d.day}"   # %-d is Linux-only
             label     = f"  !! {a['company']}"
             meta      = f"first seen {first}  ({days_left}d left,  {a['count']} role{'s' if a['count'] != 1 else ''})"
             print(f"{label:<34} {meta}")

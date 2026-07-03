@@ -1,0 +1,18 @@
+# Log rotation for the job-filter service log (filter.log grows unbounded
+# otherwise — a disk and SD-wear concern on the Pi).
+#
+# Install (adjust the path to match WorkingDirectory in jobfilter.service):
+#   sudo cp jobfilter.logrotate /etc/logrotate.d/jobfilter
+#
+# copytruncate is required: systemd keeps the log file descriptor open, so a
+# plain rename would leave the service writing to the rotated file forever.
+/home/bluke/job_filter/data/filter.log {
+    weekly
+    maxsize 10M
+    rotate 6
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+}

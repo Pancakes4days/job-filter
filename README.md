@@ -26,7 +26,9 @@ pushes it back — so the columns you fill in (Status, Notes, dates) are never
 overwritten. `matched_jobs.csv` rides along as a full rewrite each time.
 
 Default schedule is **6 AM and 1 PM** local time. On first launch it runs one
-cycle immediately, then settles into the schedule.
+cycle immediately, then settles into the schedule. Missed slots are caught up:
+if the Pi was off (or a long cycle overran) when a slot fired, the next start
+or idle-loop tick runs the pipeline immediately instead of waiting a day.
 
 ### Built for unattended operation
 
@@ -38,6 +40,10 @@ cycle immediately, then settles into the schedule.
   runs; phases run sequentially; a long run never stacks a second cycle on top.
 - **Only stops when you say so.** It exits cleanly on `systemctl stop` (no
   restart). Any other exit is treated as a failure and restarted.
+- **Failed phases retry in place.** If a phase subprocess fails (e.g. Ollama
+  down during filter), the orchestrator keeps the checkpoint and retries that
+  phase every 15 minutes (`phase_retry_interval`) — no crash-restart loop,
+  and completed phases are never redone.
 - **Tolerates an offline laptop.** If your laptop isn't on the Tailnet, the sync
   step is skipped (not failed) and retried every 15 minutes until it succeeds.
   Because `matched_jobs.csv` is cumulative and the append dedupes by URL, a
@@ -53,8 +59,9 @@ job_filter/
 ├── scripts/   the .py files + paths.py (shared directory layout)
 ├── config/    config.json, scraper_config.json, companies.txt  (you edit these)
 ├── data/      runtime state + outputs (auto-created, mostly git-ignored)
-├── docs/      README.md, CHANGES.md
-└── jobfilter.service
+├── docs/      handoff / working notes
+├── jobfilter.service
+└── jobfilter.logrotate
 ```
 
 **Scripts** (`scripts/`)
@@ -62,6 +69,7 @@ job_filter/
 - `scraper.py` — pulls listings from job sources into `data/scraped_jobs.json`
 - `filter_jobs.py` — scores jobs with the LLM, writes `data/matched_jobs.csv`
 - `export_workbook.py` — appends new matches to `matched_jobs.xlsx` (needs `openpyxl`)
+- `prune_workbook.py` — MANUAL: trims the tracker to the best 1–2 roles per company
 - `detect_platforms.py` — one-time/manual full ATS detection from a company list
 - `verify_watchlist.py` — manual helper to spot-check detected watchlist entries
 - `paths.py` — defines `CONFIG_DIR` / `DATA_DIR`; the one place paths are set
@@ -138,9 +146,14 @@ nano config/local.json
 
   "scrape_hours_local":  [6, 13],
   "copy_retry_interval": 60,
-  "detect_delay":        0.5
+  "detect_delay":        0.5,
+  "phase_retry_interval": 900
 }
 ```
+
+`scrape_hours_local` must list at least one hour (the orchestrator refuses to
+start with an empty schedule). `phase_retry_interval` (seconds) paces retries
+of a failed pipeline phase.
 
 `remote_host` can be the Tailscale IP (`tailscale ip -4` on the laptop) or its
 MagicDNS name. `remote_dir` must be an existing folder (the sync pulls
@@ -157,6 +170,9 @@ sudo cp jobfilter.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable jobfilter
 sudo systemctl start jobfilter
+
+# Log rotation (filter.log grows forever otherwise; adjust the path inside first)
+sudo cp jobfilter.logrotate /etc/logrotate.d/jobfilter
 
 # Watch it work
 tail -f data/filter.log
@@ -279,7 +295,37 @@ python3 scripts/export_workbook.py
 - `--all` — write every job to the CSV, not just matches (useful while tuning)
 - `--rescore` — ignore `seen_jobs.txt` and re-evaluate everything
 - `--csv path.csv` — custom output location
-- `--dry-run` — skip the LLM entirely; tests file handling
+- `--dry-run` — skip the LLM entirely; tests file handling. Safe: writes to
+  `data/dry_run_results.csv` (not the real tracker) and never marks jobs seen
+
+If Ollama is down **or wedged**, `filter_jobs.py` aborts after 3 consecutive
+failures (a wedged model would otherwise burn a full `timeout_seconds` per
+job) and exits nonzero; the orchestrator keeps the checkpoint and retries the
+filter phase every 15 minutes (`phase_retry_interval`). Already-scored jobs
+stay in `seen_jobs.txt`, so retries only evaluate what's left.
+
+## Pruning the tracker (manual)
+
+The pipeline is **append-only** — it never deletes workbook rows. When the
+tracker gets noisy, trim it to the best 1–2 roles per company by hand:
+
+```bash
+python3 scripts/prune_workbook.py                  # dry-run: report only
+python3 scripts/prune_workbook.py --apply          # pull → prune → push back
+python3 scripts/prune_workbook.py --apply --local  # prune the local copy only
+```
+
+Rows with anything hand-typed (Status, Notes, Date Applied, ...) are **never
+deleted**. The dry run pulls the laptop's workbook to a temp file so the
+preview matches what `--apply` will actually do (falling back to the local
+copy, with a warning, if the laptop is unreachable). `--apply` pulls the
+laptop's workbook, prunes it, pushes it back, and only after a **confirmed
+push** records what it cut in `data/pruned_keys.txt` (so the cumulative CSV
+never re-adds those rows) — a failed push records nothing, leaving state
+consistent. `--local` prunes of the live workbook are transient (the next
+sync restores the laptop's copy) and record no keys; giving a custom workbook
+path implies `--local`. The fit/exclusion rules live at the top of
+`prune_workbook.py` — retune them there when your preferences change.
 
 ## The scraper's job format
 

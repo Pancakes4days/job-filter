@@ -1,17 +1,27 @@
 #!/usr/bin/env python3
 """
-prune_workbook.py — trim an open job-tracker worksheet down to the best 1–2 jobs
+prune_workbook.py — trim the job-tracker workbook down to the best 1–2 jobs
 per company, protecting rows you've started applying to.
 
-This is the in-pipeline version of the standalone laptop script (prune_matches.py).
-It is called by export_workbook.py right before the workbook is saved:
+MANUAL TOOL — run it by hand when the workbook gets noisy. The automated
+pipeline (export_workbook.py) is purely append-only and never deletes rows.
 
-    read CSV → append new rows → prune_workbook(ws, row_key) → wb.save()
+    python3 scripts/prune_workbook.py                  # dry-run report, no writes
+    python3 scripts/prune_workbook.py --apply          # pull → prune → push
+    python3 scripts/prune_workbook.py --apply --local  # prune the local file only
+
+--apply pulls the laptop's workbook FIRST (that copy holds your hand edits),
+prunes, pushes the result back, and only after a confirmed push records the
+deleted rows' dedup keys in data/pruned_keys.txt (so the cumulative
+matched_jobs.csv never re-adds them). If the laptop can't be reached it aborts
+rather than prune a stale copy; if the push fails, no keys are recorded, so
+state stays consistent. The dry run pulls the laptop's copy to a temp file for
+an accurate preview when possible. --local prunes of the live workbook are
+transient (the next sync restores the laptop's copy) and record no keys.
 
 Design notes:
-  * No file I/O and no backup here — it mutates the worksheet in place and returns
-    the dedup keys of the rows it deleted, so the caller can record them in a
-    suppress-list (pruned_keys.txt) and stop the cumulative CSV from re-adding them.
+  * prune_workbook() mutates the worksheet in place and returns the dedup keys
+    of the rows it deleted; file/network I/O lives only in the CLI below.
   * Columns are matched by HEADER NAME, so column reordering/additions are tolerated.
   * Rows with a real user value in any PROTECT column are never deleted. The
     pipeline auto-fills "Application ID" with "." as a spacer, so "." counts as empty.
@@ -21,8 +31,21 @@ internships and new-grad roles. Strength order: security > Applied AI/ML >
 DevOps/SRE/infra > backend/full-stack. Cuts senior/2+yr/PhD/quant/non-engineering
 and unacceptable-location rows. Edit the keyword lists below to retune.
 """
+import argparse
+import os
 import re
+import sys
+import tempfile
 from collections import defaultdict
+from pathlib import Path
+
+# export_workbook exits with a pip hint if openpyxl is missing, so import it
+# before openpyxl. It owns the workbook schema (row_key) and the pipeline's
+# pruned-keys suppress list location.
+from export_workbook import PRUNED_KEYS_PATH, XLSX_PATH, row_key
+from openpyxl import load_workbook
+from paths import DATA_DIR
+from remote import LOCAL_JSON, load_local_config, remote_base, scp
 
 KEEP_PER_COMPANY = 2
 
@@ -210,21 +233,111 @@ def prune_workbook(ws, row_key):
     return deleted_keys, kept
 
 
-# Optional: dry-run reporter for a saved file (no writes), for tuning/testing.
-if __name__ == "__main__":
-    import sys
-    from openpyxl import load_workbook
+# ── standalone CLI ────────────────────────────────────────────────────────────
 
-    def _row_key(website, title, company):
-        key = (website or "").strip() or \
-              f"{(title or '').strip()}|{(company or '').strip()}"
-        return key.lower()
+def append_pruned_keys(keys):
+    """Record deleted rows' dedup keys in the pipeline's suppress list so the
+    cumulative matched_jobs.csv never re-adds them. Only call this once the
+    pruned workbook is authoritative (pushed to the laptop) — recording keys
+    for rows that still exist somewhere just creates inconsistent state."""
+    if not keys:
+        return
+    with open(PRUNED_KEYS_PATH, "a", encoding="utf-8") as f:
+        for k in keys:
+            f.write(k + "\n")
 
-    path = sys.argv[1] if len(sys.argv) > 1 else "data/matched_jobs.xlsx"
+
+def main():
+    ap = argparse.ArgumentParser(
+        description="Trim the tracker to the best 1–2 roles per company "
+                    "(rows with hand-typed values are never deleted).")
+    ap.add_argument("workbook", nargs="?", default=str(XLSX_PATH),
+                    help=f"Workbook path (default: {XLSX_PATH}); "
+                         f"a custom path implies --local")
+    ap.add_argument("--apply", action="store_true",
+                    help="Write the changes (default is a dry-run report)")
+    ap.add_argument("--local", action="store_true",
+                    help="Skip the laptop pull/push; act on the local file only")
+    args = ap.parse_args()
+
+    path = Path(args.workbook)
+    using_default = args.workbook == str(XLSX_PATH)
+    local_only = args.local or not using_default
+
+    if args.apply and local_only and using_default:
+        print("WARNING: a --local prune of the live workbook is TRANSIENT — the next\n"
+              "         sync pulls the laptop's copy back over it, and no suppress\n"
+              "         keys are recorded. Drop --local to prune for real.")
+
+    remote_dir = None
+    tmp_pull   = None
+    if not local_only:
+        if not LOCAL_JSON.exists():
+            if args.apply:
+                sys.exit(f"Missing {LOCAL_JSON} — use --local to prune the "
+                         f"local file only.")
+            print(f"No {LOCAL_JSON.name} — previewing the local copy.")
+            local_only = True
+        else:
+            remote_dir = remote_base(load_local_config())
+            if args.apply:
+                # The laptop's copy holds your hand edits — prune THAT, never
+                # a stale one.
+                print(f"Pulling {path.name} from the laptop…")
+                if scp([remote_dir + path.name, str(path)]).returncode != 0:
+                    sys.exit("Couldn't pull the workbook (laptop offline, or file "
+                             "open in Excel?) — aborting so nothing is lost. Use "
+                             "--local to prune the Pi's copy anyway.")
+            else:
+                # Dry run: preview the copy --apply would actually prune, in a
+                # temp file so the dry run has zero side effects.
+                fd, tmp = tempfile.mkstemp(suffix=".xlsx", dir=str(DATA_DIR))
+                os.close(fd)
+                tmp_pull = Path(tmp)
+                print("Pulling the laptop's workbook for an accurate preview…")
+                if scp([remote_dir + path.name, str(tmp_pull)]).returncode == 0:
+                    path = tmp_pull
+                else:
+                    tmp_pull.unlink(missing_ok=True)
+                    tmp_pull = None
+                    print("  couldn't pull — previewing the LOCAL copy instead "
+                          "(may miss recent hand edits).")
+
+    if not path.exists():
+        sys.exit(f"No workbook at {path}")
+
     wb = load_workbook(path)
     ws = wb["Matches"] if "Matches" in wb.sheetnames else wb.active
     before = ws.max_row - 1
-    deleted, kept = prune_workbook(ws, _row_key)
-    print(f"DRY-RUN-ish on a COPY in memory only (file NOT written): {path}")
-    print(f"  data rows: {before} -> would keep {before - len(deleted)} "
-          f"(delete {len(deleted)})")
+    deleted, _kept = prune_workbook(ws, row_key)
+    print(f"  data rows: {before} -> {before - len(deleted)} "
+          f"(delete {len(deleted)}; hand-edited rows are protected)")
+
+    if not args.apply:
+        if tmp_pull:
+            tmp_pull.unlink(missing_ok=True)
+        print("Dry run — nothing written. Re-run with --apply to prune for real.")
+        return
+
+    wb.save(path)
+    print(f"Pruned {len(deleted)} row(s) from {path.name}.")
+
+    if local_only:
+        # No suppress keys on purpose: these rows still exist in the laptop
+        # workbook / cumulative CSV, so keys would suppress rows that were
+        # never authoritatively removed.
+        return
+
+    print(f"Pushing {path.name} back to the laptop…")
+    if scp([str(path), remote_dir]).returncode != 0:
+        print("PUSH FAILED — the laptop still has the unpruned copy and no keys\n"
+              "were recorded, so nothing is inconsistent. Re-run --apply once the\n"
+              "laptop is reachable.")
+        sys.exit(1)
+    append_pruned_keys(deleted)
+    print(f"Pushed. {len(deleted)} pruned key(s) recorded in "
+          f"{PRUNED_KEYS_PATH.name} so the pipeline won't re-add them.")
+
+
+if __name__ == "__main__":
+    main()

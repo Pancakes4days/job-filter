@@ -42,28 +42,34 @@ except ImportError:
 from detect_platforms import detect as detect_platform, load_names  # noqa: E402
 from paths import SCRIPTS_DIR, CONFIG_DIR, DATA_DIR  # noqa: E402
 from recruitment_watch import check_recruitment_pulse  # noqa: E402
+from remote import load_local_config, remote_base, scp as _scp  # noqa: E402
+# One Workday slug parser for both scrape and verify — a second copy here
+# already drifted once (missing strip('/')), reporting live boards unreachable.
+from scraper import _parse_workday_slug  # noqa: E402
 
 # ── settings ──────────────────────────────────────────────────────────────────
 # Deployment-specific settings live in config/local.json (gitignored).
 # Copy config/local.example.json → config/local.json and fill in your values.
 
-_local_path = CONFIG_DIR / "local.json"
-if not _local_path.exists():
-    sys.exit(
-        f"Missing {_local_path}\n"
-        f"Copy config/local.example.json → config/local.json and fill in your Tailscale details."
-    )
-_local = json.loads(_local_path.read_text(encoding="utf-8"))
+_local = load_local_config()
 
 REMOTE_HOST          = _local["remote_host"]        # Tailscale IP of your laptop
-REMOTE_USER          = _local["remote_user"]        # SSH user on your laptop
-REMOTE_DIR           = _local["remote_dir"]         # job_data folder on your laptop
+REMOTE_BASE          = remote_base(_local)          # user@host:dir/ scp prefix
+#                      (^ also fails fast at startup if local.json lacks keys)
 # Local-time hours to fire the pipeline. Uses the Pi's system timezone, so set
 # the Pi to America/New_York (`sudo timedatectl set-timezone America/New_York`)
 # and DST is handled automatically — 6 and 13 always mean 6 AM and 1 PM Eastern.
 SCRAPE_HOURS_LOCAL   = _local.get("scrape_hours_local",  [6, 13])
 COPY_RETRY_INTERVAL  = _local.get("copy_retry_interval", 60)
 DETECT_DELAY         = _local.get("detect_delay",        0.5)
+# How long to wait before retrying a failed pipeline phase (e.g. Ollama down
+# during filter). In-process pacing — the service no longer dies on phase
+# failure, so systemd's 15s restart can't turn an outage into a hot loop.
+PHASE_RETRY_INTERVAL = _local.get("phase_retry_interval", 900)
+
+if not SCRAPE_HOURS_LOCAL:
+    sys.exit("config/local.json: scrape_hours_local must list at least one hour, "
+             "e.g. [6, 13] — an empty schedule would crash the catch-up logic.")
 
 # ── paths ─────────────────────────────────────────────────────────────────────
 
@@ -140,6 +146,7 @@ def _default_state():
         "copy_pending": False,
         "last_copy_attempt": None,
         "workbook_initialized": False,  # have we ever pushed a workbook to the laptop?
+        "last_cycle_started": None,     # naive-local ISO; drives missed-slot catch-up
     }
 
 def load_state():
@@ -165,6 +172,31 @@ def next_run_time():
             t += timedelta(days=1)
         candidates.append(t)
     return min(candidates)
+
+
+def most_recent_slot():
+    """The most recent scheduled slot that has already passed (naive local)."""
+    now = datetime.now()
+    candidates = []
+    for h in SCRAPE_HOURS_LOCAL:
+        t = now.replace(hour=h, minute=0, second=0, microsecond=0)
+        if t > now:
+            t -= timedelta(days=1)
+        candidates.append(t)
+    return max(candidates)
+
+
+def pipeline_due(state):
+    """True if the latest scheduled slot has no cycle started at/after it —
+    i.e. the Pi was off (or a long cycle overran) when the slot fired. Ensures
+    missed slots are caught up instead of silently skipped to the next day."""
+    last = state.get("last_cycle_started")
+    if not last:
+        return True
+    try:
+        return datetime.fromisoformat(last) < most_recent_slot()
+    except ValueError:
+        return True
 
 # ── subprocess helper ──────────────────────────────────────────────────────────
 
@@ -200,16 +232,7 @@ def _workday_job_count(slug):
     even at 0 jobs (bogus tenants 404/422), so an empty-but-valid board reports 0
     rather than -1 and simply stays in the watchlist for future postings."""
     try:
-        s = slug.strip()
-        for pre in ("https://", "http://"):
-            if s.startswith(pre):
-                s = s[len(pre):]
-        s = s.strip("/").split("|")[0]
-        host, _, rest = s.partition("/")
-        site = rest.split("/")[0]
-        tenant = host.split(".")[0]
-        if not host or not site:
-            return -1
+        host, tenant, site = _parse_workday_slug(slug)  # ValueError → except → -1
         url = f"https://{host}/wday/cxs/{tenant}/{site}/jobs"
         payload = json.dumps({"appliedFacets": {}, "limit": 1,
                               "offset": 0, "searchText": ""}).encode("utf-8")
@@ -376,11 +399,20 @@ def verify_watchlist():
 
     log(f"Verifying {len(companies)} watchlist companies...")
     verified = []
+    consecutive_failures = 0
     for c in companies:
         platform = c.get("platform", "")
         slug     = c.get("slug", "")
         label    = c.get("label", slug)
         count    = _live_job_count(platform, slug)
+        if count < 0 and consecutive_failures < 3:
+            # One retry — a transient blip shouldn't drop a company for a cycle.
+            # But several unreachable in a row means an outage (our uplink or a
+            # whole ATS platform); retrying every one just doubles the wait, so
+            # the breaker stays open until something succeeds again.
+            time.sleep(2)
+            count = _live_job_count(platform, slug)
+        consecutive_failures = consecutive_failures + 1 if count < 0 else 0
         if count > 0:
             log(f"  {label}: {count} jobs  ({platform}:{slug})")
             verified.append(c)
@@ -420,12 +452,6 @@ def make_scrape_config(verified_companies):
 
 # ── sync results to the laptop (pull → append → push) ───────────────────────────
 
-def _scp(args):
-    """Run scp with the standard non-interactive options."""
-    return subprocess.run(
-        ["scp", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=10", *args])
-
-
 def _mark_copy_pending(state):
     state["copy_pending"] = True
     state["last_copy_attempt"] = datetime.now(timezone.utc).isoformat()
@@ -461,8 +487,8 @@ def sync_to_laptop(state):
         _mark_copy_pending(state)
         return False
 
-    remote_dir  = f"{REMOTE_USER}@{REMOTE_HOST}:{REMOTE_DIR}/"
-    remote_xlsx = f"{REMOTE_USER}@{REMOTE_HOST}:{REMOTE_DIR}/{XLSX_PATH.name}"
+    remote_dir  = REMOTE_BASE
+    remote_xlsx = REMOTE_BASE + XLSX_PATH.name
 
     # 1. Pull the laptop's current workbook so its manual edits are preserved.
     #    Start clean so we never append onto a stale local copy.
@@ -513,6 +539,10 @@ def run_pipeline(state):
         start_phase = PHASES[0]
     start_idx = PHASES.index(start_phase)
 
+    # Record the cycle start (also on resume — the slot it covers is satisfied).
+    state["last_cycle_started"] = datetime.now().isoformat()
+    save_state(state)
+
     verified = state.get("verified_companies", [])
 
     for idx, phase in enumerate(PHASES):
@@ -528,51 +558,73 @@ def run_pipeline(state):
         save_state(state)
         tag = f"Phase {idx + 1}/{N_PHASES}"
 
-        # ── detect new companies (incremental) ────────────────────────────────
-        if phase == "detect":
-            log(f"=== {tag}: Auto-detect new companies.txt entries ===")
-            detect_new_companies(state)
+        try:
+            # ── detect new companies (incremental) ────────────────────────────
+            if phase == "detect":
+                log(f"=== {tag}: Auto-detect new companies.txt entries ===")
+                detect_new_companies(state)
 
-        # ── verify watchlist ──────────────────────────────────────────────────
-        elif phase == "verify":
-            log(f"=== {tag}: Verify watchlist companies ===")
-            verified = verify_watchlist()
-            state["verified_companies"] = verified
-            save_state(state)
+            # ── verify watchlist ──────────────────────────────────────────────
+            elif phase == "verify":
+                log(f"=== {tag}: Verify watchlist companies ===")
+                verified = verify_watchlist()
+                state["verified_companies"] = verified
+                save_state(state)
 
-        # ── scrape (public sources + verified watchlist, single pass) ─────────
-        elif phase == "scrape":
-            log(f"=== {tag}: Scrape public sources + {len(verified)} verified companies ===")
-            tmp = make_scrape_config(verified)
-            try:
-                run_step([PYTHON, SCRIPTS_DIR / "scraper.py",
-                          "--config", tmp, "--out", str(SCRAPED_JOBS)])
-            finally:
-                Path(tmp).unlink(missing_ok=True)
-            # Detect watchlist companies newly posting new-grad / internship roles
-            new_alerts = check_recruitment_pulse(SCRAPED_JOBS)
-            for a in new_alerts:
-                roles = "; ".join(a["sample_roles"][:2])
-                log(f"  [RECRUITMENT ALERT] {a['company']} is posting "
-                    f"new-grad/intern roles ({a['count']} found, "
-                    f"alert active until {a['expires']}): {roles}")
+            # ── scrape (public sources + verified watchlist, single pass) ─────
+            elif phase == "scrape":
+                log(f"=== {tag}: Scrape public sources + {len(verified)} verified companies ===")
+                tmp = make_scrape_config(verified)
+                try:
+                    run_step([PYTHON, SCRIPTS_DIR / "scraper.py",
+                              "--config", tmp, "--out", str(SCRAPED_JOBS)])
+                finally:
+                    Path(tmp).unlink(missing_ok=True)
+                # Detect watchlist companies newly posting new-grad / internship roles
+                new_alerts = check_recruitment_pulse(SCRAPED_JOBS)
+                for a in new_alerts:
+                    roles = "; ".join(a["sample_roles"][:2])
+                    log(f"  [RECRUITMENT ALERT] {a['company']} is posting "
+                        f"new-grad/intern roles ({a['count']} found, "
+                        f"alert active until {a['expires']}): {roles}")
 
-        # ── filter ────────────────────────────────────────────────────────────
-        elif phase == "filter":
-            log(f"=== {tag}: Filter with LLM ===")
-            run_step([PYTHON, SCRIPTS_DIR / "filter_jobs.py", str(SCRAPED_JOBS),
-                      "--csv", str(CSV_PATH)])
+            # ── filter ────────────────────────────────────────────────────────
+            elif phase == "filter":
+                log(f"=== {tag}: Filter with LLM ===")
+                run_step([PYTHON, SCRIPTS_DIR / "filter_jobs.py", str(SCRAPED_JOBS),
+                          "--csv", str(CSV_PATH)])
 
-        # ── sync (pull tracker → append new matches → push xlsx + csv) ────────
-        elif phase == "sync":
-            log(f"=== {tag}: Sync tracker to laptop ===")
-            sync_to_laptop(state)
+            # ── sync (pull tracker → append new matches → push xlsx + csv) ────
+            elif phase == "sync":
+                log(f"=== {tag}: Sync tracker to laptop ===")
+                sync_to_laptop(state)
+
+        except RuntimeError as e:
+            # A phase subprocess failed (e.g. Ollama down during filter). Keep
+            # the checkpoint and let main() retry this phase after a pause —
+            # dying here would put systemd into a 15s crash-restart loop for
+            # the whole outage. Unexpected exceptions still propagate.
+            log(f"Phase '{phase}' failed: {e}")
+            log("Checkpoint kept — this phase will be retried without redoing "
+                "earlier phases.")
+            return
 
     log("=== Pipeline complete ===")
+    # Reset the checkpoint: a back-to-back catch-up run (a cycle that crossed a
+    # slot boundary) must start a FULL new cycle, not resume at leftover 'sync'.
+    state["phase"] = "idle"
     state["verified_companies"] = []   # clear stale data
     state["detect_attempted"] = []     # re-probe is unnecessary; reset for next cycle
+    save_state(state)
 
 # ── idle loop ──────────────────────────────────────────────────────────────────
+
+def interruptible_sleep(seconds):
+    """Sleep in 60-second ticks so SIGTERM is handled promptly."""
+    end = time.time() + seconds
+    while not _shutdown and time.time() < end:
+        time.sleep(min(60, max(1, end - time.time())))
+
 
 def idle_until(state, next_run_dt):
     log(f"Idle — next pipeline run: {next_run_dt.strftime('%Y-%m-%d %H:%M')} local")
@@ -615,35 +667,43 @@ def main():
             log("WARNING: no watchlist and no companies.txt. Public sources only. "
                 "Add company names to companies.txt to build a watchlist automatically.")
 
-    first_launch = not STATE_PATH.exists()
     state = load_state()
 
-    # Resume an interrupted pipeline rather than waiting for the next schedule
-    if state.get("phase") in PHASES:
-        log(f"Resuming interrupted pipeline from phase: {state['phase']}")
+    def run_and_pace():
+        """One run_pipeline call; if a phase failed (checkpoint still set),
+        wait PHASE_RETRY_INTERVAL before the loop retries it."""
         run_pipeline(state)
-        if _shutdown:
-            log("Orchestrator stopped.")
-            sys.exit(0)
-    elif first_launch:
-        log("First launch — running an initial cycle now, then settling into the schedule.")
-        run_pipeline(state)
-        if _shutdown:
-            log("Orchestrator stopped.")
-            sys.exit(0)
+        if not _shutdown and state.get("phase") in PHASES:
+            log(f"Pipeline stalled at phase '{state['phase']}' — retrying in "
+                f"{PHASE_RETRY_INTERVAL // 60} min.")
+            interruptible_sleep(PHASE_RETRY_INTERVAL)
 
     while not _shutdown:
+        # Resume/retry an interrupted or failed pipeline from its checkpoint
+        # (systemd crash restart, or a phase failure being paced by run_and_pace).
+        if state.get("phase") in PHASES:
+            log(f"Resuming pipeline from phase: {state['phase']}")
+            run_and_pace()
+            continue
+
+        # Catch-up: covers first launch (no cycle on record) and slots missed
+        # while the Pi was off or a long cycle overran the schedule.
+        if pipeline_due(state):
+            if state.get("last_cycle_started"):
+                log(f"Missed the {most_recent_slot().strftime('%H:%M')} slot — "
+                    f"running a catch-up cycle now.")
+            else:
+                log("No previous cycle on record — running one now, "
+                    "then settling into the schedule.")
+            run_and_pace()
+            continue
+
         nrt = next_run_time()
         state["phase"] = "idle"
         state["next_run"] = nrt.isoformat()
         save_state(state)
 
         idle_until(state, nrt)
-
-        if _shutdown:
-            break
-
-        run_pipeline(state)
 
     log("Orchestrator stopped.")
     sys.exit(0)   # clean exit → systemd will not restart (Restart=on-failure)

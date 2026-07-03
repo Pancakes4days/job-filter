@@ -36,6 +36,12 @@ from paths import CONFIG_DIR, DATA_DIR  # noqa: E402
 CONFIG_PATH = CONFIG_DIR / "config.json"
 SEEN_PATH = DATA_DIR / "seen_jobs.txt"
 
+# Abort after this many failures in a row. A dead Ollama fails fast, but a
+# WEDGED one (accepts connections, never answers) burns the full
+# timeout_seconds (default 300s) per job — without this, a big scrape could
+# spend hours timing out before anyone notices.
+MAX_CONSECUTIVE_ERRORS = 3
+
 # JSON schema the model is forced to follow (Ollama structured outputs).
 RESULT_SCHEMA = {
     "type": "object",
@@ -184,15 +190,23 @@ def append_csv(csv_path, row):
 def main():
     parser = argparse.ArgumentParser(description="Filter job listings with a local LLM.")
     parser.add_argument("jobs_file", help="JSON file of job listings from your scraper")
-    parser.add_argument("--csv", default=str(DATA_DIR / "matched_jobs.csv"),
-                        help="Output CSV path (default: matched_jobs.csv)")
+    parser.add_argument("--csv", default=None,
+                        help="Output CSV path (default: matched_jobs.csv; "
+                             "dry runs default to dry_run_results.csv)")
     parser.add_argument("--all", action="store_true",
                         help="Write every job to the CSV, not just suitable ones")
     parser.add_argument("--rescore", action="store_true",
                         help="Re-evaluate jobs even if already seen")
     parser.add_argument("--dry-run", action="store_true",
-                        help="Skip the LLM call; emit fake scores to test the pipeline")
+                        help="Skip the LLM call; emit fake scores to a separate CSV "
+                             "without touching matched_jobs.csv or seen_jobs.txt")
     args = parser.parse_args()
+
+    # A dry run must never contaminate the real tracker: unless a CSV path was
+    # given explicitly, write the fake rows somewhere disposable.
+    if args.csv is None:
+        args.csv = str(DATA_DIR / ("dry_run_results.csv" if args.dry_run
+                                   else "matched_jobs.csv"))
 
     config = load_config()
     profile = config.get("profile", {})
@@ -201,6 +215,7 @@ def main():
     seen = set() if args.rescore else load_seen()
 
     total, kept, skipped, errors = 0, 0, 0, 0
+    consecutive_errors = 0
     started = time.time()
 
     for job in jobs:
@@ -212,6 +227,7 @@ def main():
         title = job.get("title", "(no title)")
         print(f"[{total}] {title} @ {job.get('company','?')} ... ", end="", flush=True)
 
+        err = None
         try:
             if args.dry_run:
                 result = {"suitable": True, "score": 7,
@@ -221,21 +237,26 @@ def main():
                 result = call_ollama(config, system_prompt, build_user_prompt(job))
             r = validate_result(result, profile.get("threshold", 6))
         except urllib.error.URLError as e:
-            errors += 1
             reason = str(getattr(e, "reason", e))
-            if "refused" in reason.lower():
-                print(f"OLLAMA OFFLINE — start Ollama and retry ({reason})")
-            else:
-                print(f"OLLAMA NETWORK ERROR ({reason})")
-            continue
+            err = (f"OLLAMA OFFLINE — start Ollama and retry ({reason})"
+                   if "refused" in reason.lower()
+                   else f"OLLAMA NETWORK ERROR ({reason})")
         except TimeoutError:
-            errors += 1
-            print(f"OLLAMA TIMEOUT — model too slow or num_ctx={config.get('num_ctx', 4096)} too large for this job")
-            continue
+            err = (f"OLLAMA TIMEOUT — model too slow or "
+                   f"num_ctx={config.get('num_ctx', 4096)} too large for this job")
         except (json.JSONDecodeError, KeyError, ValueError) as e:
+            err = f"BAD RESPONSE ({e}) — skipping"
+
+        if err:
             errors += 1
-            print(f"BAD RESPONSE ({e}) — skipping")
+            consecutive_errors += 1
+            print(err)
+            if consecutive_errors >= MAX_CONSECUTIVE_ERRORS:
+                print(f"\n{consecutive_errors} failures in a row — Ollama looks "
+                      f"down or wedged; aborting so the rest can be retried later.")
+                break
             continue
+        consecutive_errors = 0
 
         verdict = "MATCH" if r["suitable"] else "no"
         print(f"score {r['score']}/10 -> {verdict}")
@@ -253,12 +274,23 @@ def main():
             })
             kept += 1
 
-        if not args.rescore:
+        # Dry runs produce fake scores — recording them as seen would stop the
+        # real model from ever evaluating these jobs.
+        if not args.rescore and not args.dry_run:
             mark_seen(fp)
 
     elapsed = time.time() - started
     print(f"\nDone. Evaluated {total}, wrote {kept} to {args.csv}, "
           f"skipped {skipped} already-seen, {errors} errors, {elapsed:.0f}s elapsed.")
+
+    # Exit nonzero when the run was cut short by consecutive failures, or when
+    # every attempted evaluation failed — either way Ollama is unusable, and
+    # the orchestrator should treat the filter phase as failed and retry it
+    # later instead of advancing to sync. Jobs already scored stay in
+    # seen_jobs.txt, so the retry only evaluates what's left.
+    if consecutive_errors >= MAX_CONSECUTIVE_ERRORS or (total and errors == total):
+        sys.exit(f"Ollama unusable ({errors}/{total} attempted jobs failed) — "
+                 f"exiting nonzero so the pipeline retries this phase.")
 
 
 if __name__ == "__main__":
