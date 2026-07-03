@@ -381,14 +381,16 @@ Walleye Capital
 New Relic
 Dynatrace
 West Monroe
-AppDynamicsWEX
+AppDynamics
+WEX
 Whatnot
 Wurl
 Gretel
 Harvey
 Vanta
 Zebra Technologies
-Zus HealthWorkhelio
+Zus Health
+Workhelio
 Warner Bros
 Wealth.com
 Virtu

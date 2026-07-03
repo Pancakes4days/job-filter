@@ -16,3 +16,68 @@ Dazz             -> acquired by Wiz (dazz.wiz.io/careers)
 # feed currently returns 0 jobs (feed disabled) even though the HTML board has openings.
 # Metomic's Workable account is valid but has 0 open roles right now.
 # Both are included in watchlist_manual.json — the scraper will pick up postings when they appear.
+
+# ---- Added 2026-07-01 (session resolving the 113 remaining companies) ----
+
+# Unsupported ATS:
+Retool           -> Gem         (jobs.gem.com/retool; old greenhouse:retool is dead)
+Monday.com       -> Comeet      (comeet.com/jobs/monday)
+Varonis          -> no supported ATS found (JS careers page, likely Comeet)
+Claroty          -> no supported ATS found (JS careers page, likely Comeet)
+Pentera          -> no supported ATS found (JS careers page, likely Comeet)
+Cyolo            -> no supported ATS found (JS careers page, likely Comeet)
+Flutterwave      -> BambooHR    (flutterwavego.bamboohr.com)
+TheGuarantors    -> Rippling    (ats.rippling.com/theguarantors-open-positions)
+OneStream        -> active hiring is on UltiPro/UKG; their REAL but empty greenhouse:onestreamsoftware board was added anyway
+Steampunk        -> iCIMS       (careers-steampunk.icims.com)
+Acuity Insurance -> iCIMS       (careers-myacuity.icims.com)
+Laserfiche       -> Jobvite     (jobs.jobvite.com/laserfiche)
+SMBC             -> SuccessFactors (careers.smbcgroup.com)
+New York Life Insurance -> SuccessFactors (jobs.newyorklife.com)
+Bechtel          -> custom/SuccessFactors (jobs.bechtel.com; no Workday link)
+Electrify America -> no supported ATS found (VW subsidiary)
+Unity            -> custom careers site (careers.unity.com, JS/403; old SR + greenhouse:unity3d both dead)
+
+# Custom / in-house portals (no public API):
+Citadel          -> custom (citadel.com/careers)
+Balyasny         -> custom Salesforce portal (bambusdev.my.site.com)
+D. E. Shaw       -> custom (apply.deshaw.com)
+Renaissance Technologies -> custom (rentec.com/Careers.action)
+Wolverine Trading -> custom (wolve.com/careers)
+VanEck           -> custom / resume by email (vaneck.com/us/en/our-firm/careers/)
+MarketAxess      -> custom JS careers site; no public Workday tenant discoverable
+West Monroe      -> custom JS careers site (westmonroe.com/careers/job-search); ATS not identifiable
+                    (ebtw.fa.us2.oraclecloud.com/CX_1 from search is a DIFFERENT company - Las Vegas jobs)
+JMP              -> folded under SAS's custom careers site
+Greater New York Insurance Companies -> no ATS found
+
+# ICE (Intercontinental Exchange): REAL Oracle site egdd.fa.us6.oraclecloud.com/CX
+# (job pages resolve there) but the anonymous requisition-list API returns 0 for every
+# query shape while ~190 jobs are live -> connector would silently show nothing. Left out.
+
+# Acquired / folded / defunct:
+Secureworks      -> acquired by Sophos (workable:sophos exists but is a stale 0-job account)
+Lacework         -> acquired by Fortinet (workable:lacework is the stale real account, 0 jobs)
+Truera           -> acquired by Snowflake (ashby:snowflake already in watchlist)
+Gretel           -> acquired by NVIDIA (2025)
+Adept            -> team acqui-hired by Amazon (2024); company effectively gone
+Weights and Biases -> acquired by CoreWeave; ADDED as greenhouse:coreweave (label "Weights and Biases")
+Sarcos           -> renamed Palladyne AI; no supported ATS found
+Flatiron School  -> old greenhouse board gone; no supported ATS found
+Jasper           -> workable:jasper is a DIFFERENT company (AU real estate); Jasper AI's ATS not detectable
+Somos            -> workable:somos is a DIFFERENT company (Mexican food brand); Somos Inc's ATS not found
+Telos            -> workable:telos unverifiable (0 jobs, generic name); Telos Corp's ATS not found
+
+# Covered via a parent company's existing entry (label mismatch will still flag them):
+Segment          -> Twilio-owned (greenhouse:twilio already in watchlist)
+AppDynamics      -> Cisco-owned (Cisco boards already in watchlist)
+Doordash Merchant -> DoorDash (smartrecruiters:doordash already in watchlist)
+
+# Probed on all 6 single-slug platforms with name variants, nothing found
+# (small companies, mostly no public ATS):
+# ACX, AlteraSF, ASTi, AtlasQuo, Beli, Cadent, Careyaya Health Tech, Clarity Innovations,
+# Coursicle, Creative Spirit US, Devo, EclecticIQ, Gantry, Greek Learners, Hireshire,
+# Hiscope Enterprises, IQ Storage, iRocket, M Science, narb, New Harbor, Ninth Wave,
+# Nucleus Security, Olami, Orange Tail, Princeton Biopartners, QuickSlot Health,
+# Research Innovations, SalesPilot 365, Security Innovation, Shee Atika Government Services,
+# Replicate, U.S. Hunger, Vallera, Versana, Visionary Integration Professionals, Workhelio, Wurl

@@ -1818,5 +1818,120 @@
     "platform": "workday",
     "slug": "nytimes.wd5.myworkdayjobs.com/NYT",
     "label": "New York Times"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "dbtlabsinc",
+    "label": "dbt Labs"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "pulumicorporation",
+    "label": "Pulumi"
+  },
+  {
+    "platform": "workable",
+    "slug": "huggingface",
+    "label": "Hugging Face"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "soundcloud71",
+    "label": "SoundCloud"
+  },
+  {
+    "platform": "lever",
+    "slug": "convergentresearch",
+    "label": "Convergent"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "capstoneinvestmentadvisors",
+    "label": "Capstone"
+  },
+  {
+    "platform": "lever",
+    "slug": "zushealth",
+    "label": "Zus Health"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "onestreamsoftware",
+    "label": "OneStream"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "hs",
+    "label": "Headspace"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "arcesiumllc",
+    "label": "Arcesium"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "fiveringsllc",
+    "label": "Five Rings"
+  },
+  {
+    "platform": "workable",
+    "slug": "nuvei",
+    "label": "Nuvei"
+  },
+  {
+    "platform": "workable",
+    "slug": "credoai",
+    "label": "Credo AI"
+  },
+  {
+    "platform": "workable",
+    "slug": "ubie",
+    "label": "Ubie"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "harnessinc",
+    "label": "Harness"
+  },
+  {
+    "platform": "greenhouse",
+    "slug": "coreweave",
+    "label": "Weights and Biases"
+  },
+  {
+    "platform": "workable",
+    "slug": "auzmor",
+    "label": "Auzmor"
+  },
+  {
+    "platform": "workday",
+    "slug": "icf.wd5.myworkdayjobs.com/ICFExternal_Career_Site",
+    "label": "ICF"
+  },
+  {
+    "platform": "workday",
+    "slug": "knitwellgroup.wd1.myworkdayjobs.com/US_Corporate_Jobs",
+    "label": "KnitWell Group"
+  },
+  {
+    "platform": "workday",
+    "slug": "nba.wd108.myworkdayjobs.com/nbacareers",
+    "label": "NBA"
+  },
+  {
+    "platform": "workday",
+    "slug": "crowe.wd12.myworkdayjobs.com/External_Careers",
+    "label": "Crowe"
+  },
+  {
+    "platform": "workday",
+    "slug": "wexinc.wd5.myworkdayjobs.com/WEXInc",
+    "label": "WEX"
+  },
+  {
+    "platform": "workday",
+    "slug": "integralads.wd1.myworkdayjobs.com/IAScareers",
+    "label": "Integral Ad Science"
   }
 ]
