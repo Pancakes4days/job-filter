@@ -1,8 +1,11 @@
 [Unit]
 Description=Job Filter Pipeline Orchestrator
-# Wait for network and Ollama before starting
-After=network-online.target ollama.service
-Wants=network-online.target ollama.service
+# Wait for network, Ollama, and a synced clock before starting. The clock
+# matters: the Pi has no RTC battery, and jobs scored with a stale boot-time
+# clock get timestamps behind the sync watermark — they'd be mistaken for
+# hand-deleted rows and never reach the tracker.
+After=network-online.target ollama.service time-sync.target
+Wants=network-online.target ollama.service time-sync.target
 
 [Service]
 Type=simple

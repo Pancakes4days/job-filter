@@ -1,4 +1,4 @@
-"""Shared directory layout for the job_filter pipeline.
+"""Shared directory layout and shared file paths for the job_filter pipeline.
 
 Project tree:
     job_filter/
@@ -20,3 +20,9 @@ DATA_DIR    = BASE_DIR / "data"
 
 # Runtime outputs live under data/; make sure it exists for first-run writes.
 DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+# Sync-watermark files — a cross-file handshake: export_workbook.py writes the
+# candidate to .pending, orchestrator.py promotes it to .txt only after the
+# laptop confirms a push. Defined once here so the two sides can't drift.
+EXPORT_MARK_PATH    = DATA_DIR / "export_mark.txt"
+EXPORT_MARK_PENDING = DATA_DIR / "export_mark.pending"

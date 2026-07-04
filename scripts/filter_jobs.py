@@ -31,6 +31,7 @@ try:
 except ImportError:
     _fcntl = None
 
+from matches import CSV_FIELDS, TS_FORMAT  # noqa: E402 — shared writer/reader schema
 from paths import CONFIG_DIR, DATA_DIR  # noqa: E402
 
 CONFIG_PATH = CONFIG_DIR / "config.json"
@@ -55,12 +56,6 @@ RESULT_SCHEMA = {
     "required": ["suitable", "score", "matched_skills", "concerns", "reason"],
 }
 
-CSV_COLUMNS = [
-    "date_processed", "title", "company", "location", "salary", "url", "source",
-    "score", "suitable", "matched_skills", "concerns", "reason",
-]
-
-
 def load_config():
     if not CONFIG_PATH.exists():
         sys.exit(f"Config not found: {CONFIG_PATH}\nEdit config.json with your profile first.")
@@ -82,6 +77,19 @@ def job_fingerprint(job):
     """Stable ID for duplicate detection: prefer URL, fall back to title+company."""
     key = job.get("url") or f"{job.get('title','')}|{job.get('company','')}"
     return hashlib.sha256(key.strip().lower().encode("utf-8")).hexdigest()[:16]
+
+
+def count_scrape_matches(rows, jobs):
+    """How many of this scrape's jobs have a match row in the CSV.
+
+    Keyed by the same fingerprint as seen-tracking, so it can't drift from
+    'scored' counts the way URL-set intersection did: duplicate CSV rows for
+    one job collapse, URL-less jobs (title|company fingerprints) still count,
+    and blank/whitespace URLs can't cross-match. Used by pipeline_stats.py
+    and jobs_left.py. (Lives here, not in matches.py — matches importing
+    job_fingerprint back from this module would be a cycle.)"""
+    row_fps = {job_fingerprint(r) for r in rows}
+    return len({job_fingerprint(j) for j in jobs} & row_fps)
 
 
 def load_seen():
@@ -180,7 +188,7 @@ def append_csv(csv_path, row):
     with open(csv_path, "a", newline="", encoding="utf-8-sig") as f:
         if _fcntl is not None:
             _fcntl.flock(f, _fcntl.LOCK_EX)
-        writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS, quoting=csv.QUOTE_ALL)
+        writer = csv.DictWriter(f, fieldnames=CSV_FIELDS, quoting=csv.QUOTE_ALL)
         if is_new:
             writer.writeheader()
         writer.writerow(row)
@@ -263,7 +271,7 @@ def main():
 
         if r["suitable"] or args.all:
             append_csv(args.csv, {
-                "date_processed": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M"),
+                "date_processed": datetime.now(timezone.utc).strftime(TS_FORMAT),
                 "title": job.get("title", ""),
                 "company": job.get("company", ""),
                 "location": job.get("location", ""),

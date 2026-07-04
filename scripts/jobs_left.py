@@ -1,26 +1,34 @@
-import json, hashlib
-from pathlib import Path
+"""Quick one-screen progress check: how many scraped jobs are still unscored.
+(pipeline_stats.py gives the full picture; this is the 2-second version.)"""
 
-BASE = Path(__file__).resolve().parent.parent
-DATA = BASE / "data"
+import json
 
-def fingerprint(job):
-    key = job.get("url") or f"{job.get('title','')}|{job.get('company','')}"
-    return hashlib.sha256(key.strip().lower().encode("utf-8")).hexdigest()[:16]
+from filter_jobs import count_scrape_matches, job_fingerprint, load_seen
+from matches import read_matches
+from paths import DATA_DIR
 
-seen_all  = {l.strip() for l in (DATA / "seen_jobs.txt").read_text().splitlines() if l.strip()}
-jobs      = json.loads((DATA / "scraped_jobs.json").read_text())["jobs"]
-unseen    = [j for j in jobs if fingerprint(j) not in seen_all]
 
-csv_path  = DATA / "matched_jobs.csv"
-matches   = sum(1 for _ in open(csv_path)) - 1 if csv_path.exists() else 0
+def main():
+    seen_all = load_seen()
+    jobs     = json.loads((DATA_DIR / "scraped_jobs.json").read_text(encoding="utf-8"))["jobs"]
+    unseen   = [j for j in jobs if job_fingerprint(j) not in seen_all]
+    rows     = read_matches(DATA_DIR / "matched_jobs.csv")
 
-scored_current = len(jobs) - len(unseen)
-no_match       = scored_current - matches
+    # Matches for THIS scrape only, fingerprint-keyed to match how "scored"
+    # is counted (the CSV is cumulative — mixing scopes or keying by URL made
+    # "No match" go negative).
+    scrape_matches = count_scrape_matches(rows, jobs)
+    scored_current = len(jobs) - len(unseen)
+    no_match       = scored_current - scrape_matches
 
-print(f"All time scored:           {len(seen_all)}")
-print(f"Scored (this scrape):      {scored_current}")
-print(f"  -> Matches:              {matches}")
-print(f"  -> No match:             {no_match}")
-print(f"Remaining (this scrape):   {len(unseen)}")
-print(f"Total jobs (this scrape):  {len(jobs)}")
+    print(f"All time scored:           {len(seen_all)}")
+    print(f"All time matches:          {len(rows)}")
+    print(f"Scored (this scrape):      {scored_current}")
+    print(f"  -> Matches:              {scrape_matches}")
+    print(f"  -> No match:             {no_match}")
+    print(f"Remaining (this scrape):   {len(unseen)}")
+    print(f"Total jobs (this scrape):  {len(jobs)}")
+
+
+if __name__ == "__main__":
+    main()

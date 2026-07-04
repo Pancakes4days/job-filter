@@ -8,62 +8,31 @@ Run any time from ~/job_filter:
 """
 
 import argparse
-import csv
-import hashlib
 import json
 from collections import Counter, defaultdict
 from datetime import date
 from pathlib import Path
 
+# Shared with the rest of the pipeline: one fingerprint, one seen-list reader,
+# one CSV reader — so the stats can't drift from what the pipeline actually does.
+from filter_jobs import count_scrape_matches, job_fingerprint as fingerprint, load_seen
+from matches import month_day, read_matches
+
 BASE    = Path(__file__).resolve().parent.parent
 DATA    = BASE / "data"
-SCRIPTS = BASE / "scripts"
 
 SCRAPED   = DATA / "scraped_jobs.json"
-SEEN      = DATA / "seen_jobs.txt"
 MATCHES   = DATA / "matched_jobs.csv"
 STATE     = DATA / "orchestrator_state.json"
 CFG       = BASE / "config" / "config.json"
 ALERTS    = DATA / "recruitment_alerts.json"
 
-CSV_FIELDS = [
-    "date_processed", "title", "company", "location", "salary", "url", "source",
-    "score", "suitable", "matched_skills", "concerns", "reason",
-]
-
 # ── helpers ───────────────────────────────────────────────────────────────────
-
-def fingerprint(job):
-    key = job.get("url") or f"{job.get('title','')}|{job.get('company','')}"
-    return hashlib.sha256(key.strip().lower().encode()).hexdigest()[:16]
-
-def load_seen():
-    if not SEEN.exists():
-        return set()
-    return {l.strip() for l in SEEN.read_text().splitlines() if l.strip()}
 
 def load_jobs():
     if not SCRAPED.exists():
         return []
     return json.loads(SCRAPED.read_text())["jobs"]
-
-def load_matches():
-    if not MATCHES.exists():
-        return []
-    rows = []
-    with open(MATCHES, newline="", encoding="utf-8-sig") as f:
-        first = f.readline(); f.seek(0)
-        # filter_jobs.py writes with QUOTE_ALL, so the header may arrive quoted
-        has_header = first.strip().lstrip('"').startswith("date_processed")
-        reader = csv.DictReader(f, fieldnames=None if has_header else CSV_FIELDS)
-        for row in reader:
-            try:
-                score = int(float(row.get("score", "") or 0))
-                if 0 <= score <= 10:
-                    rows.append(row)
-            except (TypeError, ValueError):
-                continue
-    return rows
 
 def load_state():
     if not STATE.exists():
@@ -114,8 +83,7 @@ def main():
         section("RECRUITMENT ALERTS  — watchlist companies posting new-grad / intern roles")
         for a in alerts:
             days_left = (date.fromisoformat(a["expires"]) - today).days
-            first_d   = date.fromisoformat(a["first_seen"])
-            first     = f"{first_d:%b} {first_d.day}"   # %-d is Linux-only
+            first     = month_day(date.fromisoformat(a["first_seen"]))
             label     = f"  !! {a['company']}"
             meta      = f"first seen {first}  ({days_left}d left,  {a['count']} role{'s' if a['count'] != 1 else ''})"
             print(f"{label:<34} {meta}")
@@ -125,7 +93,7 @@ def main():
 
     jobs      = load_jobs()
     seen      = load_seen()
-    matches   = load_matches()
+    matches   = read_matches(MATCHES)
     state     = load_state()
     threshold = load_threshold()
 
@@ -147,8 +115,7 @@ def main():
     all_time     = len(seen)
     match_count  = len(matches)
     # Count matches from current scrape only
-    job_urls = {j.get("url","").strip().lower() for j in jobs if j.get("url")}
-    scrape_matches  = sum(1 for r in matches if (r.get("url") or "").strip().lower() in job_urls)
+    scrape_matches  = count_scrape_matches(matches, jobs)
     scrape_no_match = scored - scrape_matches
     scrape_label    = "last scrape" if remaining == 0 else "this scrape"
 

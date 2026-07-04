@@ -10,6 +10,7 @@ seen_jobs.txt
 pruned_keys.txt
 export_mark.txt
 export_mark.pending
+held_count.txt
 scraped_jobs.json
 *.csv
 *.xlsx

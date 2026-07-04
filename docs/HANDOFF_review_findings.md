@@ -1,5 +1,88 @@
 # Handoff: code-review findings — FIXED 2026-07-03
 
+## Review #3 (consolidation + review-2 fixes diff) — fixes applied 2026-07-03
+
+A third review caught two bugs in review #2's own fixes, plus small gaps.
+All addressed:
+
+1. **held>=20 warning counted a standing total (CONFIRMED)** — held includes
+   every hand-deletion ever (they stay in the cumulative CSV), so it would
+   eventually warn forever and its advice would resurrect deliberate
+   deletions. Now delta-based: previous count persisted in
+   `data/held_count.txt` (gitignored); warns only when held JUMPS ≥20 in one
+   run — the actual backup-rollback signature.
+2. **jobs_left URL-intersection counting (CONFIRMED)** — four mechanisms
+   could still yield negative/wrong counts (duplicate CSV rows, fingerprint
+   vs URL keying, URL-less matches, whitespace URLs). Replaced with
+   fingerprint-keyed `count_scrape_matches(rows, jobs)` shared from
+   filter_jobs.py (NOT matches.py — that import direction would cycle);
+   pipeline_stats now uses the same helper (its copy shared 3 of 4 flaws).
+3. **time-sync.target was a no-op without systemd-time-wait-sync
+   (CONFIRMED)** — README's Pi setup now includes
+   `sudo systemctl enable systemd-time-wait-sync.service`.
+4. **Watermark timestamp format was an uncoupled literal (CONFIRMED)** —
+   `matches.TS_FORMAT` now owns "%Y-%m-%d %H:%M" with the lexical-ordering
+   contract documented; filter_jobs writes with it; export's comparator
+   comment references it.
+5. **CSV_COLUMNS alias dropped (CONFIRMED)** — filter_jobs uses CSV_FIELDS
+   directly.
+6. **paths.py docstring (CONFIRMED)** — now "directory layout and shared
+   file paths".
+7. **jobs_left output semantics (CONFIRMED, disclosure)** — "-> Matches:" is
+   scrape-scoped since the rewrite; all-time total is its own labeled line.
+8. **Not done (recorded options):** folding jobs_left into
+   `pipeline_stats --brief` (recurring recommendation; drift surface now
+   mostly dead via the shared helper — fold if it gets flagged again);
+   threading the watermark through export's stdout instead of the .pending
+   file (future hardening; current design audited safe); the
+   EXPORT_MARK-alias grep-split (cut by the cap; cosmetic).
+
+---
+
+## Review #2 (watermark + cleanup diff) — small fixes applied 2026-07-03
+
+A second multi-agent review of the watermark commit + consolidation cleanup
+found 10 issues (2 confirmed bugs at the watermark's seams, the rest
+edge-case disclosures/cleanups). Small fixes applied:
+
+1. **Stale .pending promotion (CONFIRMED)** — export now unlinks
+   `export_mark.pending` at the very start of every run (before any early
+   return), so only a pending written by that run can be promoted.
+2. **Bootstrap misclassification (CONFIRMED)** — inherent to the scalar
+   bootstrap; mitigations: held-count printed every run + README documents
+   the one-time "newest deleted row returns once" edge.
+3. **Backup-rollback rows held (PLAUSIBLE)** — export warns loudly when one
+   run holds ≥ 20 rows; README documents deleting `data/export_mark.txt` as
+   the recovery knob.
+4. **Pre-NTP clock skew (PLAUSIBLE)** — jobfilter.service now orders
+   After/Wants `time-sync.target` (note: with plain systemd-timesyncd this
+   improves but doesn't guarantee ordering; enable
+   `systemd-time-wait-sync.service` on the Pi for a hard guarantee).
+5. **Same-minute `ts <= mark` collision (PLAUSIBLE)** — accepted tradeoff
+   (`<` would resurrect same-minute deletions instead); documented here.
+   A per-key exported ledger would eliminate findings 2–5 as a class if this
+   ever matters in practice.
+6. **README overpromise (CONFIRMED)** — "Deletions are respected" bullet now
+   lists the edge cases + recovery knob.
+7. **MARK constants duplicated (CONFIRMED)** — moved to paths.py
+   (`EXPORT_MARK_PATH` / `EXPORT_MARK_PENDING`); both modules import them.
+8. **jobs_left issues (CONFIRMED)** — added `__main__` guard; "Matches" now
+   scrape-scoped (negative "No match" impossible) with a separate all-time
+   line.
+9. **Blank-timestamp rows bypass watermark (PLAUSIBLE)** — accepted
+   limitation (only reachable via hand-edited CSV lines); documented in
+   README's edge cases.
+10. **pipeline_stats semantic tightening (PLAUSIBLE)** — noted: rows with no
+    title AND no url no longer count in the distribution sections (benign —
+    such rows identify no job). Also dropped the dead `SCRIPTS` constant.
+
+Refuted by verification (do NOT "fix"): pruned keys advancing the watermark
+past unconfirmed rows (safe by the append→push→commit ordering); gating the
+tiny .pending write for efficiency (dwarfed by the unconditional xlsx save,
+and conflicts with fix #1).
+
+---
+
 **Status:** All 10 findings from the 2026-07-02 review are fixed, tested where
 runnable on the dev box, and sitting **uncommitted** in the working tree along
 with the original change set. Remaining items are the optional cleanups and
@@ -71,19 +154,22 @@ re-added; newer rows are new matches and always append. Mechanics:
   hand-delete + new match, bootstrap, and rebuild all behave. Prune CLI
   dry-run also smoke-tested (clean run, file untouched).
 
-## Still open (optional, low priority)
+## Cleanup items — DONE 2026-07-03
 
-- **Shared CSV reader:** the quoted-header sniff + `CSV_FIELDS` are still
-  duplicated between `export_workbook.read_matches` and
-  `pipeline_stats.load_matches` (and `jobs_left.py:16` naively assumes a
-  header). Blocker for the naive merge: pipeline_stats deliberately has no
-  openpyxl dependency, so the shared reader needs its own small module.
-- **Shared date helper:** `f"{d:%b} {d.day}"` still in two places (same
-  openpyxl-dependency consideration).
-- **`most_recent_slot` vs `next_run_time` merge:** verifier judged a merged
-  helper possibly denser, not clearly simpler — take or leave.
-- **Do NOT "fix":** the double `save_state` in `run_pipeline` (deliberate
-  persistence guarantee) and Windows scp drive-letter handling (non-issue).
+- **Shared CSV reader:** new `scripts/matches.py` (stdlib-only, so
+  pipeline_stats stays openpyxl-free) owns `CSV_FIELDS`, the header-tolerant
+  `read_matches()`, and `month_day()`. Consumers: filter_jobs (writer schema),
+  export_workbook, pipeline_stats, jobs_left (its naive line-count reader is
+  gone). pipeline_stats and jobs_left also now import `job_fingerprint` /
+  `load_seen` from filter_jobs instead of re-implementing them.
+- **Shared date helper:** `matches.month_day()` replaces both `%-d`
+  workaround copies.
+- **Slot-helper merge:** `_today_slots(now)` + 2-line `next_run_time` /
+  `most_recent_slot`; frozen-clock tested on all boundaries (between slots,
+  before first, after last, exactly on a slot).
+- **Do NOT "fix" (unchanged, deliberate):** the double `save_state` in
+  `run_pipeline` (persistence guarantee) and Windows scp drive-letter
+  handling (non-issue).
 
 ## Watchlist sanity checks (carried over, still pending user)
 

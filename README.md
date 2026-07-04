@@ -58,6 +58,13 @@ or idle-loop tick runs the pipeline immediately instead of waiting a day.
   The sync watermark separates your deletions (older than the last confirmed
   sync, missing from the workbook) from new matches (newer), and only advances
   once the laptop confirms a push — so a failed push never strands new rows.
+  Known edge cases: the very first sync after installing this feature can't
+  protect a deletion of your *newest* row (delete it once more and it sticks);
+  a lost workbook is fully rebuilt from the CSV (everything returns); rows
+  without a Date Found timestamp aren't covered; and if you restore the
+  laptop's workbook from an old backup, delete `data/export_mark.txt` on the
+  Pi so the missing rows are re-added instead of being mistaken for deletions
+  (the export warns when one run holds suspiciously many rows).
 
 ## Layout
 
@@ -119,8 +126,12 @@ ollama run gemma3:4b "Say hello in five words."   # sanity check
 # 2. Install openpyxl (the only non-stdlib dependency, used by the export phase)
 pip install openpyxl       # or: sudo apt install python3-openpyxl
 
-# 3. Set the Pi's timezone so the schedule means local time (DST-safe)
+# 3. Set the Pi's timezone so the schedule means local time (DST-safe), and
+#    make boots WAIT for a synced clock. The Pi has no RTC battery: without
+#    this, a post-outage boot can score jobs with a stale clock, and those
+#    timestamps land behind the sync watermark (mistaken for deleted rows).
 sudo timedatectl set-timezone America/New_York
+sudo systemctl enable systemd-time-wait-sync.service
 
 # 4. Passwordless SSH from the Pi to your laptop (needed for the copy step,
 #    which runs non-interactively under systemd)

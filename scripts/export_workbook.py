@@ -15,7 +15,6 @@ Usage:
 """
 
 import argparse
-import csv
 import sys
 from pathlib import Path
 
@@ -28,7 +27,9 @@ try:
 except ImportError:
     sys.exit("export_workbook.py needs openpyxl — run: pip install openpyxl")
 
-from paths import DATA_DIR
+from matches import month_day, read_matches
+from paths import (DATA_DIR, EXPORT_MARK_PATH as MARK_PATH,
+                   EXPORT_MARK_PENDING as MARK_PENDING)
 
 CSV_PATH  = DATA_DIR / "matched_jobs.csv"
 XLSX_PATH = DATA_DIR / "matched_jobs.xlsx"
@@ -38,24 +39,23 @@ XLSX_PATH = DATA_DIR / "matched_jobs.xlsx"
 # pruned listings to be reconsidered.
 PRUNED_KEYS_PATH = DATA_DIR / "pruned_keys.txt"
 
+# Last run's held count (see the rollback warning in main). Not part of the
+# watermark commit handshake — purely a baseline so the warning fires on a
+# sudden JUMP in held rows, not on the standing total of all deletions ever.
+HELD_COUNT_PATH = DATA_DIR / "held_count.txt"
+
 # Sync watermark: the date_processed of the newest CSV row that has made it
 # into a workbook the laptop confirmed receiving. Any OLDER row that is
 # missing from the pulled workbook can only be missing because the user
 # deleted it by hand — so it is never re-added. Newer rows are new matches
 # and are always appended. The export writes the candidate value to
-# MARK_PENDING; the orchestrator promotes it to MARK_PATH only after a
-# successful push, so a failed push never strands unexported rows behind
-# the watermark. Timestamps are "%Y-%m-%d %H:%M" UTC → string compare works.
-MARK_PATH    = DATA_DIR / "export_mark.txt"
-MARK_PENDING = DATA_DIR / "export_mark.pending"
+# MARK_PENDING (paths.py); the orchestrator promotes it to MARK_PATH only
+# after a successful push, so a failed push never strands unexported rows
+# behind the watermark. Timestamps are matches.TS_FORMAT (UTC) — the lexical
+# ts <= mark comparison below is only a valid time ordering because that
+# format is fixed-width, zero-padded, most-significant-first.
 
 MAX_VALIDATION_ROW = 5000
-
-# Fields written by filter_jobs.py (no header row in CSV output)
-CSV_FIELDS = [
-    "date_processed", "title", "company", "location", "salary", "url", "source",
-    "score", "suitable", "matched_skills", "concerns", "reason",
-]
 
 # ── column layout ─────────────────────────────────────────────────────────────
 # (header, csv_field or None for manual columns, width)
@@ -104,43 +104,14 @@ def row_key(website, title, company):
 
 
 def fmt_date(val):
-    """Format date_processed to clean 'Jun 17 2026' style."""
+    """Format date_processed to clean 'Jun 17' style."""
     if not val:
         return ""
     try:
         from datetime import datetime
-        d = datetime.strptime(str(val).strip()[:10], "%Y-%m-%d")
-        return f"{d:%b} {d.day}"   # %-d is Linux-only; this works everywhere
+        return month_day(datetime.strptime(str(val).strip()[:10], "%Y-%m-%d"))
     except Exception:
         return str(val)[:10]
-
-
-def read_matches(csv_path):
-    """Read CSV with or without a header row, skipping malformed rows."""
-    if not csv_path.exists():
-        return []
-    with open(csv_path, newline="", encoding="utf-8-sig") as f:
-        first = f.readline(); f.seek(0)
-        # filter_jobs.py writes with QUOTE_ALL, so the header may arrive quoted
-        has_header = first.strip().lstrip('"').startswith("date_processed")
-        reader = csv.DictReader(
-            f, fieldnames=None if has_header else CSV_FIELDS)
-        rows = []
-        for row in reader:
-            # Skip rows with no title and no URL
-            title = (row.get("title") or "").strip()
-            url   = (row.get("url")   or "").strip()
-            if not title and not url:
-                continue
-            # Skip rows where score is not numeric (field misalignment in CSV)
-            try:
-                score = int(float(row.get("score", "") or 0))
-                if score < 0 or score > 10:
-                    continue
-            except (TypeError, ValueError):
-                continue
-            rows.append(row)
-        return rows
 
 
 def csv_row_to_cells(row):
@@ -281,6 +252,12 @@ def main():
     ap.add_argument("--no-color", action="store_true")
     args = ap.parse_args()
 
+    # A pending watermark must only ever come from THIS run. Clear any stale
+    # one (e.g. from a cycle whose push failed) BEFORE the early returns below,
+    # or the orchestrator could promote it after an unrelated successful push —
+    # committing a watermark the pushed workbook never reflected.
+    MARK_PENDING.unlink(missing_ok=True)
+
     matches = read_matches(Path(args.csv))
     if not matches:
         print(f"No rows in {args.csv} — nothing to export.")
@@ -340,6 +317,22 @@ def main():
     MARK_PENDING.write_text(new_mark, encoding="utf-8")
     print(f"{added} new row(s) added; {held} hand-deleted row(s) left deleted; "
           f"workbook now has {ws.max_row - 1} matches -> {out}")
+    # held is a STANDING total (hand-deleted rows stay in the cumulative CSV
+    # forever), so warn only when it JUMPS — dozens of rows newly held in one
+    # run is the signature of a laptop workbook restored from an older backup,
+    # not of gradual hand-pruning. Deleting the mark file re-adds everything
+    # still in the CSV.
+    prev_held = 0
+    try:
+        prev_held = int(HELD_COUNT_PATH.read_text(encoding="utf-8").strip() or 0)
+    except (OSError, ValueError):
+        pass
+    HELD_COUNT_PATH.write_text(str(held), encoding="utf-8")
+    if held - prev_held >= 20:
+        print(f"WARNING: held rows jumped {prev_held} -> {held} in one run. If "
+              f"the laptop workbook was restored from a backup, delete "
+              f"{MARK_PATH} and re-run to recover the missing rows. (If you "
+              f"really did just hand-delete {held - prev_held} rows, ignore this.)")
 
 
 if __name__ == "__main__":

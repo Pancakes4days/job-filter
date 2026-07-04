@@ -40,7 +40,9 @@ except ImportError:
 # Reuse the standalone detector's logic for incremental auto-detection of
 # companies newly added to companies.txt.
 from detect_platforms import detect as detect_platform, load_names  # noqa: E402
-from paths import SCRIPTS_DIR, CONFIG_DIR, DATA_DIR  # noqa: E402
+from paths import (SCRIPTS_DIR, CONFIG_DIR, DATA_DIR,  # noqa: E402
+                   EXPORT_MARK_PATH as MARK_PATH,
+                   EXPORT_MARK_PENDING as MARK_PENDING)
 from recruitment_watch import check_recruitment_pulse  # noqa: E402
 from remote import load_local_config, remote_base, scp as _scp  # noqa: E402
 # One Workday slug parser for both scrape and verify — a second copy here
@@ -82,10 +84,9 @@ SCRAPED_JOBS   = DATA_DIR / "scraped_jobs.json"
 CSV_PATH       = DATA_DIR / "matched_jobs.csv"
 XLSX_PATH      = DATA_DIR / "matched_jobs.xlsx"
 FOUND_JSON     = DATA_DIR / "watchlist_found.json"
-# Sync watermark (see export_workbook.py): export writes the candidate to
-# .pending; we promote it only after the laptop confirms the push.
-MARK_PATH      = DATA_DIR / "export_mark.txt"
-MARK_PENDING   = DATA_DIR / "export_mark.pending"
+# Sync watermark: export_workbook.py writes the candidate to MARK_PENDING;
+# we promote it to MARK_PATH only after the laptop confirms the push.
+# (Both constants come from paths.py — see the import at the top.)
 
 # Local backup on the Pi: each sync drops a copy of the latest workbook + CSV
 # here before pushing to the laptop, so the Pi always retains its own copy.
@@ -166,28 +167,23 @@ def save_state(state):
 
 # ── scheduling ─────────────────────────────────────────────────────────────────
 
+def _today_slots(now):
+    """Today's scheduled fire times as naive local datetimes (Pi's timezone;
+    DST handled by the OS timezone)."""
+    return [now.replace(hour=h, minute=0, second=0, microsecond=0)
+            for h in SCRAPE_HOURS_LOCAL]
+
+
 def next_run_time():
-    """Next scheduled fire time as a naive local datetime (Pi's timezone)."""
-    now = datetime.now()  # local time — DST handled by the OS timezone
-    candidates = []
-    for h in SCRAPE_HOURS_LOCAL:
-        t = now.replace(hour=h, minute=0, second=0, microsecond=0)
-        if t <= now:
-            t += timedelta(days=1)
-        candidates.append(t)
-    return min(candidates)
+    """Next scheduled fire time (wraps forward to tomorrow past the last slot)."""
+    now = datetime.now()
+    return min(t if t > now else t + timedelta(days=1) for t in _today_slots(now))
 
 
 def most_recent_slot():
-    """The most recent scheduled slot that has already passed (naive local)."""
+    """Most recent slot already passed (wraps back to yesterday before the first)."""
     now = datetime.now()
-    candidates = []
-    for h in SCRAPE_HOURS_LOCAL:
-        t = now.replace(hour=h, minute=0, second=0, microsecond=0)
-        if t > now:
-            t -= timedelta(days=1)
-        candidates.append(t)
-    return max(candidates)
+    return max(t if t <= now else t - timedelta(days=1) for t in _today_slots(now))
 
 
 def pipeline_due(state):
