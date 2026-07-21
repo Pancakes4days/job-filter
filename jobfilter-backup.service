@@ -1,0 +1,18 @@
+[Unit]
+Description=Job Filter tracker DB backup
+# Oneshot, driven by jobfilter-backup.timer. Deliberately NOT ordered against
+# jobfilter.service: the SQLite online backup API is safe against a live
+# writer, so this never needs the pipeline stopped.
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=bluke
+WorkingDirectory=/home/bluke/job_filter
+
+# Add --push to also send the snapshot to the laptop (needs config/local.json
+# and the same passwordless SSH the workbook sync uses).
+ExecStart=/usr/bin/python3 /home/bluke/job_filter/scripts/backup_db.py --keep 14
+
+StandardOutput=append:/home/bluke/job_filter/data/backup.log
+StandardError=append:/home/bluke/job_filter/data/backup.log

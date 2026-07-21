@@ -49,6 +49,19 @@ def read_matches(csv_path):
         return rows
 
 
+def row_key(website, title, company):
+    """The tracker's dedup key: lowercased URL, falling back to 'title|company'
+    when a listing has no URL. Mirrors filter_jobs.job_fingerprint.
+
+    Lives here (stdlib only) rather than in export_workbook.py so db.py and the
+    web app can key rows the same way without pulling in openpyxl.
+    export_workbook re-exports it for the callers that already import it there.
+    """
+    key = (website or "").strip() or \
+          f"{(title or '').strip()}|{(company or '').strip()}"
+    return key.lower()
+
+
 def month_day(d):
     """'Jul 3' from a date/datetime — cross-platform (strftime %-d is Linux-only)."""
     return f"{d:%b} {d.day}"

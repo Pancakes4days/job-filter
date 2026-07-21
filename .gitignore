@@ -19,3 +19,9 @@ orchestrator_state.json
 orchestrator.lock
 recruitment_alerts.json
 job_data/
+
+# Web tracker DB (-wal/-shm are WAL sidecars) + its nightly snapshots
+tracker.db
+tracker.db-wal
+tracker.db-shm
+backups/

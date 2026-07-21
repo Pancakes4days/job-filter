@@ -26,3 +26,8 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 # laptop confirms a push. Defined once here so the two sides can't drift.
 EXPORT_MARK_PATH    = DATA_DIR / "export_mark.txt"
 EXPORT_MARK_PENDING = DATA_DIR / "export_mark.pending"
+
+# Web-tracker database (docs/PLAN_web_tracker.md). Lives here rather than in
+# db.py so backup_db.py and the web app can't disagree about its location.
+DB_PATH    = DATA_DIR / "tracker.db"
+BACKUP_DIR = DATA_DIR / "backups"

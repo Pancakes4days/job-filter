@@ -27,7 +27,10 @@ try:
 except ImportError:
     sys.exit("export_workbook.py needs openpyxl — run: pip install openpyxl")
 
-from matches import month_day, read_matches
+# row_key moved to matches.py (stdlib only) so db.py and the web app can key
+# rows without importing openpyxl. Re-exported here: prune_workbook.py and
+# other callers still do `from export_workbook import row_key`.
+from matches import month_day, read_matches, row_key  # noqa: F401 — re-export
 from paths import (DATA_DIR, EXPORT_MARK_PATH as MARK_PATH,
                    EXPORT_MARK_PENDING as MARK_PENDING)
 
@@ -97,12 +100,6 @@ HEADER_FG = "FFFFFFFF"
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
-def row_key(website, title, company):
-    key = (website or "").strip() or \
-          f"{(title or '').strip()}|{(company or '').strip()}"
-    return key.lower()
-
-
 def fmt_date(val):
     """Format date_processed to clean 'Jun 17' style."""
     if not val:
@@ -142,18 +139,29 @@ def style_website_cell(cell):
         cell.font  = Font(color="0563C1", underline="single")
 
 
+def strip_hyperlink(value):
+    """Raw URL from a Website cell, which style_website_cell wrote as
+    =HYPERLINK("url","Link"). Needed anywhere the workbook is read back —
+    export's dedup and bootstrap_from_workbook's import both key on the URL.
+
+    Only correct when the workbook is loaded with data_only=False (the
+    default): with data_only=True openpyxl returns the cached display text
+    ("Link") and the URL is simply not there to recover.
+    """
+    if isinstance(value, str) and value.startswith("=HYPERLINK"):
+        try:
+            return value.split('"')[1]
+        except IndexError:
+            pass
+    return value
+
+
 def existing_keys(ws):
     keys = set()
     for r in range(2, ws.max_row + 1):
-        website = ws.cell(row=r, column=WEBSITE_COL).value
+        website = strip_hyperlink(ws.cell(row=r, column=WEBSITE_COL).value)
         title   = ws.cell(row=r, column=TITLE_COL).value
         company = ws.cell(row=r, column=COMPANY_COL).value
-        # Strip HYPERLINK formula so key matches raw URL from CSV
-        if isinstance(website, str) and website.startswith("=HYPERLINK"):
-            try:
-                website = website.split('"')[1]
-            except IndexError:
-                pass
         if website or title or company:
             keys.add(row_key(website, title, company))
     return keys

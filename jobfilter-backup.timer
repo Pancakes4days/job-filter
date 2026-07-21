@@ -1,0 +1,18 @@
+[Unit]
+Description=Nightly job-filter tracker DB backup
+
+[Timer]
+# 02:00 local — clear of both pipeline slots (06:00 and 13:00), so a snapshot
+# never overlaps the filter phase's CPU load.
+OnCalendar=*-*-* 02:00:00
+
+# The Pi is not always on. Persistent=true runs a missed snapshot at the next
+# boot instead of silently skipping the night — same catch-up philosophy as the
+# orchestrator's missed-slot handling.
+Persistent=true
+
+# Avoid a thundering herd with any other timer that also picked 02:00.
+RandomizedDelaySec=15m
+
+[Install]
+WantedBy=timers.target
