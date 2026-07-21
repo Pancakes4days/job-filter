@@ -1,0 +1,126 @@
+/* Job tracker — single stylesheet, no build step, no CDN.
+   Dark by default; the Pi serves this to one laptop over the tailnet. */
+
+:root {
+  --bg: #12151a; --panel: #191d24; --line: #262c36;
+  --fg: #dfe4ec; --muted: #8b95a6; --accent: #6aa9ff;
+  --good: #4ec98a; --warn: #e0b341; --bad: #e06c6c;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 15px/1.55 ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ── nav + status strip ─────────────────────────────────────────────────── */
+
+nav {
+  display: flex; flex-wrap: wrap; gap: 1.1rem; align-items: center;
+  padding: .7rem 1.2rem; background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+nav a { color: var(--muted); text-decoration: none; font-size: .9rem; }
+nav a:hover { color: var(--fg); }
+nav .brand { color: var(--fg); font-weight: 600; margin-right: .6rem; font-family: ui-monospace, monospace; }
+
+.strip {
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: .5rem;
+  padding: .45rem 1.2rem; font-size: .85rem; font-family: ui-monospace, monospace;
+  background: #151a21; color: var(--muted); border-bottom: 1px solid var(--line);
+}
+/* A cycle is in flight. A hint, not a blocker — the site stays fully usable. */
+.strip.is-running { color: var(--warn); border-bottom-color: var(--warn); }
+.strip.is-running::before { content: "● "; }
+
+main { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1.2rem 4rem; }
+
+/* ── type ───────────────────────────────────────────────────────────────── */
+
+h1 { font-size: 1.4rem; margin: 0 0 1rem; font-weight: 600; }
+h2 { font-size: .95rem; margin: 0 0 .5rem; font-weight: 600; }
+h3 { font-size: .8rem; margin: 1rem 0 .25rem; color: var(--muted);
+     text-transform: uppercase; letter-spacing: .04em; }
+.muted { color: var(--muted); font-weight: 400; }
+.small { font-size: .8rem; }
+.hint { color: var(--muted); font-size: .82rem; margin: 0 0 .8rem; }
+.sub { color: var(--muted); margin: -.5rem 0 1.2rem; }
+code { font-family: ui-monospace, monospace; font-size: .85em; color: var(--accent); }
+a { color: var(--accent); }
+
+.banner {
+  padding: .6rem .9rem; border-left: 3px solid var(--warn);
+  background: #1e1c14; color: var(--warn); font-size: .87rem;
+}
+
+/* ── layout ─────────────────────────────────────────────────────────────── */
+
+.card {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 1rem 1.1rem; margin-bottom: 1.2rem;
+}
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.2rem; }
+.grid .card { margin-bottom: 0; }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+         gap: 1rem; margin-bottom: 1.2rem; }
+.tile { background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+        padding: .9rem 1rem; display: flex; flex-direction: column; }
+.tile .n { font-size: 1.7rem; font-weight: 600; font-family: ui-monospace, monospace; }
+.tile .l { color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
+
+/* ── bars + rows ────────────────────────────────────────────────────────── */
+
+.row { display: flex; align-items: center; gap: .6rem; padding: .18rem 0; font-size: .88rem; }
+.row .k { font-family: ui-monospace, monospace; color: var(--muted); min-width: 3.2rem; }
+.row .k.wide { min-width: 9rem; }
+.row .v { font-family: ui-monospace, monospace; margin-left: auto; }
+.barwrap { flex: 1; height: 9px; background: #0e1116; border-radius: 3px; overflow: hidden; }
+.bar { display: block; height: 100%; background: var(--accent); }
+
+/* ── tables ─────────────────────────────────────────────────────────────── */
+
+table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+th { text-align: left; color: var(--muted); font-weight: 500; font-size: .78rem;
+     text-transform: uppercase; letter-spacing: .04em;
+     padding: .35rem .5rem; border-bottom: 1px solid var(--line); }
+td { padding: .38rem .5rem; border-bottom: 1px solid #1e232b; vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+td.num { text-align: right; font-family: ui-monospace, monospace; }
+
+/* Wide tables scroll inside themselves rather than the page. */
+table.jobs { display: block; overflow-x: auto; white-space: nowrap; }
+table.jobs td:nth-child(2) { white-space: normal; min-width: 20rem; }
+
+.score { font-family: ui-monospace, monospace; font-weight: 600; text-align: center; }
+.s10, .s9 { color: var(--good); }
+.s8, .s7   { color: var(--fg); }
+.s6, .s5, .s4, .s3, .s2, .s1, .s0 { color: var(--muted); }
+
+/* ── filters ────────────────────────────────────────────────────────────── */
+
+.filters { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+.filters input, .filters select, .filters button {
+  background: var(--panel); color: var(--fg); border: 1px solid var(--line);
+  border-radius: 4px; padding: .35rem .55rem; font-size: .85rem; font-family: inherit;
+}
+.filters input[type=search] { min-width: 15rem; flex: 1; }
+.filters button { background: var(--accent); color: #0b0e12; border-color: var(--accent);
+                  font-weight: 600; cursor: pointer; }
+.filters .clear { align-self: center; color: var(--muted); font-size: .82rem; }
+
+/* ── misc ───────────────────────────────────────────────────────────────── */
+
+.log {
+  background: #0d1015; border: 1px solid var(--line); border-radius: 6px;
+  padding: .9rem; max-height: 70vh; overflow: auto;
+  font-family: ui-monospace, monospace; font-size: .8rem;
+  white-space: pre-wrap; word-break: break-word;
+}
+ul.plain { list-style: none; padding: 0; margin: 0;
+           max-height: 26rem; overflow-y: auto; font-size: .87rem; }
+ul.plain li { padding: .2rem 0; border-bottom: 1px solid #1e232b; }
+.alerts { border-left: 3px solid var(--warn); }
+.alert { padding: .4rem 0; }
+.alert ul { margin: .3rem 0 0; padding-left: 1.1rem; color: var(--muted); font-size: .85rem; }

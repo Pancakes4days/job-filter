@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Job Tracker{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<nav>
+  <a class="brand" href="{{ url_for('dashboard') }}">job_filter</a>
+  <a href="{{ url_for('dashboard') }}">Dashboard</a>
+  <a href="{{ url_for('jobs') }}">Jobs</a>
+  <a href="{{ url_for('jobs', archived=1) }}">Archive</a>
+  <a href="{{ url_for('logs') }}">Logs</a>
+  <a href="{{ url_for('watchlist') }}">Watchlist</a>
+  <a href="{{ url_for('export_xlsx') }}">Export .xlsx</a>
+</nav>
+
+{# Status strip, deliberately NOT a blocking splash — see web/app.py. #}
+<div id="strip" class="strip {{ 'is-running' if status_bar.running else '' }}">
+  <span id="strip-text">{% include "_status.html" %}</span>
+  <span class="strip-next">next run {{ status_bar.next_run }}</span>
+</div>
+
+<main>
+{% block body %}{% endblock %}
+</main>
+
+<script>
+// Poll the pipeline status so a long filter phase visibly progresses without
+// a reload. Failures are ignored on purpose: a momentarily unavailable status
+// endpoint must not blank out a page that is otherwise fine.
+(function () {
+  var strip = document.getElementById("strip");
+  var text  = document.getElementById("strip-text");
+  if (!strip || !text) return;
+  setInterval(function () {
+    fetch("{{ url_for('status') }}", {cache: "no-store"})
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (s) {
+        if (!s) return;
+        strip.classList.toggle("is-running", !!s.running);
+        var parts = [s.phase];
+        if (s.error) {
+          parts.push(s.error);
+        } else if (s.remaining > 0) {
+          parts.push(s.scored + " / " + s.total + " scored");
+          if (s.eta) parts.push(s.eta + " remaining");
+        } else if (s.total) {
+          parts.push(s.total + " jobs scored (" + s.label + ")");
+        }
+        text.textContent = parts.join(" · ");
+      })
+      .catch(function () {});
+  }, 15000);
+})();
+</script>
+</body>
+</html>

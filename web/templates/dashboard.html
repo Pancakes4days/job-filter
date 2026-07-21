@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · job_filter{% endblock %}
+{% block body %}
+
+{% if alerts %}
+<section class="card alerts">
+  <h2>Recruitment alerts</h2>
+  <p class="hint">Watchlist companies that just opened new-grad / intern roles.</p>
+  {% for a in alerts %}
+  <div class="alert">
+    <strong>{{ a.company }}</strong>
+    <span class="muted">{{ a.count }} role{{ '' if a.count == 1 else 's' }} · first seen {{ a.first_seen }}</span>
+    <ul>{% for role in a.sample_roles[:3] %}<li>{{ role }}</li>{% endfor %}</ul>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+<section class="tiles">
+  <div class="tile"><span class="n">{{ counts.live }}</span><span class="l">tracked</span></div>
+  <div class="tile"><span class="n">{{ counts.deleted }}</span><span class="l">archived</span></div>
+  <div class="tile"><span class="n">{{ status_bar.total or 0 }}</span><span class="l">{{ status_bar.label or 'last scrape' }}</span></div>
+  <div class="tile"><span class="n">{{ status_bar.remaining or 0 }}</span><span class="l">unscored</span></div>
+</section>
+
+<div class="grid">
+  <section class="card">
+    <h2>Score distribution</h2>
+    <p class="hint">Live rows. Threshold is {{ threshold }}.</p>
+    {% for score, n in scores %}
+    <div class="row">
+      <span class="k">{{ score }}/10</span>
+      <span class="barwrap"><span class="bar" style="width: {{ (100 * n / score_max) if score_max else 0 }}%"></span></span>
+      <span class="v">{{ n }}</span>
+    </div>
+    {% else %}<p class="muted">No scored jobs yet.</p>{% endfor %}
+  </section>
+
+  <section class="card">
+    <h2>Application status</h2>
+    <p class="hint">Populated once editing lands (phase 5).</p>
+    {% for s in statuses %}
+    <div class="row"><span class="k wide">{{ s.status }}</span><span class="v">{{ s.n }}</span></div>
+    {% endfor %}
+  </section>
+
+  <section class="card">
+    <h2>Top companies</h2>
+    <table>
+      <tr><th>Company</th><th>Jobs</th><th>Avg</th><th>Max</th></tr>
+      {% for c in companies %}
+      <tr>
+        <td><a href="{{ url_for('jobs', company=c.company) }}">{{ c.company }}</a></td>
+        <td>{{ c.n }}</td>
+        <td>{{ '%.1f' % c.avg_score if c.avg_score is not none else '—' }}</td>
+        <td>{{ c.max_score if c.max_score is not none else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Locations</h2>
+    <table>
+      {% for loc, n in locations %}
+      <tr><td>{{ loc }}</td><td class="num">{{ n }}</td></tr>
+      {% endfor %}
+    </table>
+  </section>
+</div>
+
+<section class="card">
+  <h2>Recently found</h2>
+  <table class="jobs">
+    <tr><th>Score</th><th>Title</th><th>Company</th><th>Location</th><th>Found</th></tr>
+    {% for j in recent %}
+    <tr>
+      <td class="score s{{ j.score }}">{{ j.score if j.score is not none else '—' }}</td>
+      <td><a href="{{ url_for('job_detail', key=j.key) }}">{{ j.title }}</a></td>
+      <td>{{ j.company }}</td>
+      <td>{{ j.location }}</td>
+      <td class="muted">{{ j.date_processed | shortdate }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+
+{% endblock %}

@@ -1,0 +1,29 @@
+[Unit]
+Description=Job Filter Web Tracker
+# Deliberately independent of jobfilter.service: a web crash must not take down
+# scoring, and a pipeline restart must not drop the site. WAL means the two can
+# share the database without coordination.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=bluke
+WorkingDirectory=/home/bluke/job_filter
+
+# One worker, threaded: SQLite reads are fast and the app has a single user, so
+# extra workers would only multiply open connections. Loopback-bound — the
+# tailnet is reached via `tailscale serve`, never by binding a public interface.
+ExecStart=/usr/bin/gunicorn --workers 1 --threads 4 --bind 127.0.0.1:8000 web.app:app
+
+Restart=always
+RestartSec=5
+
+# The filter phase holds CPUQuota=300%; the web app must not compete with it.
+CPUQuota=50%
+
+StandardOutput=append:/home/bluke/job_filter/data/web.log
+StandardError=append:/home/bluke/job_filter/data/web.log
+
+[Install]
+WantedBy=multi-user.target

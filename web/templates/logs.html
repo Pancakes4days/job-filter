@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Logs · job_filter{% endblock %}
+{% block body %}
+<h1>Pipeline log</h1>
+<p class="hint">Tail of {{ path }} — rotated weekly by jobfilter.logrotate.</p>
+{% if log %}
+<pre class="log" id="log">{{ log }}</pre>
+<script>
+  // Land at the newest lines, the way `tail -f` does.
+  var el = document.getElementById("log");
+  el.scrollTop = el.scrollHeight;
+</script>
+{% else %}
+<p class="muted">No log yet.</p>
+{% endif %}
+{% endblock %}

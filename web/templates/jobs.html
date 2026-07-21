@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Archive' if archived else 'Jobs' }} · job_filter{% endblock %}
+{% block body %}
+
+<h1>{{ 'Archive' if archived else 'Jobs' }}
+  <span class="muted">{{ rows|length }} of {{ counts.deleted if archived else counts.live }}</span>
+</h1>
+{% if archived %}
+<p class="hint">Tombstoned rows. They stay in the database so the pipeline
+cannot re-add them — that is what replaced the sync watermark.</p>
+{% endif %}
+
+<form class="filters" method="get">
+  {% if archived %}<input type="hidden" name="archived" value="1">{% endif %}
+  <input type="search" name="q" value="{{ q }}" placeholder="search title, company, notes…">
+  <select name="company">
+    <option value="">all companies</option>
+    {% for c in companies %}
+    <option value="{{ c }}" {{ 'selected' if c == sel_company }}>{{ c }}</option>
+    {% endfor %}
+  </select>
+  <select name="status">
+    <option value="">any status</option>
+    {% for s in statuses %}
+    <option value="{{ s }}" {{ 'selected' if s == sel_status }}>{{ s }}</option>
+    {% endfor %}
+  </select>
+  <input type="number" name="min_score" min="0" max="10" value="{{ min_score if min_score is not none }}" placeholder="min score">
+  <select name="sort">
+    {% for k in sort_keys %}
+    <option value="{{ k }}" {{ 'selected' if k == sort }}>sort: {{ k }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit">Filter</button>
+  <a class="clear" href="{{ url_for('jobs', archived=1 if archived else none) }}">clear</a>
+</form>
+
+<table class="jobs">
+  <tr>
+    <th>Score</th><th>Title</th><th>Company</th><th>Location</th>
+    <th>Found</th><th>Status</th><th>Link</th>
+  </tr>
+  {% for j in rows %}
+  <tr>
+    <td class="score s{{ j.score }}">{{ j.score if j.score is not none else '—' }}</td>
+    <td><a href="{{ url_for('job_detail', key=j.key) }}">{{ j.title or '(no title)' }}</a></td>
+    <td>{{ j.company }}</td>
+    <td>{{ j.location }}</td>
+    <td class="muted">{{ j.date_processed | shortdate }}</td>
+    <td>{{ j.status or '' }}</td>
+    <td>{% if j.url %}<a href="{{ j.url }}" target="_blank" rel="noopener">apply</a>{% endif %}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="7" class="muted">Nothing matches those filters.</td></tr>
+  {% endfor %}
+</table>
+
+{% endblock %}

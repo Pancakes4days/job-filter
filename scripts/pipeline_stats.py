@@ -57,6 +57,70 @@ def load_active_alerts():
     except Exception:
         return []
 
+# Measured gemma3:4b scoring rate on the Pi 5, used for the ETA.
+SECONDS_PER_JOB = 75
+
+
+def progress(jobs=None, seen=None, matches=None):
+    """Scrape progress, match counts and ETA as a dict.
+
+    Extracted from main() so the web dashboard renders the SAME numbers rather
+    than recomputing them — the drift this repo keeps designing against (see
+    count_scrape_matches, which exists because two copies of this arithmetic
+    had already diverged). main() below is now purely a renderer of this dict.
+
+    Arguments are for testing/injection; all default to reading from disk.
+    """
+    jobs    = load_jobs() if jobs is None else jobs
+    seen    = load_seen() if seen is None else seen
+    matches = read_matches(MATCHES) if matches is None else matches
+
+    # Keyed by fingerprint, so duplicate postings in one scrape collapse — this
+    # is why scored + remaining can be less than total.
+    fps           = {fingerprint(j): j for j in jobs}
+    scored_fps    = {fp for fp in fps if fp in seen}
+    unscored_fps  = {fp for fp in fps if fp not in seen}
+    scored_jobs   = [fps[fp] for fp in scored_fps]
+    unscored_jobs = [fps[fp] for fp in unscored_fps]
+
+    scored         = len(scored_jobs)
+    remaining      = len(unscored_jobs)
+    scrape_matches = count_scrape_matches(matches, jobs)
+
+    return {
+        "jobs":            jobs,
+        "seen":            seen,
+        "matches":         matches,
+        "scored_jobs":     scored_jobs,
+        "unscored_jobs":   unscored_jobs,
+        "total":           len(jobs),
+        "scored":          scored,
+        "remaining":       remaining,
+        "all_time":        len(seen),
+        "match_count":     len(matches),
+        "scrape_matches":  scrape_matches,
+        "scrape_no_match": scored - scrape_matches,
+        # "last scrape" once everything is scored — the numbers describe a
+        # finished pass, not one in flight.
+        "scrape_label":    "last scrape" if remaining == 0 else "this scrape",
+        "eta_seconds":     remaining * SECONDS_PER_JOB,
+    }
+
+
+def simplify_loc(loc):
+    """Collapse free-text locations into the buckets worth counting."""
+    loc = (loc or "").strip()
+    if not loc:             return "Unknown"
+    if "Remote" in loc:     return "Remote (US)"
+    if "New York" in loc or "NYC" in loc: return "New York, NY"
+    if "San Francisco" in loc or "SF" in loc: return "San Francisco, CA"
+    if "Boston" in loc:     return "Boston, MA"
+    if "Austin" in loc:     return "Austin, TX"
+    if "Seattle" in loc:    return "Seattle, WA"
+    if "Switzerland" in loc or "Zurich" in loc: return "Switzerland"
+    return loc[:35]
+
+
 def bar(n, total, width=20):
     filled = int(width * n / total) if total else 0
     return "█" * filled + "░" * (width - filled)
@@ -91,33 +155,25 @@ def main():
                 print(f"       -> {role}")
         print()
 
-    jobs      = load_jobs()
-    seen      = load_seen()
-    matches   = read_matches(MATCHES)
     state     = load_state()
     threshold = load_threshold()
 
-    if not jobs:
+    if not load_jobs():
         print("No scraped_jobs.json found — run the scraper first.")
         return
 
-    # Partition jobs
-    fps = {fingerprint(j): j for j in jobs}
-    scored_fps   = {fp for fp in fps if fp in seen}
-    unscored_fps = {fp for fp in fps if fp not in seen}
-
-    scored_jobs   = [fps[fp] for fp in scored_fps]
-    unscored_jobs = [fps[fp] for fp in unscored_fps]
-
-    total        = len(jobs)
-    scored       = len(scored_jobs)
-    remaining    = len(unscored_jobs)
-    all_time     = len(seen)
-    match_count  = len(matches)
-    # Count matches from current scrape only
-    scrape_matches  = count_scrape_matches(matches, jobs)
-    scrape_no_match = scored - scrape_matches
-    scrape_label    = "last scrape" if remaining == 0 else "this scrape"
+    p = progress()
+    jobs, matches   = p["jobs"], p["matches"]
+    seen            = p["seen"]           # used by the --company detail section
+    unscored_jobs   = p["unscored_jobs"]
+    total           = p["total"]
+    scored          = p["scored"]
+    remaining       = p["remaining"]
+    all_time        = p["all_time"]
+    match_count     = p["match_count"]
+    scrape_matches  = p["scrape_matches"]
+    scrape_no_match = p["scrape_no_match"]
+    scrape_label    = p["scrape_label"]
 
     # ── OVERVIEW ──────────────────────────────────────────────────────────────
     section("PIPELINE OVERVIEW")
@@ -188,18 +244,6 @@ def main():
     # ── LOCATION BREAKDOWN (matches) ──────────────────────────────────────────
     if matches:
         section(f"TOP LOCATIONS  (matched jobs, top {args.top})")
-        def simplify_loc(loc):
-            loc = (loc or "").strip()
-            if not loc:             return "Unknown"
-            if "Remote" in loc:     return "Remote (US)"
-            if "New York" in loc or "NYC" in loc: return "New York, NY"
-            if "San Francisco" in loc or "SF" in loc: return "San Francisco, CA"
-            if "Boston" in loc:     return "Boston, MA"
-            if "Austin" in loc:     return "Austin, TX"
-            if "Seattle" in loc:    return "Seattle, WA"
-            if "Switzerland" in loc or "Zurich" in loc: return "Switzerland"
-            return loc[:35]
-
         loc_dist = Counter(simplify_loc(r.get("location","")) for r in matches)
         for loc, cnt in loc_dist.most_common(args.top):
             print(f"  {loc:<35} {cnt:>5}  {pct(cnt, match_count):>5}")
@@ -230,11 +274,11 @@ def main():
 
     # ── ETA ───────────────────────────────────────────────────────────────────
     if remaining > 0:
-        eta_mins = remaining * 75 // 60
+        eta_mins = p["eta_seconds"] // 60
         eta_hrs  = eta_mins // 60
         eta_min  = eta_mins % 60
         section("ESTIMATED TIME REMAINING")
-        print(f"  {remaining} jobs × ~75s/job  →  ~{eta_hrs}h {eta_min}m")
+        print(f"  {remaining} jobs × ~{SECONDS_PER_JOB}s/job  →  ~{eta_hrs}h {eta_min}m")
 
 
 if __name__ == "__main__":

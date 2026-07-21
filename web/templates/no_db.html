@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Not bootstrapped · job_filter</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<main>
+  <h1>No tracker database yet</h1>
+  <p>Expected at <code>{{ db_path }}</code>.</p>
+  <p>Phase 2 has not been run. Seed it from the laptop's workbook:</p>
+  <pre class="log">python3 scripts/bootstrap_from_workbook.py --dry-run
+python3 scripts/bootstrap_from_workbook.py</pre>
+</main>
+</body>
+</html>

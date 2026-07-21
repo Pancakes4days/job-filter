@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ job.title }} · job_filter{% endblock %}
+{% block body %}
+
+<h1>{{ job.title or '(no title)' }}</h1>
+<p class="sub">
+  <strong>{{ job.company }}</strong>
+  {% if job.location %}· {{ job.location }}{% endif %}
+  {% if job.salary %}· {{ job.salary }}{% endif %}
+  {% if job.url %}· <a href="{{ job.url }}" target="_blank" rel="noopener">apply</a>{% endif %}
+</p>
+
+{% if job.deleted_at %}
+<p class="banner">Archived {{ job.deleted_at[:10] }} ({{ job.deleted_reason }}).
+The pipeline will not re-add it.</p>
+{% endif %}
+
+<div class="grid">
+  <section class="card">
+    <h2>Scoring</h2>
+    <div class="row"><span class="k wide">Score</span><span class="v">{{ job.score }}/10</span></div>
+    <div class="row"><span class="k wide">Found</span><span class="v">{{ job.date_processed | shortdate }}</span></div>
+    <div class="row"><span class="k wide">Source</span><span class="v">{{ job.source }}</span></div>
+    {% if job.reason %}<h3>Why</h3><p>{{ job.reason }}</p>{% endif %}
+    {% if job.matched_skills %}<h3>Matched skills</h3><p>{{ job.matched_skills }}</p>{% endif %}
+    {% if job.concerns %}<h3>Concerns</h3><p>{{ job.concerns }}</p>{% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Application</h2>
+    <p class="hint">Read-only until phase 5.</p>
+    {% for label, value in [
+        ('Status', job.status), ('Date applied', job.date_applied),
+        ('Cover letter', job.cover_letter), ('Due date', job.due_date),
+        ('Round #', job.round_num), ('As of', job.as_of),
+        ('Application ID', job.application_id)] %}
+    <div class="row"><span class="k wide">{{ label }}</span><span class="v">{{ value or '—' }}</span></div>
+    {% endfor %}
+    {% if job.notes %}<h3>Notes</h3><p>{{ job.notes }}</p>{% endif %}
+  </section>
+</div>
+
+<p class="muted small">key: <code>{{ job.key }}</code></p>
+
+{% endblock %}

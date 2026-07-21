@@ -1,0 +1,9 @@
+{#- Server-rendered first paint of the status strip; the JS in base.html
+    replaces this text every 15s. Keep the two wordings in sync. -#}
+{{ status_bar.phase }}
+{%- if status_bar.error %} · {{ status_bar.error }}
+{%- elif status_bar.remaining and status_bar.remaining > 0 %}
+  · {{ status_bar.scored }} / {{ status_bar.total }} scored
+  {%- if status_bar.eta %} · {{ status_bar.eta }} remaining{% endif %}
+{%- elif status_bar.total %} · {{ status_bar.total }} jobs scored ({{ status_bar.label }})
+{%- endif %}

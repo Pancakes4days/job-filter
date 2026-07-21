@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Watchlist · job_filter{% endblock %}
+{% block body %}
+<h1>Watchlist health</h1>
+
+<div class="grid">
+  <section class="card">
+    <h2>Undetected <span class="muted">{{ misses|length }}</span></h2>
+    <p class="hint">Auto-detection could not find an ATS. Add a slug hint in
+      <code>config/companies.txt</code> (<code>Name | slug</code>) to re-probe.</p>
+    <ul class="plain">{% for m in misses %}<li>{{ m }}</li>{% else %}<li class="muted">None.</li>{% endfor %}</ul>
+  </section>
+
+  <section class="card">
+    <h2>Unsupported ATS <span class="muted">{{ unsupported|length }}</span></h2>
+    <p class="hint">On platforms the scraper does not implement — check these manually.</p>
+    <ul class="plain">{% for u in unsupported %}<li>{{ u }}</li>{% else %}<li class="muted">None.</li>{% endfor %}</ul>
+  </section>
+</div>
+{% endblock %}
