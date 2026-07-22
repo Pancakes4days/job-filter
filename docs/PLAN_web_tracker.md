@@ -1,7 +1,7 @@
 # Plan: Pi-hosted web tracker, replacing the laptop Excel sync
 
-Status: **phases 0–3 done** (2026-07-21) · phase 2 **not yet run against the real
-laptop workbook**, which phase 3 depends on · phases 4–6 not started
+Status: **phases 0–4 done** · bootstrap run against the real laptop workbook and
+the site is live on the Pi over Tailscale (2026-07-22) · phases 5–6 not started
 
 Moves the system of record from `matched_jobs.xlsx` on the laptop to a SQLite
 DB on the Pi, served over Tailscale. The Excel sync subsystem is deleted, not
@@ -257,19 +257,34 @@ no torn reads, so there is nothing to protect against. A splash screen also
 needs its own liveness detection (did the pipeline die holding the lock?),
 which the strip does not.
 
-### Phase 4 — pipeline writes to the DB
+### Phase 4 — pipeline writes to the DB — DONE
 
-Add a `store` phase to `PHASES` (`orchestrator.py:100`), *before* `sync`:
+`PHASES` is now `["detect", "verify", "scrape", "filter", "store", "sync"]`. The
+`store` phase reads `matched_jobs.csv` and upserts with `ON CONFLICT(key) DO
+NOTHING` in **one transaction**, so a reader sees the batch before-or-after,
+never mid-write. Sync still runs; both tracks live in parallel until phase 6.
 
-```python
-PHASES = ["detect", "verify", "scrape", "filter", "store", "sync"]
-```
+Implementation: `scripts/store_matches.py`, run by the orchestrator as a
+subprocess (same pattern as scrape/filter, so a failure keeps the checkpoint and
+is retried by the existing phase-retry logic). Also runnable by hand:
+`python3 scripts/store_matches.py`.
 
-`store` reads `matched_jobs.csv` and upserts with `ON CONFLICT(key) DO NOTHING`,
-in **one transaction** so readers see before-or-after, never mid-batch.
+Deviations / notes worth keeping:
 
-Sync still runs. Both tracks live in parallel — diff the DB against the
-workbook for a few cycles to build confidence.
+- **`store` refuses an un-bootstrapped or missing DB** and does not create one.
+  `matched_jobs.csv` is cumulative — every match ever scored — so upserting it
+  into an empty DB would re-add every past hand-deletion as a *live* row, the
+  exact resurrection the phase-2 `import-csv` tombstones prevent. It also leaves
+  the web app's "run phase 2" 503 page intact instead of replacing it with a
+  misleadingly empty tracker.
+- **The first `store` after the bootstrap adds 0 rows, by construction.** The
+  bootstrap already imported every CSV key (113 live + 1129 tombstones = 1242 =
+  all CSV rows), so every key conflicts. New matches only appear once a later
+  filter phase appends new rows to the CSV — which is exactly the steady state.
+- Only `PIPELINE_FIELDS` are written (`db.from_csv_row`), and `DO NOTHING` means
+  even an existing pipeline row is never rewritten — a re-scored/changed CSV row
+  does not overwrite the DB. That's fine while sync is the authority for edits;
+  revisit if the pipeline ever needs to *update* a live row's score.
 
 ### Phase 5 — web app becomes authoritative
 

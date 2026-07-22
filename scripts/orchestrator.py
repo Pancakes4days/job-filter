@@ -7,8 +7,14 @@ Pipeline (fires on SCRAPE_HOURS_LOCAL schedule, twice daily):
   2. verify   — probe each watchlist company's ATS for live job count
   3. scrape   — scraper.py: public sources + verified watchlist, single pass
   4. filter   — filter_jobs.py scores jobs via local Ollama LLM
-  5. sync     — pull the laptop's tracker, append new matches (export_workbook.py),
+  5. store    — upsert new matches into the tracker DB (store_matches.py);
+                ON CONFLICT(key) DO NOTHING, so tombstones and hand edits survive
+  6. sync     — pull the laptop's tracker, append new matches (export_workbook.py),
                 push the .xlsx + .csv back over Tailscale (retries if offline)
+
+The 'store' and 'sync' tracks run in parallel during the web-tracker migration
+(docs/PLAN_web_tracker.md): the DB is the new system of record, the laptop sync
+is kept until phase 6 deletes it.
 
 Phase is written to orchestrator_state.json before every transition, so a
 crash or systemd restart resumes from the last checkpoint automatically.
@@ -97,7 +103,7 @@ PYTHON = sys.executable   # same interpreter this script was launched with
 
 # Pipeline phase order — state is saved at the start of each phase so a
 # restart can skip phases that already finished.
-PHASES = ["detect", "verify", "scrape", "filter", "sync"]
+PHASES = ["detect", "verify", "scrape", "filter", "store", "sync"]
 N_PHASES = len(PHASES)
 
 # ── graceful shutdown ──────────────────────────────────────────────────────────
@@ -596,6 +602,12 @@ def run_pipeline(state):
             elif phase == "filter":
                 log(f"=== {tag}: Filter with LLM ===")
                 run_step([PYTHON, SCRIPTS_DIR / "filter_jobs.py", str(SCRAPED_JOBS),
+                          "--csv", str(CSV_PATH)])
+
+            # ── store (upsert new matches into the tracker DB) ────────────────
+            elif phase == "store":
+                log(f"=== {tag}: Store new matches into the tracker DB ===")
+                run_step([PYTHON, SCRIPTS_DIR / "store_matches.py",
                           "--csv", str(CSV_PATH)])
 
             # ── sync (pull tracker → append new matches → push xlsx + csv) ────
