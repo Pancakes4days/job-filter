@@ -7,10 +7,6 @@ config/local.json
 
 # Runtime state + outputs (live under data/)
 seen_jobs.txt
-pruned_keys.txt
-export_mark.txt
-export_mark.pending
-held_count.txt
 scraped_jobs.json
 *.csv
 *.xlsx
@@ -18,6 +14,13 @@ scraped_jobs.json
 orchestrator_state.json
 orchestrator.lock
 recruitment_alerts.json
+
+# Legacy laptop-sync artifacts (removed in phase 6; ignored so stale copies on
+# an upgraded Pi don't show as untracked). Safe to delete from data/.
+pruned_keys.txt
+export_mark.txt
+export_mark.pending
+held_count.txt
 job_data/
 
 # Web tracker DB (-wal/-shm are WAL sidecars) + its nightly snapshots

@@ -1,25 +1,31 @@
 #!/usr/bin/env python3
 """
-Build/maintain matched_jobs.xlsx — a job-application tracker styled like a
-hand-kept spreadsheet, fed from the pipeline's matched_jobs.csv.
+Render matched_jobs.xlsx — a job-application tracker styled like a hand-kept
+spreadsheet — from the tracker database (data/tracker.db).
 
-Append-only by design. New matches are added as new rows; rows already in the
-workbook are never rewritten, so the columns you fill in by hand (Status,
-Notes, dates, ...) survive every run. Dedup is by Website URL (fallback
-title|company), mirroring filter_jobs.job_fingerprint.
+Pure renderer (phase 6 of docs/PLAN_web_tracker.md). The DB is the system of
+record; this produces a snapshot of the live (non-tombstoned) jobs on demand.
+The web app serves it behind /export.xlsx, and it can be run by hand:
 
-Usage:
-    python3 export_workbook.py
-    python3 export_workbook.py --csv matched.csv --out tracker.xlsx
+    python3 export_workbook.py                 # -> data/matched_jobs.xlsx
+    python3 export_workbook.py --out other.xlsx
     python3 export_workbook.py --no-color
+
+History: this used to append CSV rows onto a workbook pulled from the laptop,
+using a sync watermark to tell hand-deletions from new matches. All of that
+(watermark, held-count, pruned-keys, the laptop pull/push) went away with the
+sync in phase 6 — a soft-deleted DB row simply isn't in `live_jobs`, so there is
+nothing to infer.
 """
 
 import argparse
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 try:
-    from openpyxl import Workbook, load_workbook
+    from openpyxl import Workbook
     from openpyxl.utils import get_column_letter
     from openpyxl.worksheet.datavalidation import DataValidation
     from openpyxl.formatting.rule import ColorScaleRule
@@ -27,41 +33,20 @@ try:
 except ImportError:
     sys.exit("export_workbook.py needs openpyxl — run: pip install openpyxl")
 
-# row_key moved to matches.py (stdlib only) so db.py and the web app can key
-# rows without importing openpyxl. Re-exported here: prune_workbook.py and
-# other callers still do `from export_workbook import row_key`.
-from matches import month_day, read_matches, row_key  # noqa: F401 — re-export
-from paths import (DATA_DIR, EXPORT_MARK_PATH as MARK_PATH,
-                   EXPORT_MARK_PENDING as MARK_PENDING)
+# row_key lives in matches.py (stdlib only) so db.py and the web app can key
+# rows without importing openpyxl. Re-exported here for callers that still do
+# `from export_workbook import row_key`.
+from matches import month_day, row_key  # noqa: F401 — re-export
+from paths import DATA_DIR
 
-CSV_PATH  = DATA_DIR / "matched_jobs.csv"
 XLSX_PATH = DATA_DIR / "matched_jobs.xlsx"
-# Dedup keys of rows trimmed by a manual `prune_workbook.py --apply` run.
-# Skipped on future appends so the cumulative matched_jobs.csv never re-adds a
-# row that was intentionally pruned. Delete this file if you want previously-
-# pruned listings to be reconsidered.
-PRUNED_KEYS_PATH = DATA_DIR / "pruned_keys.txt"
-
-# Last run's held count (see the rollback warning in main). Not part of the
-# watermark commit handshake — purely a baseline so the warning fires on a
-# sudden JUMP in held rows, not on the standing total of all deletions ever.
-HELD_COUNT_PATH = DATA_DIR / "held_count.txt"
-
-# Sync watermark: the date_processed of the newest CSV row that has made it
-# into a workbook the laptop confirmed receiving. Any OLDER row that is
-# missing from the pulled workbook can only be missing because the user
-# deleted it by hand — so it is never re-added. Newer rows are new matches
-# and are always appended. The export writes the candidate value to
-# MARK_PENDING (paths.py); the orchestrator promotes it to MARK_PATH only
-# after a successful push, so a failed push never strands unexported rows
-# behind the watermark. Timestamps are matches.TS_FORMAT (UTC) — the lexical
-# ts <= mark comparison below is only a valid time ordering because that
-# format is fixed-width, zero-padded, most-significant-first.
 
 MAX_VALIDATION_ROW = 5000
 
 # ── column layout ─────────────────────────────────────────────────────────────
-# (header, csv_field or None for manual columns, width)
+# (workbook header, jobs-table column, width). Every column maps to a DB column
+# now — the pipeline-owned ones and the user-owned ones alike — so rendering is
+# a straight projection of a live jobs row.
 COLUMNS = [
     ("Score",          "score",          8),
     ("Job Title",      "title",          50),
@@ -70,17 +55,17 @@ COLUMNS = [
     ("Pay",            "salary",         12),
     ("Website",        "url",            16),
     ("Date Found",     "date_processed", 16),
-    ("Date Applied",   None,             16),
+    ("Date Applied",   "date_applied",   16),
     ("Why",            "reason",         45),
     ("Matched Skills", "matched_skills", 30),
     ("Concerns",       "concerns",       30),
-    ("Application ID", ".",              16),   # auto-filled with "." to block overflow
-    ("Cover Letter",   None,             16),
-    ("Due Date",       None,             12),
-    ("Round #",        None,             10),
-    ("Status",         None,             18),
-    ("As of",          None,             12),
-    ("Notes",          None,             30),
+    ("Application ID", "application_id", 16),
+    ("Cover Letter",   "cover_letter",   16),
+    ("Due Date",       "due_date",       12),
+    ("Round #",        "round_num",      10),
+    ("Status",         "status",         18),
+    ("As of",          "as_of",          12),
+    ("Notes",          "notes",          30),
 ]
 HEADERS     = [c[0] for c in COLUMNS]
 WEBSITE_COL = HEADERS.index("Website") + 1
@@ -114,22 +99,23 @@ def fmt_date(val):
         return str(val)[:10]
 
 
-def csv_row_to_cells(row):
+def db_row_to_cells(row):
+    """Project one live jobs row (sqlite3.Row or dict) onto the workbook columns."""
+    def get(field):
+        try:
+            return row[field]
+        except (KeyError, IndexError):
+            return None
+
     cells = []
     for _, field, _ in COLUMNS:
-        if field is None:
-            cells.append("")
-        elif field == ".":
-            cells.append(".")
-        elif field == "score":
-            try:
-                cells.append(int(float(row.get("score", "") or 0)))
-            except (TypeError, ValueError):
-                cells.append(row.get("score", ""))
+        val = get(field)
+        if field == "score":
+            cells.append(val if val is not None else "")
         elif field == "date_processed":
-            cells.append(fmt_date(row.get("date_processed", "")))
+            cells.append(fmt_date(val))
         else:
-            cells.append(row.get(field, ""))
+            cells.append("" if val is None else str(val))
     return cells
 
 
@@ -157,45 +143,6 @@ def strip_hyperlink(value):
         except IndexError:
             pass
     return value
-
-
-def existing_keys(ws):
-    keys = set()
-    for r in range(2, ws.max_row + 1):
-        website = strip_hyperlink(ws.cell(row=r, column=WEBSITE_COL).value)
-        title   = ws.cell(row=r, column=TITLE_COL).value
-        company = ws.cell(row=r, column=COMPANY_COL).value
-        if website or title or company:
-            keys.add(row_key(website, title, company))
-    return keys
-
-
-def load_pruned_keys():
-    """Dedup keys of rows previously trimmed by prune_workbook()."""
-    if not PRUNED_KEYS_PATH.exists():
-        return set()
-    with open(PRUNED_KEYS_PATH, encoding="utf-8") as f:
-        return {ln.strip() for ln in f if ln.strip()}
-
-
-# (append_pruned_keys lives in prune_workbook.py — the manual tool that owns
-#  writing the suppress list; this module only reads it.)
-
-
-def load_mark():
-    """Committed sync watermark, or None if no sync has been confirmed yet."""
-    if MARK_PATH.exists():
-        return MARK_PATH.read_text(encoding="utf-8").strip()
-    return None
-
-
-def bootstrap_mark(matches, accounted_keys):
-    """First run without a watermark: everything already in the workbook (or
-    already pruned) is accounted for; the newest such timestamp separates
-    hand-deleted history (older, absent) from not-yet-synced matches (newer)."""
-    return max((r.get("date_processed", "") or "" for r in matches
-                if row_key(r.get("url"), r.get("title"), r.get("company"))
-                in accounted_keys), default="")
 
 
 # ── workbook creation ─────────────────────────────────────────────────────────
@@ -253,97 +200,46 @@ def _apply_score_color(ws):
     ws.conditional_formatting.add(f"{col}2:{col}{MAX_VALIDATION_ROW}", rule)
 
 
-# ── main ──────────────────────────────────────────────────────────────────────
+# ── rendering ─────────────────────────────────────────────────────────────────
+
+def render_workbook(rows, use_color=True):
+    """A styled Workbook holding `rows` (live jobs, sqlite3.Row or dicts), best
+    scores first. Pure — no I/O — so the web app can save it to a BytesIO and
+    the CLI to a file. Callers pass already-filtered live rows; tombstones never
+    reach here."""
+    wb, ws = create_workbook(use_color=use_color)
+    for row in rows:
+        ws.append(db_row_to_cells(row))
+        style_website_cell(ws.cell(row=ws.max_row, column=WEBSITE_COL))
+    return wb
+
 
 def main():
     ap = argparse.ArgumentParser(
-        description="Build/append the job-tracker .xlsx from matched_jobs.csv.")
-    ap.add_argument("--csv",      default=str(CSV_PATH))
+        description="Render the job-tracker .xlsx from the tracker database.")
     ap.add_argument("--out",      default=str(XLSX_PATH))
     ap.add_argument("--no-color", action="store_true")
     args = ap.parse_args()
 
-    # A pending watermark must only ever come from THIS run. Clear any stale
-    # one (e.g. from a cycle whose push failed) BEFORE the early returns below,
-    # or the orchestrator could promote it after an unrelated successful push —
-    # committing a watermark the pushed workbook never reflected.
-    MARK_PENDING.unlink(missing_ok=True)
+    import db  # local: keeps openpyxl-free importers of this module unaffected
 
-    matches = read_matches(Path(args.csv))
-    if not matches:
-        print(f"No rows in {args.csv} — nothing to export.")
-        return
+    if not db.DB_PATH.exists():
+        sys.exit(f"No tracker database at {db.DB_PATH} — run "
+                 f"bootstrap_from_workbook.py first.")
+
+    # Read-write, not mode=ro: a read-only connection can't build the WAL index
+    # and fails against a DB the pipeline has open (same reason web/app.py does
+    # this). The existence guard above means connect() won't create a new DB.
+    conn = db.connect()
+    try:
+        rows = db.live_jobs(conn)
+    finally:
+        conn.close()
 
     out = Path(args.out)
-    fresh_workbook = not out.exists()
-    if fresh_workbook:
-        wb, ws = create_workbook(use_color=not args.no_color)
-        seen   = set()
-    else:
-        wb   = load_workbook(out)
-        ws   = wb["Matches"] if "Matches" in wb.sheetnames else wb.active
-        seen = existing_keys(ws)
-
-    # Don't re-add rows a manual prune has trimmed (the CSV is cumulative).
-    seen |= load_pruned_keys()
-
-    # Sync watermark: rows older than the last confirmed sync that are missing
-    # from the workbook were deleted by hand — leave them deleted. A fresh
-    # workbook is a full rebuild, so the watermark doesn't apply (the CSV is
-    # the only record we have); pruned keys still suppress.
-    if fresh_workbook:
-        mark = ""
-    else:
-        mark = load_mark()
-        if mark is None:
-            mark = bootstrap_mark(matches, seen)
-            if mark:
-                print(f"No sync watermark yet — CSV rows up to {mark} that are "
-                      f"missing from the workbook stay deleted.")
-
-    added, held = 0, 0
-    new_mark = mark
-    for row in matches:
-        key = row_key(row.get("url"), row.get("title"), row.get("company"))
-        ts  = (row.get("date_processed") or "").strip()
-        if key in seen:
-            new_mark = max(new_mark, ts)   # accounted for (present or pruned)
-            continue
-        if ts and mark and ts <= mark:
-            held += 1                      # pre-watermark and absent → hand-deleted
-            continue
-        seen.add(key)
-        ws.append(csv_row_to_cells(row))
-        style_website_cell(ws.cell(row=ws.max_row, column=WEBSITE_COL))
-        added += 1
-        new_mark = max(new_mark, ts)
-
-    # Update auto_filter range to cover all data rows
-    last_col = get_column_letter(len(COLUMNS))
-    ws.auto_filter.ref = f"A1:{last_col}1"
-
+    wb = render_workbook(rows, use_color=not args.no_color)
     wb.save(out)
-    # Candidate watermark — committed to MARK_PATH by the orchestrator only
-    # after the laptop confirms the push, so a failed push re-appends next time.
-    MARK_PENDING.write_text(new_mark, encoding="utf-8")
-    print(f"{added} new row(s) added; {held} hand-deleted row(s) left deleted; "
-          f"workbook now has {ws.max_row - 1} matches -> {out}")
-    # held is a STANDING total (hand-deleted rows stay in the cumulative CSV
-    # forever), so warn only when it JUMPS — dozens of rows newly held in one
-    # run is the signature of a laptop workbook restored from an older backup,
-    # not of gradual hand-pruning. Deleting the mark file re-adds everything
-    # still in the CSV.
-    prev_held = 0
-    try:
-        prev_held = int(HELD_COUNT_PATH.read_text(encoding="utf-8").strip() or 0)
-    except (OSError, ValueError):
-        pass
-    HELD_COUNT_PATH.write_text(str(held), encoding="utf-8")
-    if held - prev_held >= 20:
-        print(f"WARNING: held rows jumped {prev_held} -> {held} in one run. If "
-              f"the laptop workbook was restored from a backup, delete "
-              f"{MARK_PATH} and re-run to recover the missing rows. (If you "
-              f"really did just hand-delete {held - prev_held} rows, ignore this.)")
+    print(f"Rendered {len(rows)} live job(s) -> {out}")
 
 
 if __name__ == "__main__":

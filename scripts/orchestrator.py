@@ -9,12 +9,11 @@ Pipeline (fires on SCRAPE_HOURS_LOCAL schedule, twice daily):
   4. filter   — filter_jobs.py scores jobs via local Ollama LLM
   5. store    — upsert new matches into the tracker DB (store_matches.py);
                 ON CONFLICT(key) DO NOTHING, so tombstones and hand edits survive
-  6. sync     — pull the laptop's tracker, append new matches (export_workbook.py),
-                push the .xlsx + .csv back over Tailscale (retries if offline)
 
-The 'store' and 'sync' tracks run in parallel during the web-tracker migration
-(docs/PLAN_web_tracker.md): the DB is the new system of record, the laptop sync
-is kept until phase 6 deletes it.
+The SQLite tracker DB is the single system of record (docs/PLAN_web_tracker.md).
+The old laptop Excel sync was removed in phase 6 — the web app owns the tracker
+now, and export_workbook.py renders a workbook from the DB on demand rather than
+the pipeline pushing one to the laptop.
 
 Phase is written to orchestrator_state.json before every transition, so a
 crash or systemd restart resumes from the last checkpoint automatically.
@@ -26,16 +25,14 @@ Manual run:     python3 orchestrator.py
 import json
 import os
 import re
-import shutil
 import signal
-import socket
 import subprocess
 import sys
 import tempfile
 import time
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 
 try:
@@ -46,11 +43,11 @@ except ImportError:
 # Reuse the standalone detector's logic for incremental auto-detection of
 # companies newly added to companies.txt.
 from detect_platforms import detect as detect_platform, load_names  # noqa: E402
-from paths import (SCRIPTS_DIR, CONFIG_DIR, DATA_DIR,  # noqa: E402
-                   EXPORT_MARK_PATH as MARK_PATH,
-                   EXPORT_MARK_PENDING as MARK_PENDING)
+from paths import SCRIPTS_DIR, CONFIG_DIR, DATA_DIR  # noqa: E402
 from recruitment_watch import check_recruitment_pulse  # noqa: E402
-from remote import load_local_config, remote_base, scp as _scp  # noqa: E402
+# local.json still carries the schedule (scrape_hours_local etc.); its former
+# remote_* keys are unused now that the laptop sync is gone.
+from remote import load_local_config  # noqa: E402
 # One Workday slug parser for both scrape and verify — a second copy here
 # already drifted once (missing strip('/')), reporting live boards unreachable.
 from scraper import _parse_workday_slug  # noqa: E402
@@ -61,14 +58,10 @@ from scraper import _parse_workday_slug  # noqa: E402
 
 _local = load_local_config()
 
-REMOTE_HOST          = _local["remote_host"]        # Tailscale IP of your laptop
-REMOTE_BASE          = remote_base(_local)          # user@host:dir/ scp prefix
-#                      (^ also fails fast at startup if local.json lacks keys)
 # Local-time hours to fire the pipeline. Uses the Pi's system timezone, so set
 # the Pi to America/New_York (`sudo timedatectl set-timezone America/New_York`)
 # and DST is handled automatically — 6 and 13 always mean 6 AM and 1 PM Eastern.
 SCRAPE_HOURS_LOCAL   = _local.get("scrape_hours_local",  [6, 13])
-COPY_RETRY_INTERVAL  = _local.get("copy_retry_interval", 60)
 DETECT_DELAY         = _local.get("detect_delay",        0.5)
 # How long to wait before retrying a failed pipeline phase (e.g. Ollama down
 # during filter). In-process pacing — the service no longer dies on phase
@@ -88,22 +81,13 @@ COMPANIES_TXT  = CONFIG_DIR / "companies.txt"
 MISSES_TXT     = DATA_DIR / "watchlist_misses.txt"
 SCRAPED_JOBS   = DATA_DIR / "scraped_jobs.json"
 CSV_PATH       = DATA_DIR / "matched_jobs.csv"
-XLSX_PATH      = DATA_DIR / "matched_jobs.xlsx"
 FOUND_JSON     = DATA_DIR / "watchlist_found.json"
-# Sync watermark: export_workbook.py writes the candidate to MARK_PENDING;
-# we promote it to MARK_PATH only after the laptop confirms the push.
-# (Both constants come from paths.py — see the import at the top.)
-
-# Local backup on the Pi: each sync drops a copy of the latest workbook + CSV
-# here before pushing to the laptop, so the Pi always retains its own copy.
-# Set to None to disable.
-LOCAL_COPY_DIR = DATA_DIR / "job_data"
 
 PYTHON = sys.executable   # same interpreter this script was launched with
 
 # Pipeline phase order — state is saved at the start of each phase so a
 # restart can skip phases that already finished.
-PHASES = ["detect", "verify", "scrape", "filter", "store", "sync"]
+PHASES = ["detect", "verify", "scrape", "filter", "store"]
 N_PHASES = len(PHASES)
 
 # ── graceful shutdown ──────────────────────────────────────────────────────────
@@ -154,9 +138,6 @@ def _default_state():
         "next_run": None,
         "verified_companies": [],
         "detect_attempted": [],   # company names already probed (resumable detect)
-        "copy_pending": False,
-        "last_copy_attempt": None,
-        "workbook_initialized": False,  # have we ever pushed a workbook to the laptop?
         "last_cycle_started": None,     # naive-local ISO; drives missed-slot catch-up
     }
 
@@ -211,15 +192,6 @@ def run_step(cmd):
     result = subprocess.run(cmd)
     if result.returncode != 0:
         raise RuntimeError(f"Subprocess exited with code {result.returncode}")
-
-# ── network ────────────────────────────────────────────────────────────────────
-
-def laptop_online():
-    try:
-        with socket.create_connection((REMOTE_HOST, 22), timeout=5):
-            return True
-    except OSError:
-        return False
 
 # ── watchlist verification ─────────────────────────────────────────────────────
 
@@ -456,87 +428,6 @@ def make_scrape_config(verified_companies):
                 s["enabled"] = False
     return _write_temp_config(cfg)
 
-# ── sync results to the laptop (pull → append → push) ───────────────────────────
-
-def _mark_copy_pending(state):
-    state["copy_pending"] = True
-    state["last_copy_attempt"] = datetime.now(timezone.utc).isoformat()
-    save_state(state)
-
-
-def _save_local_copy():
-    """Keep a local backup of the latest workbook + CSV on the Pi."""
-    if LOCAL_COPY_DIR is None:
-        return
-    LOCAL_COPY_DIR.mkdir(parents=True, exist_ok=True)
-    for src in (XLSX_PATH, CSV_PATH):
-        if src.exists():
-            shutil.copy2(src, LOCAL_COPY_DIR / src.name)
-    log(f"Saved a local copy of the workbook + CSV to {LOCAL_COPY_DIR}")
-
-
-def sync_to_laptop(state):
-    """Pull the laptop's workbook, append new matches, push it (and the CSV) back.
-
-    The laptop's job_data/matched_jobs.xlsx is the copy you hand-edit, so we pull
-    it FIRST and only ever add rows — your Status/Notes survive every cycle.
-    matched_jobs.csv is cumulative and the append dedupes by URL, so a cycle
-    skipped while the laptop is offline is caught up on the next successful sync.
-    Returns True on success, False if it should be retried later."""
-    if not CSV_PATH.exists():
-        log("No matches yet — nothing to sync.")
-        return True
-
-    if not laptop_online():
-        log(f"Laptop ({REMOTE_HOST}) not reachable on Tailscale — "
-            f"will retry in {COPY_RETRY_INTERVAL // 60} min.")
-        _mark_copy_pending(state)
-        return False
-
-    remote_dir  = REMOTE_BASE
-    remote_xlsx = REMOTE_BASE + XLSX_PATH.name
-
-    # 1. Pull the laptop's current workbook so its manual edits are preserved.
-    #    Start clean so we never append onto a stale local copy.
-    XLSX_PATH.unlink(missing_ok=True)
-    log(f"Pulling {XLSX_PATH.name} from laptop to preserve manual edits…")
-    pulled = _scp([remote_xlsx, str(XLSX_PATH)]).returncode == 0
-    if not pulled:
-        if state.get("workbook_initialized"):
-            # The workbook should exist on the laptop, but we couldn't read it —
-            # most likely it's open in Excel. Do NOT overwrite it with a fresh
-            # one; defer and retry so hand-typed columns are never lost.
-            log("  couldn't pull the workbook (likely open in Excel) — deferring "
-                "so your edits aren't overwritten; will retry.")
-            _mark_copy_pending(state)
-            return False
-        log("  no workbook on the laptop yet — creating the first one.")
-
-    # 2. Append new matches (export_workbook.py is append-only + idempotent).
-    run_step([PYTHON, SCRIPTS_DIR / "export_workbook.py",
-              "--csv", str(CSV_PATH), "--out", str(XLSX_PATH)])
-
-    # 2b. Keep a local backup on the Pi *before* pushing to the laptop.
-    _save_local_copy()
-
-    # 3. Push the workbook + the (rewritten) CSV back into job_data.
-    log(f"Pushing {XLSX_PATH.name} + {CSV_PATH.name} → {remote_dir}")
-    if _scp([str(XLSX_PATH), str(CSV_PATH), remote_dir]).returncode == 0:
-        log("Synced workbook + CSV to the laptop.")
-        # The laptop has this batch — commit the sync watermark so rows the
-        # user later deletes from the workbook are never re-added.
-        if MARK_PENDING.exists():
-            MARK_PENDING.replace(MARK_PATH)
-        state["workbook_initialized"] = True
-        state["copy_pending"] = False
-        state["last_copy_attempt"] = datetime.now(timezone.utc).isoformat()
-        save_state(state)
-        return True
-
-    log("Push failed (laptop may have the workbook open) — will retry later.")
-    _mark_copy_pending(state)
-    return False
-
 # ── pipeline ───────────────────────────────────────────────────────────────────
 
 def run_pipeline(state):
@@ -605,15 +496,13 @@ def run_pipeline(state):
                           "--csv", str(CSV_PATH)])
 
             # ── store (upsert new matches into the tracker DB) ────────────────
+            # The final phase: the DB is the system of record. There is no push
+            # to the laptop anymore — the web app owns the tracker, and
+            # export_workbook renders a .xlsx from the DB on demand.
             elif phase == "store":
                 log(f"=== {tag}: Store new matches into the tracker DB ===")
                 run_step([PYTHON, SCRIPTS_DIR / "store_matches.py",
                           "--csv", str(CSV_PATH)])
-
-            # ── sync (pull tracker → append new matches → push xlsx + csv) ────
-            elif phase == "sync":
-                log(f"=== {tag}: Sync tracker to laptop ===")
-                sync_to_laptop(state)
 
         except RuntimeError as e:
             # A phase subprocess failed (e.g. Ollama down during filter). Keep
@@ -627,7 +516,7 @@ def run_pipeline(state):
 
     log("=== Pipeline complete ===")
     # Reset the checkpoint: a back-to-back catch-up run (a cycle that crossed a
-    # slot boundary) must start a FULL new cycle, not resume at leftover 'sync'.
+    # slot boundary) must start a FULL new cycle, not resume at a leftover phase.
     state["phase"] = "idle"
     state["verified_companies"] = []   # clear stale data
     state["detect_attempted"] = []     # re-probe is unnecessary; reset for next cycle
@@ -648,18 +537,6 @@ def idle_until(state, next_run_dt):
         now_local = datetime.now()            # naive local — for the schedule
         if now_local >= next_run_dt:
             return
-
-        # retry pending copy while waiting for next scheduled run
-        if state.get("copy_pending"):
-            last = state.get("last_copy_attempt")
-            now_utc = datetime.now(timezone.utc)   # aware UTC — matches stored timestamp
-            since = (
-                (now_utc - datetime.fromisoformat(last)).total_seconds()
-                if last else COPY_RETRY_INTERVAL
-            )
-            if since >= COPY_RETRY_INTERVAL:
-                sync_to_laptop(state)
-
         # sleep in 60-second ticks so SIGTERM is handled promptly
         sleep_for = min(60, max(1, (next_run_dt - now_local).total_seconds()))
         time.sleep(sleep_for)

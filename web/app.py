@@ -48,7 +48,6 @@ app = Flask(__name__)
 LOG_PATH         = DATA_DIR / "filter.log"
 MISSES_PATH      = DATA_DIR / "watchlist_misses.txt"
 UNSUPPORTED_PATH = DATA_DIR / "watchlist_unsupported.txt"
-XLSX_PATH        = DATA_DIR / "matched_jobs.xlsx"
 
 LOG_TAIL_BYTES = 200_000        # read only the tail; filter.log rotates at 10M
 
@@ -291,12 +290,22 @@ def watchlist():
 
 @app.route("/export.xlsx")
 def export_xlsx():
-    """The workbook the pipeline still produces. Becomes a DB-rendered download
-    in phase 6, once export_workbook stops being a sync target."""
-    if not XLSX_PATH.exists():
-        return render_template("not_found.html", key=XLSX_PATH.name,
-                               status_bar=pipeline_status()), 404
-    return send_file(XLSX_PATH, as_attachment=True, download_name=XLSX_PATH.name)
+    """Render the workbook from the DB's live jobs on demand. export_workbook is
+    imported lazily so the app still boots on a box without openpyxl — only this
+    one route needs it."""
+    import io
+
+    import export_workbook as ew
+
+    rows = db.live_jobs(get_db())
+    wb   = ew.render_workbook(rows)
+    buf  = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return send_file(
+        buf, as_attachment=True, download_name="matched_jobs.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
 
 
 @app.template_filter("shortdate")

@@ -1,9 +1,9 @@
 # Plan: Pi-hosted web tracker, replacing the laptop Excel sync
 
-Status: **phases 0–5 done** · bootstrap run against the real laptop workbook and
-the site is live on the Pi over Tailscale (2026-07-22); the web app is now the
-authoritative editor of the user-owned columns · phase 6 (delete the sync) not
-started
+Status: **COMPLETE — phases 0–6 done** (2026-07-22). The SQLite tracker DB is
+the single system of record, served + edited via the Pi-hosted web app over
+Tailscale. The laptop Excel sync has been removed; `export_workbook.py` renders
+a workbook from the DB on demand.
 
 Moves the system of record from `matched_jobs.xlsx` on the laptop to a SQLite
 DB on the Pi, served over Tailscale. The Excel sync subsystem is deleted, not
@@ -330,23 +330,51 @@ a user delete becomes a tombstone that `store`'s `ON CONFLICT DO NOTHING` won't
 resurrect — both verified by test. From here the laptop workbook is a stale
 artifact; phase 6 removes the sync that maintains it.
 
-### Phase 6 — delete the sync
+### Phase 6 — delete the sync — DONE
 
-Remove:
+Removed, as planned:
 
-- the `sync` phase and its retry/deferral logic in `orchestrator.py`
-  (~21 call sites reference scp/copy_pending/remote_*)
-- `export_mark.txt`, `export_mark.pending`, `EXPORT_MARK_*` in `paths.py`
-- `load_mark`, `bootstrap_mark`, the `ts <= mark` comparator, `held_count.txt`
-  and the held-rows warning in `export_workbook.py`
-- `pruned_keys.txt` and `prune_workbook.py`'s pull/push path — pruning becomes
-  a bulk soft-delete in the UI, or a `--apply` that just writes tombstones
-- `remote.py`, unless Phase 0's backup push keeps it alive
+- The `sync` phase and all its plumbing in `orchestrator.py` — `sync_to_laptop`,
+  `_mark_copy_pending`, `_save_local_copy`, `laptop_online`, the `copy_pending`
+  retry in `idle_until`, the `copy_pending`/`last_copy_attempt`/
+  `workbook_initialized` state fields, `REMOTE_HOST`/`REMOTE_BASE`/
+  `LOCAL_COPY_DIR`/`COPY_RETRY_INTERVAL`, and the now-unused `socket`/`shutil`/
+  `timezone`/`remote_base`/`scp` imports. `PHASES` is now
+  `["detect","verify","scrape","filter","store"]`.
+- `EXPORT_MARK_PATH` / `EXPORT_MARK_PENDING` from `paths.py`.
+- `load_mark`, `bootstrap_mark`, the `ts <= mark` comparator, `existing_keys`,
+  `load_pruned_keys`, `held_count.txt` and the held-rows warning, and the whole
+  append/merge/watermark `main()` from `export_workbook.py`.
+- `prune_workbook.py`'s laptop pull/push and `pruned_keys.txt` suppress-list.
 
-`export_workbook.py` survives as a pure DB → xlsx renderer behind
-`/export.xlsx`. It loses the append/merge/watermark logic entirely.
+`export_workbook.py` is now a **pure DB → xlsx renderer** (`render_workbook`),
+served at `/export.xlsx` and runnable standalone. Its styling helpers (header
+fill, HYPERLINK cells, score colour scale, dropdown validation) are unchanged.
 
-Update the README: sections at lines 23–67 and 328–349 mostly disappear.
+`prune_workbook.py` keeps its fit/exclusion heuristics verbatim but now operates
+on DB rows: `plan_prunes(rows)` (pure) decides the cut, and `--apply` writes
+`deleted_reason='prune'` tombstones in one transaction. A pruned row leaves the
+site and the export and can't be re-added; **Restore** in the UI reverses it.
+
+Deviations / notes worth keeping:
+
+- **`remote.py` stays** — `backup_db.py --push` still uses it (as phase 0
+  anticipated). `local.json`'s `remote_*` keys are now optional, used only there.
+- **`COLUMNS` in `export_workbook` now maps every header to a DB column** (was
+  csv_field / None / "."). `bootstrap_from_workbook.py` derived its
+  pipeline-field map from `COLUMNS`; that derivation was updated to exclude
+  `db.USER_FIELDS` so the vestigial one-shot stays correct for disaster-recovery
+  re-migration (it still refuses to run while the DB has rows).
+- **`/export.xlsx` imports `export_workbook` lazily**, so the web app still boots
+  without openpyxl — only that one route needs it.
+- **README** rewritten: intro, "How it runs", unattended-operation bullets,
+  Layout, Pi setup, `local.json`, run-by-hand, and Pruning sections now describe
+  the DB/web-app architecture. Legacy sync artifacts kept in `.gitignore`
+  (labelled) so stale copies on an upgraded Pi don't show as untracked.
+
+All of the above is covered by tests (render live-only + hyperlinks + user
+columns; prune protects edits and writes tombstones; `/export.xlsx` serves a
+DB-rendered workbook; store still doesn't resurrect; web writes intact).
 
 ---
 

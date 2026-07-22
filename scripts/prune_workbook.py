@@ -1,30 +1,27 @@
 #!/usr/bin/env python3
 """
-prune_workbook.py — trim the job-tracker workbook down to the best 1–2 jobs
-per company, protecting rows you've started applying to.
+prune_workbook.py — trim the tracker down to the best 1–2 jobs per company,
+protecting rows you've started applying to.
 
-MANUAL TOOL — run it by hand when the workbook gets noisy. The automated
-pipeline (export_workbook.py) is purely append-only and never deletes rows.
+MANUAL TOOL — run it by hand when the tracker gets noisy. The automated pipeline
+never deletes rows.
 
-    python3 scripts/prune_workbook.py                  # dry-run report, no writes
-    python3 scripts/prune_workbook.py --apply          # pull → prune → push
-    python3 scripts/prune_workbook.py --apply --local  # prune the local file only
+    python3 scripts/prune_workbook.py            # dry-run report, no writes
+    python3 scripts/prune_workbook.py --apply    # soft-delete the pruned rows
 
---apply pulls the laptop's workbook FIRST (that copy holds your hand edits),
-prunes, pushes the result back, and only after a confirmed push records the
-deleted rows' dedup keys in data/pruned_keys.txt (so the cumulative
-matched_jobs.csv never re-adds them). If the laptop can't be reached it aborts
-rather than prune a stale copy; if the push fails, no keys are recorded, so
-state stays consistent. The dry run pulls the laptop's copy to a temp file for
-an accurate preview when possible. --local prunes of the live workbook are
-transient (the next sync restores the laptop's copy) and record no keys.
+As of phase 6 (docs/PLAN_web_tracker.md) this operates on the tracker DB, not a
+workbook: --apply writes a tombstone (deleted_reason='prune') for each pruned
+row, in one transaction. A tombstoned row is excluded from the site and from
+export_workbook's render, and the pipeline's ON CONFLICT(key) DO NOTHING never
+re-adds it — so there is no suppress-list to maintain and no laptop to push to.
+Restore any row from the job's page in the web UI if a prune was too aggressive.
 
 Design notes:
-  * prune_workbook() mutates the worksheet in place and returns the dedup keys
-    of the rows it deleted; file/network I/O lives only in the CLI below.
-  * Columns are matched by HEADER NAME, so column reordering/additions are tolerated.
+  * plan_prunes() is pure — it decides which keys to delete; the DB write lives
+    only in the CLI below, so the heuristics are testable in isolation.
   * Rows with a real user value in any PROTECT column are never deleted. The
-    pipeline auto-fills "Application ID" with "." as a spacer, so "." counts as empty.
+    old workbook auto-filled "Application ID" with "." as a spacer, so "." still
+    counts as empty (bootstrap carried that convention into the DB).
 
 Candidate profile baked into the rules: May 2027 grad targeting Summer 2027
 internships and new-grad roles. Strength order: security > Applied AI/ML >
@@ -32,28 +29,18 @@ DevOps/SRE/infra > backend/full-stack. Cuts senior/2+yr/PhD/quant/non-engineerin
 and unacceptable-location rows. Edit the keyword lists below to retune.
 """
 import argparse
-import os
 import re
-import sys
-import tempfile
 from collections import defaultdict
-from pathlib import Path
 
-# export_workbook exits with a pip hint if openpyxl is missing, so import it
-# before openpyxl. It owns the workbook schema (row_key) and the pipeline's
-# pruned-keys suppress list location.
-from export_workbook import PRUNED_KEYS_PATH, XLSX_PATH, row_key
-from openpyxl import load_workbook
-from paths import DATA_DIR
-from remote import LOCAL_JSON, load_local_config, remote_base, scp
+import db
 
 KEEP_PER_COMPANY = 2
 
-# User-edited columns. A real value in any of these protects the row from deletion.
-PROTECT_COLS = ["Date Applied", "Application ID", "Cover Letter",
-                "Due Date", "Round #", "Status", "As of", "Notes"]
-# "Application ID" is auto-filled with "." by export_workbook.py as a spacer; "" and
-# "." both count as empty so they never falsely protect a row.
+# A real value in any of these user-owned columns protects a row from pruning.
+# This is exactly db.USER_FIELDS — kept in sync by referencing it directly.
+PROTECT_COLS = db.USER_FIELDS
+# "application_id" was auto-filled with "." by the old workbook exporter as a
+# spacer; "" and "." both count as empty so they never falsely protect a row.
 PLACEHOLDERS = {"", "."}
 
 # ── location ──────────────────────────────────────────────────────────────────
@@ -169,174 +156,91 @@ def _score_val(s):
     except (TypeError, ValueError): return 0.0
 
 
-def prune_workbook(ws, row_key):
-    """Trim `ws` (a worksheet with a header row) to the best 1–2 jobs per company.
+# ── pruning plan ──────────────────────────────────────────────────────────────
 
-    `row_key(website, title, company)` is the caller's dedup-key function; it is used
-    to build the list of deleted-row keys returned for the suppress-list.
+def _g(row, field):
+    """Field of a jobs row (sqlite3.Row or dict) as a string, '' if absent/NULL."""
+    try:
+        v = row[field]
+    except (KeyError, IndexError):
+        v = None
+    return "" if v is None else str(v)
 
-    Protected rows (any real value in PROTECT_COLS) are never deleted. Returns
-    (deleted_keys, kept_count) where deleted_keys is a list of dedup keys.
+
+def _is_protected(row):
+    return any(_g(row, c).strip().lower() not in PLACEHOLDERS for c in PROTECT_COLS)
+
+
+def _sort_key(row):
+    title = _g(row, "title")
+    blob  = " ".join([title, _g(row, "reason"), _g(row, "concerns")])
+    cyc   = 0 if EXPLICIT_2027.search(blob) else 1
+    return (_fit_tier(title), _loc_rank(_g(row, "location")), cyc,
+            -_score_val(_g(row, "score")))
+
+
+def plan_prunes(rows):
+    """Decide which live rows to prune to the best KEEP_PER_COMPANY per company.
+
+    `rows` are jobs rows (the DB's live set). Pure: returns (delete_keys,
+    kept_count). Rows with any hand-typed user value are protected and never
+    pruned; among the rest, hard-excluded rows are dropped and the best
+    survivors per company are kept.
     """
-    header = [c.value for c in ws[1]]
-    col = {name: i for i, name in enumerate(header)}     # 0-based into the cell tuple
-
-    def g(cells, name):
-        i = col.get(name)
-        v = cells[i].value if i is not None else None
-        return "" if v is None else str(v)
-
-    def key_of(cells):
-        website = g(cells, "Website")
-        if website.startswith("=HYPERLINK"):            # unwrap =HYPERLINK("url","Link")
-            try: website = website.split('"')[1]
-            except IndexError: pass
-        return row_key(website, g(cells, "Job Title"), g(cells, "Company"))
-
-    def is_protected(cells):
-        return any(g(cells, c).strip().lower() not in PLACEHOLDERS for c in PROTECT_COLS)
-
-    def sort_key(cells):
-        title = g(cells, "Job Title")
-        blob = " ".join([title, g(cells, "Why"), g(cells, "Concerns")])
-        cyc = 0 if EXPLICIT_2027.search(blob) else 1
-        return (_fit_tier(title), _loc_rank(g(cells, "Location")), cyc,
-                -_score_val(g(cells, "Score")))
-
-    # gather data rows with their 1-based sheet index
-    rows = [(idx, cells) for idx, cells in enumerate(ws.iter_rows(min_row=2), start=2)]
     by_company = defaultdict(list)
-    for idx, cells in rows:
-        by_company[g(cells, "Company")].append((idx, cells))
+    for row in rows:
+        by_company[_g(row, "company")].append(row)
 
-    delete_idx = []
-    deleted_keys = []
+    delete_keys = []
     kept = 0
     for _company, items in by_company.items():
-        protected = [(i, c) for i, c in items if is_protected(c)]
-        cand      = [(i, c) for i, c in items if not is_protected(c)]
-        survivors = [(i, c) for i, c in cand
-                     if not _hard_excluded(g(c, "Job Title"), g(c, "Location"),
-                                           g(c, "Why"), g(c, "Concerns"))]
-        survivors.sort(key=lambda ic: sort_key(ic[1]))
-        keep = survivors[:KEEP_PER_COMPANY]
-        keep_idx = {i for i, _ in protected} | {i for i, _ in keep}
-        kept += len(keep_idx)
-        for i, c in items:
-            if i not in keep_idx:
-                delete_idx.append(i)
-                deleted_keys.append(key_of(c))
-
-    for i in sorted(delete_idx, reverse=True):           # bottom-up so indices hold
-        ws.delete_rows(i, 1)
-
-    return deleted_keys, kept
+        protected = [r for r in items if _is_protected(r)]
+        cand      = [r for r in items if not _is_protected(r)]
+        survivors = [r for r in cand
+                     if not _hard_excluded(_g(r, "title"), _g(r, "location"),
+                                           _g(r, "reason"), _g(r, "concerns"))]
+        survivors.sort(key=_sort_key)
+        keep      = survivors[:KEEP_PER_COMPANY]
+        keep_keys = {r["key"] for r in protected} | {r["key"] for r in keep}
+        kept += len(keep_keys)
+        for r in items:
+            if r["key"] not in keep_keys:
+                delete_keys.append(r["key"])
+    return delete_keys, kept
 
 
 # ── standalone CLI ────────────────────────────────────────────────────────────
 
-def append_pruned_keys(keys):
-    """Record deleted rows' dedup keys in the pipeline's suppress list so the
-    cumulative matched_jobs.csv never re-adds them. Only call this once the
-    pruned workbook is authoritative (pushed to the laptop) — recording keys
-    for rows that still exist somewhere just creates inconsistent state."""
-    if not keys:
-        return
-    with open(PRUNED_KEYS_PATH, "a", encoding="utf-8") as f:
-        for k in keys:
-            f.write(k + "\n")
-
-
 def main():
     ap = argparse.ArgumentParser(
-        description="Trim the tracker to the best 1–2 roles per company "
-                    "(rows with hand-typed values are never deleted).")
-    ap.add_argument("workbook", nargs="?", default=str(XLSX_PATH),
-                    help=f"Workbook path (default: {XLSX_PATH}); "
-                         f"a custom path implies --local")
+        description="Trim the tracker to the best 1–2 roles per company by "
+                    "soft-deleting the rest (rows with hand-typed values are "
+                    "never deleted).")
     ap.add_argument("--apply", action="store_true",
-                    help="Write the changes (default is a dry-run report)")
-    ap.add_argument("--local", action="store_true",
-                    help="Skip the laptop pull/push; act on the local file only")
+                    help="Write the tombstones (default is a dry-run report)")
     args = ap.parse_args()
 
-    path = Path(args.workbook)
-    using_default = args.workbook == str(XLSX_PATH)
-    local_only = args.local or not using_default
+    if not db.DB_PATH.exists():
+        raise SystemExit(f"No tracker database at {db.DB_PATH} — nothing to prune.")
 
-    if args.apply and local_only and using_default:
-        print("WARNING: a --local prune of the live workbook is TRANSIENT — the next\n"
-              "         sync pulls the laptop's copy back over it, and no suppress\n"
-              "         keys are recorded. Drop --local to prune for real.")
+    conn = db.connect()
+    try:
+        rows = db.live_jobs(conn)
+        before = len(rows)
+        delete_keys, _kept = plan_prunes(rows)
+        print(f"  live rows: {before} -> {before - len(delete_keys)} "
+              f"(prune {len(delete_keys)}; hand-edited rows are protected)")
 
-    remote_dir = None
-    tmp_pull   = None
-    if not local_only:
-        if not LOCAL_JSON.exists():
-            if args.apply:
-                sys.exit(f"Missing {LOCAL_JSON} — use --local to prune the "
-                         f"local file only.")
-            print(f"No {LOCAL_JSON.name} — previewing the local copy.")
-            local_only = True
-        else:
-            remote_dir = remote_base(load_local_config())
-            if args.apply:
-                # The laptop's copy holds your hand edits — prune THAT, never
-                # a stale one.
-                print(f"Pulling {path.name} from the laptop…")
-                if scp([remote_dir + path.name, str(path)]).returncode != 0:
-                    sys.exit("Couldn't pull the workbook (laptop offline, or file "
-                             "open in Excel?) — aborting so nothing is lost. Use "
-                             "--local to prune the Pi's copy anyway.")
-            else:
-                # Dry run: preview the copy --apply would actually prune, in a
-                # temp file so the dry run has zero side effects.
-                fd, tmp = tempfile.mkstemp(suffix=".xlsx", dir=str(DATA_DIR))
-                os.close(fd)
-                tmp_pull = Path(tmp)
-                print("Pulling the laptop's workbook for an accurate preview…")
-                if scp([remote_dir + path.name, str(tmp_pull)]).returncode == 0:
-                    path = tmp_pull
-                else:
-                    tmp_pull.unlink(missing_ok=True)
-                    tmp_pull = None
-                    print("  couldn't pull — previewing the LOCAL copy instead "
-                          "(may miss recent hand edits).")
+        if not args.apply:
+            print("Dry run — nothing written. Re-run with --apply to prune for real.")
+            return
 
-    if not path.exists():
-        sys.exit(f"No workbook at {path}")
-
-    wb = load_workbook(path)
-    ws = wb["Matches"] if "Matches" in wb.sheetnames else wb.active
-    before = ws.max_row - 1
-    deleted, _kept = prune_workbook(ws, row_key)
-    print(f"  data rows: {before} -> {before - len(deleted)} "
-          f"(delete {len(deleted)}; hand-edited rows are protected)")
-
-    if not args.apply:
-        if tmp_pull:
-            tmp_pull.unlink(missing_ok=True)
-        print("Dry run — nothing written. Re-run with --apply to prune for real.")
-        return
-
-    wb.save(path)
-    print(f"Pruned {len(deleted)} row(s) from {path.name}.")
-
-    if local_only:
-        # No suppress keys on purpose: these rows still exist in the laptop
-        # workbook / cumulative CSV, so keys would suppress rows that were
-        # never authoritatively removed.
-        return
-
-    print(f"Pushing {path.name} back to the laptop…")
-    if scp([str(path), remote_dir]).returncode != 0:
-        print("PUSH FAILED — the laptop still has the unpruned copy and no keys\n"
-              "were recorded, so nothing is inconsistent. Re-run --apply once the\n"
-              "laptop is reachable.")
-        sys.exit(1)
-    append_pruned_keys(deleted)
-    print(f"Pushed. {len(deleted)} pruned key(s) recorded in "
-          f"{PRUNED_KEYS_PATH.name} so the pipeline won't re-add them.")
+        with db.transaction(conn):
+            deleted = sum(db.soft_delete(conn, k, reason="prune") for k in delete_keys)
+        print(f"Soft-deleted {deleted} row(s) (deleted_reason='prune'). "
+              f"Restore any of them from the job's page in the web UI.")
+    finally:
+        conn.close()
 
 
 if __name__ == "__main__":

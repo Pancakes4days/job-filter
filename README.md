@@ -1,10 +1,10 @@
 # Job Filter Pipeline — Raspberry Pi 5 + gemma3:4b
 
 Scrapes job listings from multiple sources, scores them against your
-skills/preferences with a local LLM, keeps an Excel tracker of the matches, and
-syncs it to your laptop over Tailscale. Runs unattended as a systemd service so
-you just open your laptop to a fresh list. No cloud, no API keys, and one
-optional Python package (`openpyxl`, only for the Excel export).
+skills/preferences with a local LLM, and tracks the matches in a SQLite database
+you browse and edit from a small web app served over Tailscale. Runs unattended
+as a systemd service so you just open the site to a fresh list. No cloud, no API
+keys, and one Python package (`openpyxl`, only for the on-demand `.xlsx` export).
 
 ## How it runs
 
@@ -16,17 +16,19 @@ fires a 5-phase pipeline:
 2. verify   — probe each watchlist company's job board for live openings
 3. scrape   — scraper.py: public sources + verified watchlist, single pass
 4. filter   — filter_jobs.py scores each job via the local Ollama LLM
-5. sync     — pull the laptop's tracker, append new matches (export_workbook.py),
-              push the .xlsx + .csv back to job_data over Tailscale
+5. store    — store_matches.py upserts new matches into the tracker DB
 ```
 
-The workbook you hand-edit lives on the **laptop** (`job_data/matched_jobs.xlsx`).
-The sync phase pulls it first, appends only new matches, and pushes it back — so
-the columns you fill in (Status, Notes, dates) are never overwritten, and **rows
-you delete stay deleted**: a sync watermark (`data/export_mark.txt`) tracks the
-newest batch the laptop has confirmed receiving, so an older row missing from
-the workbook is recognized as your deletion, not re-added from the cumulative
-CSV. `matched_jobs.csv` rides along as a full rewrite each time.
+The **tracker database** (`data/tracker.db`, SQLite/WAL) is the single system of
+record. The `store` phase inserts new matches with `ON CONFLICT(key) DO NOTHING`,
+so the columns you fill in (Status, Notes, dates) are never overwritten and a
+row you delete stays deleted — a deleted row is kept as a *tombstone* rather
+than removed, so the pipeline can't resurrect it. You read and edit everything
+through the web app (`web/app.py`), served on the tailnet via `tailscale serve`;
+`export_workbook.py` renders a styled `.xlsx` from the DB on demand behind
+`/export.xlsx`. (Earlier versions synced an Excel workbook to a laptop over
+Tailscale using a watermark; that sync was removed once the DB became
+authoritative — see `docs/PLAN_web_tracker.md`.)
 
 Default schedule is **6 AM and 1 PM** local time. On first launch it runs one
 cycle immediately, then settles into the schedule. Missed slots are caught up:
@@ -47,34 +49,28 @@ or idle-loop tick runs the pipeline immediately instead of waiting a day.
   down during filter), the orchestrator keeps the checkpoint and retries that
   phase every 15 minutes (`phase_retry_interval`) — no crash-restart loop,
   and completed phases are never redone.
-- **Tolerates an offline laptop.** If your laptop isn't on the Tailnet, the sync
-  step is skipped (not failed) and retried every 15 minutes until it succeeds.
-  Because `matched_jobs.csv` is cumulative and the append dedupes by URL, a
-  skipped cycle is caught up on the next successful sync.
-- **Never clobbers your edits.** If the workbook can't be pulled from the laptop
-  when it should exist (e.g. you have it open in Excel), the sync is deferred and
-  retried rather than overwriting it with a fresh copy.
-- **Deletions are respected.** Rows you remove from the workbook stay removed.
-  The sync watermark separates your deletions (older than the last confirmed
-  sync, missing from the workbook) from new matches (newer), and only advances
-  once the laptop confirms a push — so a failed push never strands new rows.
-  Known edge cases: the very first sync after installing this feature can't
-  protect a deletion of your *newest* row (delete it once more and it sticks);
-  a lost workbook is fully rebuilt from the CSV (everything returns); rows
-  without a Date Found timestamp aren't covered; and if you restore the
-  laptop's workbook from an old backup, delete `data/export_mark.txt` on the
-  Pi so the missing rows are re-added instead of being mistaken for deletions
-  (the export warns when one run holds suspiciously many rows).
+- **Your edits are never clobbered.** The pipeline only writes pipeline-owned
+  columns; Status, Notes, dates and the rest belong to you and the web app, a
+  disjoint set, so `store` and your edits can't collide.
+- **Deletions are respected.** A row you archive in the web app becomes a
+  tombstone that stays in the DB, so the pipeline's `ON CONFLICT(key) DO
+  NOTHING` never re-adds it. Restore it any time from the job's page.
+- **The DB is backed up nightly.** `backup_db.py` (a systemd timer) takes a
+  consistent online snapshot to `data/backups/` and can optionally `--push` one
+  to another machine over Tailscale — the off-device copy the laptop used to
+  provide.
 
 ## Layout
 
 ```
 job_filter/
 ├── scripts/   the .py files + paths.py (shared directory layout)
+├── web/       Flask web tracker (app.py, templates/, static/)
 ├── config/    config.json, scraper_config.json, companies.txt  (you edit these)
 ├── data/      runtime state + outputs (auto-created, mostly git-ignored)
-├── docs/      handoff / working notes
-├── jobfilter.service
+├── docs/      handoff / working notes / PLAN_web_tracker.md
+├── jobfilter.service          jobfilter-web.service
+├── jobfilter-backup.service   jobfilter-backup.timer
 └── jobfilter.logrotate
 ```
 
@@ -82,11 +78,19 @@ job_filter/
 - `orchestrator.py` — the daemon that drives everything (run this via systemd)
 - `scraper.py` — pulls listings from job sources into `data/scraped_jobs.json`
 - `filter_jobs.py` — scores jobs with the LLM, writes `data/matched_jobs.csv`
-- `export_workbook.py` — appends new matches to `matched_jobs.xlsx` (needs `openpyxl`)
-- `prune_workbook.py` — MANUAL: trims the tracker to the best 1–2 roles per company
+- `store_matches.py` — upserts the CSV's matches into `data/tracker.db`
+- `db.py` — the SQLite tracker layer (schema, migrations, queries); stdlib only
+- `backup_db.py` — nightly online snapshot of the DB to `data/backups/`
+- `export_workbook.py` — renders a styled `.xlsx` from the DB (needs `openpyxl`)
+- `prune_workbook.py` — MANUAL: soft-deletes all but the best 1–2 roles per company
 - `detect_platforms.py` — one-time/manual full ATS detection from a company list
 - `verify_watchlist.py` — manual helper to spot-check detected watchlist entries
-- `paths.py` — defines `CONFIG_DIR` / `DATA_DIR`; the one place paths are set
+- `paths.py` — defines `CONFIG_DIR` / `DATA_DIR` / `DB_PATH`; the one place paths are set
+
+**Web app** (`web/`)
+- `app.py` — read + edit the tracker over the tailnet; run under gunicorn by
+  `jobfilter-web.service`, exposed with `tailscale serve`. See
+  `docs/PLAN_web_tracker.md` for the design.
 
 **You edit these** (`config/`)
 - `config.json` — your skills, preferences, dealbreakers, LLM settings
@@ -97,19 +101,15 @@ job_filter/
 **Created automatically** (`data/`)
 - `scraped_jobs.json` — latest scrape output
 - `matched_jobs.csv` — flat results log (the machine record + dedup source);
-  pushed to the laptop's `job_data` as a full rewrite each cycle
-- `matched_jobs.xlsx` — the styled tracker. The copy you open and edit lives on
-  the laptop in `job_data`; the Pi keeps a transient working copy during sync.
-  New matches are appended as rows; your hand-typed columns (Status, Notes,
-  dates) are preserved
-- `data/job_data/` — a local backup on the Pi. Each sync drops the latest
-  `matched_jobs.xlsx` + `matched_jobs.csv` here *before* pushing to the laptop, so
-  the Pi always keeps its own copy (set `LOCAL_COPY_DIR = None` in `orchestrator.py`
-  to disable)
+  `filter_jobs.py` appends to it incrementally, which is what makes the filter
+  phase crash-resumable. `store` reads it into the DB
+- `tracker.db` — **the tracker** (SQLite/WAL): pipeline-scored jobs plus your
+  hand-edited columns, with tombstones for deletions. The web app reads and
+  writes this; `.db-wal` / `.db-shm` are its WAL sidecar files
+- `backups/` — nightly `tracker-YYYYMMDD.db` snapshots (kept 14 by default)
+- `matched_jobs.xlsx` — only when you run/download the export; a styled snapshot
+  of the DB's live jobs, not a source of truth
 - `seen_jobs.txt` — fingerprints of already-scored jobs (dedup across runs)
-- `export_mark.txt` — sync watermark: the newest batch the laptop confirmed;
-  rows older than it that you delete from the workbook are never re-added
-  (`.pending` is the candidate awaiting push confirmation)
 - `orchestrator_state.json` — pipeline checkpoint for crash recovery
 - `orchestrator.lock` — single-instance guard
 - `watchlist_misses.txt` — companies whose ATS couldn't be auto-detected
@@ -123,24 +123,26 @@ curl -fsSL https://ollama.com/install.sh | sh
 ollama pull gemma3:4b
 ollama run gemma3:4b "Say hello in five words."   # sanity check
 
-# 2. Install openpyxl (the only non-stdlib dependency, used by the export phase)
-pip install openpyxl       # or: sudo apt install python3-openpyxl
+# 2. Dependencies. openpyxl (the .xlsx export) + the web app (Flask/gunicorn).
+sudo apt install python3-openpyxl python3-flask gunicorn
 
 # 3. Set the Pi's timezone so the schedule means local time (DST-safe), and
 #    make boots WAIT for a synced clock. The Pi has no RTC battery: without
-#    this, a post-outage boot can score jobs with a stale clock, and those
-#    timestamps land behind the sync watermark (mistaken for deleted rows).
+#    this, a post-outage boot can score jobs with a stale clock, giving them
+#    wrong Date Found timestamps.
 sudo timedatectl set-timezone America/New_York
 sudo systemctl enable systemd-time-wait-sync.service
 
-# 4. Passwordless SSH from the Pi to your laptop (needed for the copy step,
-#    which runs non-interactively under systemd)
-ssh-copy-id youruser@<laptop-tailscale-ip>
+# 4. (Optional) Passwordless SSH to another machine, only if you want
+#    `backup_db.py --push` to copy nightly snapshots off the Pi.
+ssh-copy-id youruser@<other-tailscale-ip>
 ```
 
-> The systemd unit runs `orchestrator.py` with `/usr/bin/python3`, so install
-> `openpyxl` for that interpreter (a plain `pip install openpyxl`, the apt
-> package, or a venv the unit points at — just keep them consistent).
+> The systemd units run with `/usr/bin/python3` and `/usr/bin/gunicorn`, so
+> install these for the system interpreter (apt packages, or a venv the units
+> point at — just keep them consistent). See `docs/PLAN_web_tracker.md` for
+> installing `jobfilter-web.service`, `jobfilter-backup.timer`, and exposing the
+> site with `tailscale serve`.
 
 ## Configuration
 
@@ -161,14 +163,13 @@ nano config/local.json
 
 ```json
 {
+  "scrape_hours_local":  [6, 13],
+  "detect_delay":        0.5,
+  "phase_retry_interval": 900,
+
   "remote_host": "100.x.y.z",
   "remote_user": "youruser",
-  "remote_dir":  "C:/Users/youruser/job_data",
-
-  "scrape_hours_local":  [6, 13],
-  "copy_retry_interval": 60,
-  "detect_delay":        0.5,
-  "phase_retry_interval": 900
+  "remote_dir":  "/home/youruser/jobfilter-backups"
 }
 ```
 
@@ -176,12 +177,11 @@ nano config/local.json
 start with an empty schedule). `phase_retry_interval` (seconds) paces retries
 of a failed pipeline phase.
 
-`remote_host` can be the Tailscale IP (`tailscale ip -4` on the laptop) or its
-MagicDNS name. `remote_dir` must be an existing folder (the sync pulls
-`matched_jobs.xlsx` from it and pushes both files back). macOS paths look like
-`/Users/youruser/job_data`; Windows via OpenSSH uses a drive-letter path like
-`C:/Users/youruser/job_data` (forward slashes, no leading slash) — that's what
-the tested setup syncs to. Create it once on the laptop before first run.
+The `remote_*` keys are **optional** and only used by `backup_db.py --push` to
+copy nightly DB snapshots off the Pi — the pipeline no longer syncs anything to
+a laptop. `remote_host` can be a Tailscale IP (`tailscale ip -4`) or MagicDNS
+name; `remote_dir` an existing folder to receive snapshots. Omit them if you
+don't push backups.
 
 ## Install as a service
 
@@ -307,8 +307,11 @@ python3 scripts/scraper.py --config config/scraper_config.json --out data/scrape
 # Score a scrape into the CSV
 python3 scripts/filter_jobs.py data/scraped_jobs.json
 
-# Append the CSV's matches into the Excel tracker (idempotent — re-running
-# adds only jobs not already in the workbook; never touches existing rows)
+# Upsert the CSV's matches into the tracker DB (idempotent — ON CONFLICT DO
+# NOTHING, so existing rows and tombstones are left untouched)
+python3 scripts/store_matches.py
+
+# Render a styled .xlsx snapshot of the DB's live jobs (also served at /export.xlsx)
 python3 scripts/export_workbook.py
 ```
 
@@ -327,25 +330,20 @@ stay in `seen_jobs.txt`, so retries only evaluate what's left.
 
 ## Pruning the tracker (manual)
 
-The pipeline is **append-only** — it never deletes workbook rows. When the
-tracker gets noisy, trim it to the best 1–2 roles per company by hand:
+The pipeline never deletes rows. When the tracker gets noisy, trim it to the
+best 1–2 roles per company by hand:
 
 ```bash
-python3 scripts/prune_workbook.py                  # dry-run: report only
-python3 scripts/prune_workbook.py --apply          # pull → prune → push back
-python3 scripts/prune_workbook.py --apply --local  # prune the local copy only
+python3 scripts/prune_workbook.py            # dry-run: report only, no writes
+python3 scripts/prune_workbook.py --apply    # soft-delete (tombstone) the rest
 ```
 
 Rows with anything hand-typed (Status, Notes, Date Applied, ...) are **never
-deleted**. The dry run pulls the laptop's workbook to a temp file so the
-preview matches what `--apply` will actually do (falling back to the local
-copy, with a warning, if the laptop is unreachable). `--apply` pulls the
-laptop's workbook, prunes it, pushes it back, and only after a **confirmed
-push** records what it cut in `data/pruned_keys.txt` (so the cumulative CSV
-never re-adds those rows) — a failed push records nothing, leaving state
-consistent. `--local` prunes of the live workbook are transient (the next
-sync restores the laptop's copy) and record no keys; giving a custom workbook
-path implies `--local`. The fit/exclusion rules live at the top of
+deleted**. `--apply` writes a tombstone (`deleted_reason='prune'`) for each
+pruned row in one transaction: the row leaves the site and the `.xlsx` export,
+and the pipeline's `ON CONFLICT(key) DO NOTHING` never re-adds it — so there is
+no suppress-list to maintain. If a prune was too aggressive, **Restore** the row
+from its page in the web app. The fit/exclusion rules live at the top of
 `prune_workbook.py` — retune them there when your preferences change.
 
 ## The scraper's job format

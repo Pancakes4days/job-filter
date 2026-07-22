@@ -74,11 +74,14 @@ USER_HEADER_TO_COL = {
     "Application ID": "application_id",
 }
 
-# Workbook header -> CSV field, derived from export_workbook.COLUMNS so it
-# tracks the workbook schema automatically.
+# Workbook header -> pipeline field, derived from export_workbook.COLUMNS so it
+# tracks the workbook schema automatically. Since phase 6 every COLUMNS entry
+# maps to a DB column (including the user-owned ones), so the pipeline columns
+# are exactly those NOT owned by the user — the user columns are handled
+# separately by USER_HEADER_TO_COL above.
 PIPELINE_HEADER_TO_FIELD = {
     header: field for header, field, _ in COLUMNS
-    if field is not None and field != "."
+    if field not in db.USER_FIELDS
 }
 
 
