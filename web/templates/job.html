@@ -11,8 +11,14 @@
 </p>
 
 {% if job.deleted_at %}
-<p class="banner">Archived {{ job.deleted_at[:10] }} ({{ job.deleted_reason }}).
-The pipeline will not re-add it.</p>
+<div class="banner">
+  <span>Archived {{ job.deleted_at[:10] }} ({{ job.deleted_reason }}).
+  The pipeline will not re-add it.</span>
+  <form method="post" action="{{ url_for('job_restore') }}">
+    <input type="hidden" name="key" value="{{ job.key }}">
+    <button type="submit" class="btn">Restore</button>
+  </form>
+</div>
 {% endif %}
 
 <div class="grid">
@@ -28,17 +34,77 @@ The pipeline will not re-add it.</p>
 
   <section class="card">
     <h2>Application</h2>
-    <p class="hint">Read-only until phase 5.</p>
-    {% for label, value in [
-        ('Status', job.status), ('Date applied', job.date_applied),
-        ('Cover letter', job.cover_letter), ('Due date', job.due_date),
-        ('Round #', job.round_num), ('As of', job.as_of),
-        ('Application ID', job.application_id)] %}
-    <div class="row"><span class="k wide">{{ label }}</span><span class="v">{{ value or '—' }}</span></div>
-    {% endfor %}
-    {% if job.notes %}<h3>Notes</h3><p>{{ job.notes }}</p>{% endif %}
+    {# The user owns these columns; the pipeline never writes them. One Save =
+       one POST, then a redirect back here showing the stored values. #}
+    <form method="post" action="{{ url_for('job_update') }}" class="edit">
+      <input type="hidden" name="key" value="{{ job.key }}">
+
+      <label class="field">
+        <span class="k">Status</span>
+        <select name="status">
+          <option value="">—</option>
+          {% for opt in options.status %}
+          <option value="{{ opt }}" {{ 'selected' if job.status == opt }}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label class="field">
+        <span class="k">Cover letter</span>
+        <select name="cover_letter">
+          <option value="">—</option>
+          {% for opt in options.cover_letter %}
+          <option value="{{ opt }}" {{ 'selected' if job.cover_letter == opt }}>{{ opt }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label class="field">
+        <span class="k">Date applied</span>
+        <input type="text" name="date_applied" value="{{ job.date_applied or '' }}" placeholder="YYYY-MM-DD">
+      </label>
+
+      <label class="field">
+        <span class="k">Due date</span>
+        <input type="text" name="due_date" value="{{ job.due_date or '' }}" placeholder="YYYY-MM-DD">
+      </label>
+
+      <label class="field">
+        <span class="k">Round #</span>
+        <input type="text" name="round_num" value="{{ job.round_num or '' }}">
+      </label>
+
+      <label class="field">
+        <span class="k">As of</span>
+        <input type="text" name="as_of" value="{{ job.as_of or '' }}" placeholder="YYYY-MM-DD">
+      </label>
+
+      <label class="field">
+        <span class="k">Application ID</span>
+        {# The pipeline parks "." here as an overflow spacer — show it as empty. #}
+        <input type="text" name="application_id"
+               value="{{ '' if job.application_id == '.' else (job.application_id or '') }}">
+      </label>
+
+      <label class="field wide-field">
+        <span class="k">Notes</span>
+        <textarea name="notes" rows="4">{{ job.notes or '' }}</textarea>
+      </label>
+
+      <div class="actions">
+        <button type="submit" class="btn primary">Save</button>
+      </div>
+    </form>
   </section>
 </div>
+
+{% if not job.deleted_at %}
+<form method="post" action="{{ url_for('job_delete') }}" class="danger-form"
+      onsubmit="return confirm('Archive this job? It stays as a tombstone and the pipeline won\'t re-add it.');">
+  <input type="hidden" name="key" value="{{ job.key }}">
+  <button type="submit" class="btn danger">Archive this job</button>
+</form>
+{% endif %}
 
 <p class="muted small">key: <code>{{ job.key }}</code></p>
 

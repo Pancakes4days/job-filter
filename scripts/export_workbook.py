@@ -87,11 +87,14 @@ WEBSITE_COL = HEADERS.index("Website") + 1
 TITLE_COL   = HEADERS.index("Job Title") + 1
 COMPANY_COL = HEADERS.index("Company") + 1
 
+# Option lists live in db.py (stdlib) so the web UI's <select>s and this
+# workbook's data-validation dropdowns share one definition. Header-keyed here
+# for the data-validation loop below; db keys them by jobs-table column name.
+from db import USER_FIELD_OPTIONS  # noqa: E402
+
 DROPDOWNS = {
-    "Cover Letter": ["Required", "Required - ChatGPT", "Optional",
-                     "Not Required", "Submitted"],
-    "Status":       ["Applied", "Interview Scheduled", "Offer",
-                     "Rejected", "In Progress", "Withdrawn"],
+    "Cover Letter": USER_FIELD_OPTIONS["cover_letter"],
+    "Status":       USER_FIELD_OPTIONS["status"],
 }
 
 HEADER_BG = "FF1F3864"

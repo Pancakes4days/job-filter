@@ -49,6 +49,18 @@ USER_FIELDS = [
     "status", "as_of", "notes", "application_id",
 ]
 
+# Canonical option lists for the two enumerated user-owned columns. The web UI
+# (phase 5) renders these as <select>; export_workbook re-exports them,
+# header-keyed, for the workbook's data-validation dropdowns. Defined here —
+# stdlib, no openpyxl — so the web app and the workbook can't drift apart, the
+# same single-source rule row_key follows. Keys are jobs-table column names.
+USER_FIELD_OPTIONS = {
+    "status":       ["Applied", "Interview Scheduled", "Offer",
+                     "Rejected", "In Progress", "Withdrawn"],
+    "cover_letter": ["Required", "Required - ChatGPT", "Optional",
+                     "Not Required", "Submitted"],
+}
+
 # Set on soft-delete. 'user'/'prune' come from the UI; the 'import-*' values
 # are written once by the phase-2 bootstrap to carry existing deletions over.
 DELETE_REASONS = ("user", "prune", "import-csv", "import-prune")

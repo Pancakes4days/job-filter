@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
 """
-Read-only web tracker for the job filter pipeline. Phase 3 of
+Web tracker for the job filter pipeline. Phases 3 + 5 of
 docs/PLAN_web_tracker.md.
 
     python3 web/app.py                 # dev server on http://127.0.0.1:8000
     gunicorn --bind 127.0.0.1:8000 web.app:app     # how systemd runs it
 
-Serves the job tracker and pipeline dashboard over the tailnet. READ-ONLY on
-purpose: phase 3 runs alongside the still-live Excel sync, so nothing here may
-write. Editing arrives in phase 5, once the workbook is no longer authoritative.
+Serves the job tracker and pipeline dashboard over the tailnet. As of phase 5
+the user-owned columns (Status, Notes, dates, ...) are editable here and this is
+their system of record — the pipeline never writes them (disjoint from
+PIPELINE_FIELDS), so no merge logic is needed. Writes are plain HTML form POSTs
+with Post/Redirect/Get; no JavaScript is required to edit.
 
 Exposure is via `tailscale serve` (see jobfilter-web.service), which is why
 this binds to loopback and has no auth: tailnet membership IS the authentication,
-and nothing should be reachable from the LAN.
+and nothing should be reachable from the LAN. Writes add a same-origin check
+(see _reject_cross_origin) so a page on some other site the browser has open
+can't POST into the tracker — the one thing tailnet membership doesn't cover.
 
 WHY THERE IS NO "PIPELINE RUNNING" SPLASH SCREEN
 A filter phase is hours long (~75s/job) and runs twice a day, so blocking the
@@ -32,7 +36,8 @@ from pathlib import Path
 BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE / "scripts"))   # scripts/ import each other flatly
 
-from flask import Flask, g, jsonify, render_template, request, send_file
+from flask import (Flask, abort, g, jsonify, redirect, render_template,
+                   request, send_file, url_for)
 
 import db
 import pipeline_stats as stats
@@ -76,6 +81,22 @@ def require_db():
     surfacing a sqlite 'no such table' traceback."""
     if not db.DB_PATH.exists() and request.endpoint not in (None, "static"):
         return render_template("no_db.html", db_path=db.DB_PATH), 503
+
+
+@app.before_request
+def _reject_cross_origin():
+    """Block cross-site writes. There is no login and no cookie — auth is the
+    tailnet — so classic CSRF (riding an ambient session) doesn't apply, but a
+    page on any other origin the browser has open could still POST to the
+    tailnet URL. Browsers attach an Origin header to such POSTs, so requiring it
+    to match our Host stops that without a token scheme. Same-origin form posts
+    (Origin matches) and non-browser clients like curl (no Origin) pass."""
+    if request.method in ("POST", "PUT", "DELETE"):
+        origin = request.headers.get("Origin")
+        if origin:
+            from urllib.parse import urlsplit
+            if urlsplit(origin).netloc != request.host:
+                abort(403)
 
 
 # ── pipeline status ───────────────────────────────────────────────────────────
@@ -182,7 +203,58 @@ def job_detail():
     if row is None:
         return render_template("not_found.html", key=key,
                                status_bar=pipeline_status()), 404
-    return render_template("job.html", job=row, status_bar=pipeline_status())
+    return render_template("job.html", job=row, status_bar=pipeline_status(),
+                           user_fields=db.USER_FIELDS,
+                           options=db.USER_FIELD_OPTIONS)
+
+
+# ── writes (phase 5) ──────────────────────────────────────────────────────────
+# The user owns these columns; the pipeline never touches them, so an edit here
+# and a `store` upsert can't collide. Each handler is one BEGIN IMMEDIATE
+# transaction and redirects back to the detail page (Post/Redirect/Get), so a
+# refresh never re-submits.
+
+def _require_job(conn, key):
+    if not key or db.get_job(conn, key) is None:
+        abort(404)
+
+
+@app.route("/job/update", methods=["POST"])
+def job_update():
+    """Save the hand-edited user columns for one job. Only USER_FIELDS are read
+    from the form; db.update_user_fields rejects anything else, so a stray field
+    name surfaces as an error instead of silently writing a pipeline column."""
+    key = request.form.get("key", "")
+    conn = get_db()
+    _require_job(conn, key)
+    fields = {f: (request.form.get(f) or "").strip()
+              for f in db.USER_FIELDS if f in request.form}
+    with db.transaction(conn):
+        db.update_user_fields(conn, key, fields)
+    return redirect(url_for("job_detail", key=key))
+
+
+@app.route("/job/delete", methods=["POST"])
+def job_delete():
+    """Soft-delete (tombstone) a job. The row stays, so the pipeline's
+    ON CONFLICT(key) DO NOTHING never re-adds it — this is why no watermark is
+    needed. reason='user' distinguishes it from the bootstrap's import-* rows."""
+    key = request.form.get("key", "")
+    conn = get_db()
+    _require_job(conn, key)
+    with db.transaction(conn):
+        db.soft_delete(conn, key, reason="user")
+    return redirect(url_for("job_detail", key=key))
+
+
+@app.route("/job/restore", methods=["POST"])
+def job_restore():
+    key = request.form.get("key", "")
+    conn = get_db()
+    _require_job(conn, key)
+    with db.transaction(conn):
+        db.restore(conn, key)
+    return redirect(url_for("job_detail", key=key))
 
 
 @app.route("/status")

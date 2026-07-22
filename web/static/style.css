@@ -52,6 +52,7 @@ a { color: var(--accent); }
 .banner {
   padding: .6rem .9rem; border-left: 3px solid var(--warn);
   background: #1e1c14; color: var(--warn); font-size: .87rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
 }
 
 /* ── layout ─────────────────────────────────────────────────────────────── */
@@ -124,3 +125,35 @@ ul.plain li { padding: .2rem 0; border-bottom: 1px solid #1e232b; }
 .alerts { border-left: 3px solid var(--warn); }
 .alert { padding: .4rem 0; }
 .alert ul { margin: .3rem 0 0; padding-left: 1.1rem; color: var(--muted); font-size: .85rem; }
+
+/* ── edit form (phase 5) ────────────────────────────────────────────────── */
+
+.edit { display: flex; flex-direction: column; gap: .55rem; }
+.field { display: flex; align-items: center; gap: .6rem; }
+.field .k {
+  font-family: ui-monospace, monospace; color: var(--muted);
+  min-width: 7.5rem; font-size: .82rem; flex-shrink: 0;
+}
+.field input, .field select, .field textarea {
+  flex: 1; background: #0e1116; color: var(--fg);
+  border: 1px solid var(--line); border-radius: 4px;
+  padding: .35rem .5rem; font: inherit; font-size: .85rem;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none; border-color: var(--accent);
+}
+.field.wide-field { align-items: flex-start; }
+.field textarea { resize: vertical; min-height: 3.4rem; line-height: 1.4; }
+.actions { display: flex; gap: .5rem; margin-top: .3rem; }
+
+.btn {
+  background: var(--panel); color: var(--fg); border: 1px solid var(--line);
+  border-radius: 4px; padding: .38rem .8rem; font: inherit; font-size: .85rem;
+  font-weight: 600; cursor: pointer;
+}
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: #0b0e12; border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { color: var(--bad); border-color: #3a2626; }
+.btn.danger:hover { background: #241717; border-color: var(--bad); }
+.danger-form { margin-top: 1.4rem; }

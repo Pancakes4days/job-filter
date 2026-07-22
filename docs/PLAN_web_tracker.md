@@ -1,7 +1,9 @@
 # Plan: Pi-hosted web tracker, replacing the laptop Excel sync
 
-Status: **phases 0–4 done** · bootstrap run against the real laptop workbook and
-the site is live on the Pi over Tailscale (2026-07-22) · phases 5–6 not started
+Status: **phases 0–5 done** · bootstrap run against the real laptop workbook and
+the site is live on the Pi over Tailscale (2026-07-22); the web app is now the
+authoritative editor of the user-owned columns · phase 6 (delete the sync) not
+started
 
 Moves the system of record from `matched_jobs.xlsx` on the laptop to a SQLite
 DB on the Pi, served over Tailscale. The Excel sync subsystem is deleted, not
@@ -286,16 +288,47 @@ Deviations / notes worth keeping:
   does not overwrite the DB. That's fine while sync is the authority for edits;
   revisit if the pipeline ever needs to *update* a live row's score.
 
-### Phase 5 — web app becomes authoritative
+### Phase 5 — web app becomes authoritative — DONE
 
-- Inline editing of manual columns via HTMX (`POST /jobs/<key>`).
-- Status and Cover Letter render as `<select>` seeded from
-  `export_workbook.DROPDOWNS` — import it, don't retype the option lists.
-- `POST /jobs/<key>/delete` → soft-delete, `deleted_reason='user'`.
-- `POST /jobs/<key>/restore` → clear `deleted_at`.
-- `updated_at` on every write.
+The job detail page edits the user-owned columns; the DB is now the truth for
+them. Routes (all guarded by a same-origin check, see below):
 
-From here the DB is the truth. The laptop workbook is a stale artifact.
+- `POST /job/update` — save USER_FIELDS for one job. `db.update_user_fields`
+  rejects any non-user column, so the form can't reach a pipeline field.
+- `POST /job/delete` — soft-delete, `deleted_reason='user'`.
+- `POST /job/restore` — clear `deleted_at`.
+
+Each handler is one `BEGIN IMMEDIATE` transaction and redirects to the detail
+page (Post/Redirect/Get), so a refresh never re-submits. `updated_at` is stamped
+by the db write primitives.
+
+Deviations from this plan as drafted:
+
+- **No HTMX; plain HTML form POSTs with Post/Redirect/Get.** Editing needs no
+  per-field AJAX — one Save per job is fine for a single-user tool — so vendoring
+  a ~14KB library (the CSP blocks a CDN) buys nothing over a `<form>` that works
+  with zero JavaScript. Same reasoning phase 3 used to defer it; it never became
+  worth it. Status/Cover Letter are `<select>`s; the rest are text/textarea.
+- **Option lists moved to `db.py` as `USER_FIELD_OPTIONS`** (stdlib), and
+  `export_workbook.DROPDOWNS` now re-exports them header-keyed. The plan said
+  "seed from `export_workbook.DROPDOWNS`", but importing that pulls in openpyxl,
+  which the web app is deliberately free of — so the canonical copy lives in the
+  stdlib module the web app already imports, the same move `row_key` made. One
+  definition; the workbook's data-validation and the web `<select>`s can't drift.
+- **Keys travel in the form body** (`name="key"`), consistent with phase 3's
+  `/job?key=…` query-param choice — keys are raw URLs, so no `<key>` path segment.
+- **Added a same-origin guard** (`_reject_cross_origin`) on POST/PUT/DELETE.
+  There's no login or cookie, so classic CSRF (riding an ambient session) doesn't
+  apply — but without it *any* site the browser has open could POST to the
+  tailnet URL, since there's no auth check at all. Browsers send `Origin` on such
+  POSTs; requiring it to equal `Host` blocks them with no token scheme, while
+  same-origin form posts and non-browser clients (no `Origin`) pass. This is the
+  one gap tailnet membership doesn't cover.
+
+The pipeline still never writes USER_FIELDS (disjoint from PIPELINE_FIELDS), and
+a user delete becomes a tombstone that `store`'s `ON CONFLICT DO NOTHING` won't
+resurrect — both verified by test. From here the laptop workbook is a stale
+artifact; phase 6 removes the sync that maintains it.
 
 ### Phase 6 — delete the sync
 
