@@ -3,8 +3,28 @@
 Scrapes job listings from multiple sources, scores them against your
 skills/preferences with a local LLM, and tracks the matches in a SQLite database
 you browse and edit from a small web app served over Tailscale. Runs unattended
-as a systemd service so you just open the site to a fresh list. No cloud, no API
-keys, and one Python package (`openpyxl`, only for the on-demand `.xlsx` export).
+as a systemd service so you just open the site to a fresh list. No cloud and no
+API keys — the only dependencies are Ollama (the LLM), Flask + Gunicorn (the web
+app), and openpyxl (the on-demand `.xlsx` export); everything else is Python's
+standard library.
+
+## Tech stack
+
+Everything runs on the Pi; your other devices are just browsers pointed at it.
+
+| Layer | What | Notes |
+|---|---|---|
+| **Data** | SQLite (`data/tracker.db`, WAL mode) | The single system of record. File-based, no DB server. `db.py` is the only code that touches it — hand-written SQL, no ORM. |
+| **Scoring** | Ollama + `gemma3:4b` | Local LLM that scores each job. The heavy compute, and the reason it wants a Pi 5. |
+| **Scraping** | Python 3 + `urllib` | Hits ATS APIs (Greenhouse, Lever, Ashby, SmartRecruiters, Workable, Recruitee, Workday, Oracle) directly. No scraping framework. |
+| **Web app** | Flask + Jinja2, served by Gunicorn | Server-rendered HTML. Plain CSS + a few lines of vanilla JS — no React, no npm, no build step. |
+| **Access** | Tailscale (`tailscale serve`) | Puts the site on your private mesh over HTTPS. Being on the tailnet *is* the auth — no login. |
+| **Process mgmt** | systemd | `jobfilter` (pipeline), `jobfilter-web` (site), `jobfilter-backup.timer` (nightly DB snapshot). |
+| **Export** | openpyxl | Renders an `.xlsx` from the DB **on demand** at `/export.xlsx`. Not a data store — Excel is just an optional report format now. |
+
+Outside Python's standard library the whole dependency footprint is Ollama,
+Flask, Gunicorn, and openpyxl. Everything else is stdlib — deliberately, so it
+runs on a Pi with no cloud and no API keys.
 
 ## How it runs
 
@@ -96,7 +116,7 @@ job_filter/
 - `config.json` — your skills, preferences, dealbreakers, LLM settings
 - `scraper_config.json` — job sources, keyword/location filters, watchlist
 - `companies.txt` — company names you want watched (one per line; `#` comments ok)
-- top of `scripts/orchestrator.py` — laptop address, schedule (see **Configuration**)
+- `local.json` — schedule and other deployment settings (see **Configuration**)
 
 **Created automatically** (`data/`)
 - `scraped_jobs.json` — latest scrape output
@@ -185,25 +205,51 @@ don't push backups.
 
 ## Install as a service
 
+Three systemd units, all with `User=` / `WorkingDirectory=` you adjust to match
+your setup: the **pipeline**, the **web app**, and the **nightly DB backup**.
+
 ```bash
-# Adjust User= and WorkingDirectory= in jobfilter.service to match your setup
+# 1. Pipeline (scrape → score → store)
 sudo cp jobfilter.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable jobfilter
-sudo systemctl start jobfilter
+sudo systemctl enable --now jobfilter
+
+# 2. Web app (Flask under gunicorn, loopback-bound)
+sudo cp jobfilter-web.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now jobfilter-web
+
+# 3. Nightly DB backup (02:00, keeps 14 snapshots in data/backups/)
+sudo cp jobfilter-backup.service jobfilter-backup.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now jobfilter-backup.timer
 
 # Log rotation (filter.log grows forever otherwise; adjust the path inside first)
 sudo cp jobfilter.logrotate /etc/logrotate.d/jobfilter
 
 # Watch it work
 tail -f data/filter.log
-
-# Stop it (clean shutdown, no restart)
-sudo systemctl stop jobfilter
+sudo systemctl stop jobfilter        # clean shutdown, no restart
 ```
 
-The unit pins the process to 3 CPU cores (`CPUQuota=300%`) so the Pi's watchdog
-is less likely to kill it, and restarts on any failure but not on a clean stop.
+`jobfilter.service` pins the pipeline to 3 CPU cores (`CPUQuota=300%`) so the
+Pi's watchdog is less likely to kill it; `jobfilter-web.service` is capped at
+`CPUQuota=50%` so the site never competes with a running filter phase. Both
+restart on failure but not on a clean stop.
+
+### Exposing the site over Tailscale
+
+The web app binds to `127.0.0.1:8000` — nothing is on the LAN or the public
+internet. `tailscale serve` publishes it to your tailnet over HTTPS:
+
+```bash
+sudo tailscale serve --bg --https=443 localhost:8000   # or: --bg 8000 (plain HTTP)
+sudo tailscale serve status                            # prints the URL
+```
+
+Then open that URL (e.g. `https://raspberrypi.<tailnet>.ts.net/`) from any
+device signed into your tailnet — laptop, phone, whatever. Off the tailnet the
+URL doesn't resolve; tailnet membership is the only "login."
 
 ## The watchlist (company career pages)
 
