@@ -63,7 +63,10 @@ a { color: var(--accent); }
 }
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
         gap: 1.2rem; align-items: start; }
-.grid .card { margin-bottom: 0; }
+/* Every card in the dashboard row is the same fixed height, so the compact
+   summaries and the long lists line up. Cards are flex columns so a scrolling
+   list can grow to fill the space beneath its heading. */
+.grid .card { margin-bottom: 0; height: 20rem; display: flex; flex-direction: column; }
 
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
          gap: 1rem; margin-bottom: 1.2rem; }
@@ -98,7 +101,7 @@ table.jobs td:nth-child(2) { white-space: normal; min-width: 20rem; }
 /* Summary list cards (top companies, locations) stay a fixed height and scroll
    internally, so months of accumulated rows never stretch the dashboard row
    or dwarf the compact cards beside them. The header stays pinned while you scroll. */
-.list-scroll { max-height: 19rem; overflow-y: auto; }
+.list-scroll { flex: 1; min-height: 0; overflow-y: auto; }
 .list-scroll th { position: sticky; top: 0; background: var(--panel); z-index: 1; }
 
 .score { font-family: ui-monospace, monospace; font-weight: 600; text-align: center; }
