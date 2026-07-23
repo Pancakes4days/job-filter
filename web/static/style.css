@@ -66,7 +66,7 @@ a { color: var(--accent); }
 /* Every card in the dashboard row is the same fixed height, so the compact
    summaries and the long lists line up. Cards are flex columns so a scrolling
    list can grow to fill the space beneath its heading. */
-.grid .card { margin-bottom: 0; height: 20rem; display: flex; flex-direction: column; }
+.grid .card { margin-bottom: 0; height: 20rem; overflow: hidden; }
 
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
          gap: 1rem; margin-bottom: 1.2rem; }
@@ -100,10 +100,8 @@ table.jobs td:nth-child(2) { white-space: normal; min-width: 20rem; }
 
 /* Summary list cards (top companies, locations) stay a fixed height and scroll
    internally, so months of accumulated rows never stretch the dashboard row
-   or dwarf the compact cards beside them. flex:1 fills whatever space is left
-   under the heading in the flex-column card; min-height:0 lets it shrink below
-   its content so overflow-y actually engages. The header stays pinned. */
-.list-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+   or dwarf the compact cards beside them. The header stays pinned while you scroll. */
+.list-scroll { max-height: 16rem; overflow-y: auto; }
 /* Block-level table so the wrapper's overflow actually scrolls it — a default
    display:table child does not trigger the scrollbar reliably (same reason
    table.jobs is display:block). width:100% keeps it filling the card. */
