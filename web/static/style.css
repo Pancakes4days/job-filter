@@ -102,6 +102,10 @@ table.jobs td:nth-child(2) { white-space: normal; min-width: 20rem; }
    internally, so months of accumulated rows never stretch the dashboard row
    or dwarf the compact cards beside them. The header stays pinned while you scroll. */
 .list-scroll { max-height: 16rem; overflow-y: auto; }
+/* Block-level table so the wrapper's overflow actually scrolls it — a default
+   display:table child does not trigger the scrollbar reliably (same reason
+   table.jobs is display:block). width:100% keeps it filling the card. */
+.list-scroll table { display: block; width: 100%; }
 .list-scroll th { position: sticky; top: 0; background: var(--panel); z-index: 1; }
 
 .score { font-family: ui-monospace, monospace; font-weight: 600; text-align: center; }
