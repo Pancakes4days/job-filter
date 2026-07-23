@@ -46,6 +46,7 @@
 
   <section class="card">
     <h2>Top companies</h2>
+    <div class="list-scroll">
     <table>
       <tr><th>Company</th><th>Jobs</th><th>Avg</th><th>Max</th></tr>
       {% for c in companies %}
@@ -57,15 +58,18 @@
       </tr>
       {% endfor %}
     </table>
+    </div>
   </section>
 
   <section class="card">
     <h2>Locations</h2>
+    <div class="list-scroll">
     <table>
       {% for loc, n in locations %}
       <tr><td>{{ loc }}</td><td class="num">{{ n }}</td></tr>
       {% endfor %}
     </table>
+    </div>
   </section>
 </div>
 

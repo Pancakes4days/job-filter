@@ -95,6 +95,12 @@ td.num { text-align: right; font-family: ui-monospace, monospace; }
 table.jobs { display: block; overflow-x: auto; white-space: nowrap; }
 table.jobs td:nth-child(2) { white-space: normal; min-width: 20rem; }
 
+/* Summary list cards (top companies, locations) stay a fixed height and scroll
+   internally, so months of accumulated rows never stretch the dashboard row
+   or dwarf the compact cards beside them. The header stays pinned while you scroll. */
+.list-scroll { max-height: 19rem; overflow-y: auto; }
+.list-scroll th { position: sticky; top: 0; background: var(--panel); z-index: 1; }
+
 .score { font-family: ui-monospace, monospace; font-weight: 600; text-align: center; }
 .s10, .s9 { color: var(--good); }
 .s8, .s7   { color: var(--fg); }
