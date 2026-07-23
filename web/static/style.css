@@ -66,7 +66,8 @@ a { color: var(--accent); }
 /* Every card in the dashboard row is the same fixed height, so the compact
    summaries and the long lists line up. Cards are flex columns so a scrolling
    list can grow to fill the space beneath its heading. */
-.grid .card { margin-bottom: 0; height: 20rem; display: flex; flex-direction: column; }
+.grid .card { margin-bottom: 0; height: 20rem; display: flex; flex-direction: column;
+              overflow: hidden; }
 
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
          gap: 1rem; margin-bottom: 1.2rem; }
