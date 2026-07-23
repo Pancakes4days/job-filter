@@ -2036,6 +2036,56 @@
           "platform": "workday",
           "slug": "integralads.wd1.myworkdayjobs.com/IAScareers",
           "label": "Integral Ad Science"
+        },
+        {
+          "platform": "workable",
+          "slug": "segment",
+          "label": "Segment"
+        },
+        {
+          "platform": "workable",
+          "slug": "laserfiche",
+          "label": "Laserfiche"
+        },
+        {
+          "platform": "workable",
+          "slug": "unity",
+          "label": "Unity"
+        },
+        {
+          "platform": "workable",
+          "slug": "new-york-life-insurance",
+          "label": "New York Life Insurance"
+        },
+        {
+          "platform": "workable",
+          "slug": "flutterwave",
+          "label": "Flutterwave"
+        },
+        {
+          "platform": "workable",
+          "slug": "two-sigma",
+          "label": "Two Sigma"
+        },
+        {
+          "platform": "workable",
+          "slug": "research-innovations",
+          "label": "Research Innovations"
+        },
+        {
+          "platform": "workable",
+          "slug": "deshaw",
+          "label": "D. E. Shaw"
+        },
+        {
+          "platform": "workable",
+          "slug": "renaissance",
+          "label": "Renaissance Technologies"
+        },
+        {
+          "platform": "smartrecruiters",
+          "slug": "appdynamics",
+          "label": "AppDynamics"
         }
       ]
     }
