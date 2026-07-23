@@ -45,6 +45,17 @@ from paths import DATA_DIR
 
 app = Flask(__name__)
 
+
+@app.after_request
+def _no_cache_in_dev(resp):
+    """In debug mode only, tell the browser never to cache. Otherwise edits to
+    templates/CSS keep showing stale pages behind a hard refresh. Production
+    (gunicorn, debug off) is untouched, so static caching there is unaffected."""
+    if app.debug:
+        resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
 LOG_PATH         = DATA_DIR / "filter.log"
 MISSES_PATH      = DATA_DIR / "watchlist_misses.txt"
 UNSUPPORTED_PATH = DATA_DIR / "watchlist_unsupported.txt"
