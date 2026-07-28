@@ -38,12 +38,21 @@ sys.path.insert(0, str(BASE / "scripts"))   # scripts/ import each other flatly
 
 from flask import (Flask, abort, g, jsonify, redirect, render_template,
                    request, send_file, url_for)
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 import db
 import pipeline_stats as stats
 from paths import DATA_DIR
 
 app = Flask(__name__)
+
+# Served under a sub-path by the reverse proxy (Caddy `handle_path /jobfilter*`
+# strips the prefix so routes still match, then forwards it as X-Forwarded-Prefix).
+# ProxyFix copies that header into SCRIPT_NAME so every url_for() — links, static
+# assets, the status fetch — rebuilds with the /jobfilter prefix. x_prefix=0 (the
+# default) makes this a no-op, so the app still runs correctly at the root, e.g.
+# via the dev server or `gunicorn web.app:app` with no proxy in front.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_prefix=1)
 
 
 @app.after_request
