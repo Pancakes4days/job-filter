@@ -23,25 +23,33 @@
   <div class="tile"><span class="n">{{ status_bar.remaining or 0 }}</span><span class="l">unscored</span></div>
 </section>
 
-<div class="grid">
+{# `uniform` opts this row into the equal-height cards. The other .grid users
+   (job.html, watchlist.html) must NOT have it — see style.css. Every card here
+   wraps its body in .list-scroll so a long list scrolls inside the card instead
+   of being clipped by it: all eleven score buckets overflow 20rem on their own. #}
+<div class="grid uniform">
   <section class="card">
     <h2>Score distribution</h2>
     <p class="hint">Live rows. Threshold is {{ threshold }}.</p>
-    {% for score, n in scores %}
-    <div class="row">
-      <span class="k">{{ score }}/10</span>
-      <span class="barwrap"><span class="bar" style="width: {{ (100 * n / score_max) if score_max else 0 }}%"></span></span>
-      <span class="v">{{ n }}</span>
+    <div class="list-scroll">
+      {% for score, n in scores %}
+      <div class="row">
+        <span class="k">{{ score }}/10</span>
+        <span class="barwrap"><span class="bar" style="width: {{ (100 * n / score_max) if score_max else 0 }}%"></span></span>
+        <span class="v">{{ n }}</span>
+      </div>
+      {% else %}<p class="muted">No scored jobs yet.</p>{% endfor %}
     </div>
-    {% else %}<p class="muted">No scored jobs yet.</p>{% endfor %}
   </section>
 
   <section class="card">
     <h2>Application status</h2>
-    <p class="hint">Populated once editing lands (phase 5).</p>
-    {% for s in statuses %}
-    <div class="row"><span class="k wide">{{ s.status }}</span><span class="v">{{ s.n }}</span></div>
-    {% endfor %}
+    <p class="hint">Live rows by the Status column you set on each job.</p>
+    <div class="list-scroll">
+      {% for s in statuses %}
+      <div class="row"><span class="k wide">{{ s.status }}</span><span class="v">{{ s.n }}</span></div>
+      {% endfor %}
+    </div>
   </section>
 
   <section class="card">

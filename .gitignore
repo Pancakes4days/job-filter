@@ -28,3 +28,7 @@ tracker.db
 tracker.db-wal
 tracker.db-shm
 backups/
+
+# Marks data/ as dev scratch data (scripts/seed_dev_db.py). Its absence is what
+# stops that script from ever overwriting real state, so it must not be shared.
+.dev_seed

@@ -2,56 +2,90 @@
    Dark by default; the Pi serves this to one laptop over the tailnet. */
 
 :root {
+  /* Palette. Every colour in this file comes from here — a literal hex below
+     this block is a bug, because it is the thing that makes a re-theme expensive. */
   --bg: #12151a; --panel: #191d24; --line: #262c36;
   --fg: #dfe4ec; --muted: #8b95a6; --accent: #6aa9ff;
   --good: #4ec98a; --warn: #e0b341; --bad: #e06c6c;
+
+  --panel-alt: #151a21;   /* the status strip: a shade off --panel */
+  --sunken:    #0e1116;   /* recessed surfaces — inputs, bar tracks, the log pane */
+  --line-soft: #1e232b;   /* row separators inside a panel, quieter than --line */
+  --on-accent: #0b0e12;   /* text on an --accent fill; near-black, not --bg */
+  --warn-bg:   #1e1c14;   /* warn-tinted panel behind the archived banner */
+  --bad-line:  #3a2626;   /* resting border on a destructive control */
+  --bad-bg:    #241717;   /* its hover fill */
+
+  /* Type scale, collapsed from the eight near-duplicate sizes this file used to
+     carry (.78 .8 .82 .85 .87 .88 .9 .95rem). The gaps between those were under
+     half a pixel and nothing depended on them. rem throughout, so they track the
+     browser's root size rather than body's 15px. */
+  --fs-xs:   .8rem;     /* table headers, tile labels, hints, log text */
+  --fs-sm:   .86rem;    /* dense body copy: rows, tables, form controls */
+  --fs-md:   .9rem;     /* nav */
+  --fs-lg:   .95rem;    /* card headings */
+  --fs-h1:   1.4rem;
+  --fs-stat: 1.7rem;    /* the big number on a tile */
+
+  --mono: ui-monospace, monospace;
+  --sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+
+  --radius:    6px;     /* cards, tiles, the log pane */
+  --radius-sm: 4px;     /* controls: inputs, selects, buttons */
+  --radius-xs: 3px;     /* the score bar track */
+
+  --gap:   1.2rem;      /* between cards, and below a block */
+  --pad-x: 1.2rem;      /* page gutter — nav, strip and main must agree */
+
+  --dash-card-h: 20rem; /* height of every card in the dashboard's uniform row */
 }
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0; background: var(--bg); color: var(--fg);
-  font: 15px/1.55 ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+  font: 15px/1.55 var(--sans);
 }
 
 /* ── nav + status strip ─────────────────────────────────────────────────── */
 
 nav {
   display: flex; flex-wrap: wrap; gap: 1.1rem; align-items: center;
-  padding: .7rem 1.2rem; background: var(--panel);
+  padding: .7rem var(--pad-x); background: var(--panel);
   border-bottom: 1px solid var(--line);
 }
-nav a { color: var(--muted); text-decoration: none; font-size: .9rem; }
+nav a { color: var(--muted); text-decoration: none; font-size: var(--fs-md); }
 nav a:hover { color: var(--fg); }
-nav .brand { color: var(--fg); font-weight: 600; margin-right: .6rem; font-family: ui-monospace, monospace; }
+nav .brand { color: var(--fg); font-weight: 600; margin-right: .6rem; font-family: var(--mono); }
 
 .strip {
   display: flex; justify-content: space-between; flex-wrap: wrap; gap: .5rem;
-  padding: .45rem 1.2rem; font-size: .85rem; font-family: ui-monospace, monospace;
-  background: #151a21; color: var(--muted); border-bottom: 1px solid var(--line);
+  padding: .45rem var(--pad-x); font-size: var(--fs-sm); font-family: var(--mono);
+  background: var(--panel-alt); color: var(--muted); border-bottom: 1px solid var(--line);
 }
 /* A cycle is in flight. A hint, not a blocker — the site stays fully usable. */
 .strip.is-running { color: var(--warn); border-bottom-color: var(--warn); }
 .strip.is-running::before { content: "● "; }
 
-main { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1.2rem 4rem; }
+main { max-width: 1200px; margin: 0 auto; padding: 1.5rem var(--pad-x) 4rem; }
 
 /* ── type ───────────────────────────────────────────────────────────────── */
 
-h1 { font-size: 1.4rem; margin: 0 0 1rem; font-weight: 600; }
-h2 { font-size: .95rem; margin: 0 0 .5rem; font-weight: 600; }
-h3 { font-size: .8rem; margin: 1rem 0 .25rem; color: var(--muted);
+h1 { font-size: var(--fs-h1); margin: 0 0 1rem; font-weight: 600; }
+h2 { font-size: var(--fs-lg); margin: 0 0 .5rem; font-weight: 600; }
+h3 { font-size: var(--fs-xs); margin: 1rem 0 .25rem; color: var(--muted);
      text-transform: uppercase; letter-spacing: .04em; }
 .muted { color: var(--muted); font-weight: 400; }
-.small { font-size: .8rem; }
-.hint { color: var(--muted); font-size: .82rem; margin: 0 0 .8rem; }
-.sub { color: var(--muted); margin: -.5rem 0 1.2rem; }
-code { font-family: ui-monospace, monospace; font-size: .85em; color: var(--accent); }
+.small { font-size: var(--fs-xs); }
+.hint { color: var(--muted); font-size: var(--fs-xs); margin: 0 0 .8rem; }
+.sub { color: var(--muted); margin: -.5rem 0 var(--gap); }
+/* em, not rem: inline code should track whatever text it sits in. */
+code { font-family: var(--mono); font-size: .85em; color: var(--accent); }
 a { color: var(--accent); }
 
 .banner {
   padding: .6rem .9rem; border-left: 3px solid var(--warn);
-  background: #1e1c14; color: var(--warn); font-size: .87rem;
+  background: var(--warn-bg); color: var(--warn); font-size: var(--fs-sm);
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
 }
 
@@ -59,56 +93,71 @@ a { color: var(--accent); }
 
 .card {
   background: var(--panel); border: 1px solid var(--line);
-  border-radius: 6px; padding: 1rem 1.1rem; margin-bottom: 1.2rem;
+  border-radius: var(--radius); padding: 1rem 1.1rem; margin-bottom: var(--gap);
 }
+/* Cards size to their own content here. The grid gap does the spacing, so the
+   card's own bottom margin comes off. Used by job.html and watchlist.html. */
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        gap: 1.2rem; align-items: start; margin-bottom: 1.2rem; }
-/* Every card in the dashboard row is the same fixed height, so the compact
-   summaries and the long lists line up. Cards are flex columns so a scrolling
-   list can grow to fill the space beneath its heading. */
-.grid .card { margin-bottom: 0; height: 20rem; overflow: hidden; }
+        gap: var(--gap); align-items: start; margin-bottom: var(--gap); }
+.grid .card { margin-bottom: 0; }
+
+/* The dashboard row, and ONLY that row. Every card is the same fixed height so
+   the compact summaries line up with the long lists, and each is a flex column
+   so its scrolling region fills whatever space is left under the heading.
+   This must not live on plain .grid: job.html and watchlist.html use the same
+   grid for content that has to size to itself, and a fixed height there cut off
+   the edit form's Save button and the bottom of the watchlist lists.
+   overflow:hidden is a backstop — every card in this row puts its content in a
+   .list-scroll, so nothing should reach it. */
+.grid.uniform .card { height: var(--dash-card-h); display: flex; flex-direction: column;
+                      overflow: hidden; }
 
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-         gap: 1rem; margin-bottom: 1.2rem; }
-.tile { background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+         gap: 1rem; margin-bottom: var(--gap); }
+.tile { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
         padding: .9rem 1rem; display: flex; flex-direction: column; }
-.tile .n { font-size: 1.7rem; font-weight: 600; font-family: ui-monospace, monospace; }
-.tile .l { color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
+.tile .n { font-size: var(--fs-stat); font-weight: 600; font-family: var(--mono); }
+.tile .l { color: var(--muted); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .04em; }
 
 /* ── bars + rows ────────────────────────────────────────────────────────── */
 
-.row { display: flex; align-items: center; gap: .6rem; padding: .18rem 0; font-size: .88rem; }
-.row .k { font-family: ui-monospace, monospace; color: var(--muted); min-width: 3.2rem; }
+.row { display: flex; align-items: center; gap: .6rem; padding: .18rem 0; font-size: var(--fs-sm); }
+.row .k { font-family: var(--mono); color: var(--muted); min-width: 3.2rem; }
 .row .k.wide { min-width: 9rem; }
-.row .v { font-family: ui-monospace, monospace; margin-left: auto; }
-.barwrap { flex: 1; height: 9px; background: #0e1116; border-radius: 3px; overflow: hidden; }
+.row .v { font-family: var(--mono); margin-left: auto; }
+.barwrap { flex: 1; height: 9px; background: var(--sunken); border-radius: var(--radius-xs); overflow: hidden; }
 .bar { display: block; height: 100%; background: var(--accent); }
 
 /* ── tables ─────────────────────────────────────────────────────────────── */
 
-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
-th { text-align: left; color: var(--muted); font-weight: 500; font-size: .78rem;
+table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+th { text-align: left; color: var(--muted); font-weight: 500; font-size: var(--fs-xs);
      text-transform: uppercase; letter-spacing: .04em;
      padding: .35rem .5rem; border-bottom: 1px solid var(--line); }
-td { padding: .38rem .5rem; border-bottom: 1px solid #1e232b; vertical-align: top; }
+td { padding: .38rem .5rem; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
 tr:last-child td { border-bottom: none; }
-td.num { text-align: right; font-family: ui-monospace, monospace; }
+td.num { text-align: right; font-family: var(--mono); }
 
 /* Wide tables scroll inside themselves rather than the page. */
 table.jobs { display: block; overflow-x: auto; white-space: nowrap; }
 table.jobs td:nth-child(2) { white-space: normal; min-width: 20rem; }
 
-/* Summary list cards (top companies, locations) stay a fixed height and scroll
-   internally, so months of accumulated rows never stretch the dashboard row
-   or dwarf the compact cards beside them. The header stays pinned while you scroll. */
+/* The scrolling region of a summary card, so months of accumulated rows never
+   stretch the dashboard row or dwarf the compact cards beside them. The header
+   stays pinned while you scroll.
+   Standalone it falls back to a fixed max-height. Inside .grid.uniform it
+   instead fills the card: flex:1 claims the space left under the heading, and
+   min-height:0 lets it shrink below its content — without that a flex item's
+   default min-height:auto refuses to shrink and overflow-y never engages. */
 .list-scroll { max-height: 16rem; overflow-y: auto; }
+.grid.uniform .list-scroll { flex: 1; min-height: 0; max-height: none; }
 /* Block-level table so the wrapper's overflow actually scrolls it — a default
    display:table child does not trigger the scrollbar reliably (same reason
    table.jobs is display:block). width:100% keeps it filling the card. */
 .list-scroll table { display: block; width: 100%; }
 .list-scroll th { position: sticky; top: 0; background: var(--panel); z-index: 1; }
 
-.score { font-family: ui-monospace, monospace; font-weight: 600; text-align: center; }
+.score { font-family: var(--mono); font-weight: 600; text-align: center; }
 .s10, .s9 { color: var(--good); }
 .s8, .s7   { color: var(--fg); }
 .s6, .s5, .s4, .s3, .s2, .s1, .s0 { color: var(--muted); }
@@ -118,40 +167,40 @@ table.jobs td:nth-child(2) { white-space: normal; min-width: 20rem; }
 .filters { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
 .filters input, .filters select, .filters button {
   background: var(--panel); color: var(--fg); border: 1px solid var(--line);
-  border-radius: 4px; padding: .35rem .55rem; font-size: .85rem; font-family: inherit;
+  border-radius: var(--radius-sm); padding: .35rem .55rem; font-size: var(--fs-sm); font-family: inherit;
 }
 .filters input[type=search] { min-width: 15rem; flex: 1; }
-.filters button { background: var(--accent); color: #0b0e12; border-color: var(--accent);
+.filters button { background: var(--accent); color: var(--on-accent); border-color: var(--accent);
                   font-weight: 600; cursor: pointer; }
-.filters .clear { align-self: center; color: var(--muted); font-size: .82rem; }
+.filters .clear { align-self: center; color: var(--muted); font-size: var(--fs-xs); }
 
 /* ── misc ───────────────────────────────────────────────────────────────── */
 
 .log {
-  background: #0d1015; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--sunken); border: 1px solid var(--line); border-radius: var(--radius);
   padding: .9rem; max-height: 70vh; overflow: auto;
-  font-family: ui-monospace, monospace; font-size: .8rem;
+  font-family: var(--mono); font-size: var(--fs-xs);
   white-space: pre-wrap; word-break: break-word;
 }
 ul.plain { list-style: none; padding: 0; margin: 0;
-           max-height: 26rem; overflow-y: auto; font-size: .87rem; }
-ul.plain li { padding: .2rem 0; border-bottom: 1px solid #1e232b; }
+           max-height: 26rem; overflow-y: auto; font-size: var(--fs-sm); }
+ul.plain li { padding: .2rem 0; border-bottom: 1px solid var(--line-soft); }
 .alerts { border-left: 3px solid var(--warn); }
 .alert { padding: .4rem 0; }
-.alert ul { margin: .3rem 0 0; padding-left: 1.1rem; color: var(--muted); font-size: .85rem; }
+.alert ul { margin: .3rem 0 0; padding-left: 1.1rem; color: var(--muted); font-size: var(--fs-sm); }
 
 /* ── edit form (phase 5) ────────────────────────────────────────────────── */
 
 .edit { display: flex; flex-direction: column; gap: .55rem; }
 .field { display: flex; align-items: center; gap: .6rem; }
 .field .k {
-  font-family: ui-monospace, monospace; color: var(--muted);
-  min-width: 7.5rem; font-size: .82rem; flex-shrink: 0;
+  font-family: var(--mono); color: var(--muted);
+  min-width: 7.5rem; font-size: var(--fs-xs); flex-shrink: 0;
 }
 .field input, .field select, .field textarea {
-  flex: 1; background: #0e1116; color: var(--fg);
-  border: 1px solid var(--line); border-radius: 4px;
-  padding: .35rem .5rem; font: inherit; font-size: .85rem;
+  flex: 1; background: var(--sunken); color: var(--fg);
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: .35rem .5rem; font: inherit; font-size: var(--fs-sm);
 }
 .field input:focus, .field select:focus, .field textarea:focus {
   outline: none; border-color: var(--accent);
@@ -162,12 +211,12 @@ ul.plain li { padding: .2rem 0; border-bottom: 1px solid #1e232b; }
 
 .btn {
   background: var(--panel); color: var(--fg); border: 1px solid var(--line);
-  border-radius: 4px; padding: .38rem .8rem; font: inherit; font-size: .85rem;
+  border-radius: var(--radius-sm); padding: .38rem .8rem; font: inherit; font-size: var(--fs-sm);
   font-weight: 600; cursor: pointer;
 }
 .btn:hover { border-color: var(--muted); }
-.btn.primary { background: var(--accent); color: #0b0e12; border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
 .btn.primary:hover { filter: brightness(1.08); }
-.btn.danger { color: var(--bad); border-color: #3a2626; }
-.btn.danger:hover { background: #241717; border-color: var(--bad); }
+.btn.danger { color: var(--bad); border-color: var(--bad-line); }
+.btn.danger:hover { background: var(--bad-bg); border-color: var(--bad); }
 .danger-form { margin-top: 1.4rem; }

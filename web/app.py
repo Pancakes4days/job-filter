@@ -55,6 +55,22 @@ app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_prefix=1)
 
 
+@app.context_processor
+def _asset_version():
+    """Cache-bust the stylesheet link. In production (gunicorn, debug off) no
+    no-store header is sent and Flask sets no max-age, so a browser's heuristic
+    caching can keep serving a stale style.css after a deploy — CSS edits then
+    silently don't show up. A ?v=<mtime> query on the <link> changes the URL
+    whenever the file changes, so the browser is forced to refetch. Falls back
+    to 0 if the file is missing."""
+    css = Path(app.static_folder) / "style.css"
+    try:
+        version = int(css.stat().st_mtime)
+    except OSError:
+        version = 0
+    return {"asset_version": version}
+
+
 @app.after_request
 def _no_cache_in_dev(resp):
     """In debug mode only, tell the browser never to cache. Otherwise edits to
