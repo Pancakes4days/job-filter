@@ -1,4 +1,4 @@
-# Job Filter Pipeline — Raspberry Pi 5 + gemma3:4b
+# Job Filter Pipeline — Raspberry Pi 5 + gemma4:4b
 
 Scrapes job listings from multiple sources, scores them against your
 skills/preferences with a local LLM, and tracks the matches in a SQLite database
@@ -15,7 +15,7 @@ Everything runs on the Pi; your other devices are just browsers pointed at it.
 | Layer | What | Notes |
 |---|---|---|
 | **Data** | SQLite (`data/tracker.db`, WAL mode) | The single system of record. File-based, no DB server. `db.py` is the only code that touches it — hand-written SQL, no ORM. |
-| **Scoring** | Ollama + `gemma3:4b` | Local LLM that scores each job. The heavy compute, and the reason it wants a Pi 5. |
+| **Scoring** | Ollama + `gemma4:4b` | Local LLM that scores each job. The heavy compute, and the reason it wants a Pi 5. |
 | **Scraping** | Python 3 + `urllib` | Hits ATS APIs (Greenhouse, Lever, Ashby, SmartRecruiters, Workable, Recruitee, Workday, Oracle) directly. No scraping framework. |
 | **Web app** | Flask + Jinja2, served by Gunicorn | Server-rendered HTML. Plain CSS + a few lines of vanilla JS — no React, no npm, no build step. |
 | **Access** | Tailscale (`tailscale serve`) | Puts the site on your private mesh over HTTPS. Being on the tailnet *is* the auth — no login. |
@@ -140,8 +140,8 @@ job_filter/
 ```bash
 # 1. Install Ollama and pull the model (~1.5 GB)
 curl -fsSL https://ollama.com/install.sh | sh
-ollama pull gemma3:4b
-ollama run gemma3:4b "Say hello in five words."   # sanity check
+ollama pull gemma4:4b
+ollama run gemma4:4b "Say hello in five words."   # sanity check
 
 # 2. Dependencies. openpyxl (the .xlsx export) + the web app (Flask/gunicorn).
 sudo apt install python3-openpyxl python3-flask gunicorn
