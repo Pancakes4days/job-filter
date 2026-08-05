@@ -2,6 +2,12 @@
 """
 Job filter pipeline for Raspberry Pi 5 + gemma3:4b (via Ollama).
 
+The model name in config.json must match an `ollama list` tag exactly. A
+mismatch 404s on every job, trips MAX_CONSECUTIVE_ERRORS, and exits nonzero —
+which parks the orchestrator on a 15-minute retry of the filter phase, so
+`store` never runs and no new jobs reach the tracker. Symptom is silence, not
+an alarm: check `data/filter.log` for OLLAMA errors if the DB stops growing.
+
 Reads job listings from a JSON file (produced by your scraper), asks the
 local LLM to score each one against your profile in config.json, and
 appends results to a CSV you can open in Excel.
@@ -142,7 +148,7 @@ def build_user_prompt(job):
 def call_ollama(config, system_prompt, user_prompt):
     """Call local Ollama /api/chat with an enforced JSON schema. Returns parsed dict."""
     payload = {
-        "model": config.get("model", "gemma4:4b"),
+        "model": config.get("model", "gemma3:4b"),
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
