@@ -103,6 +103,7 @@ job_filter/
 - `backup_db.py` — nightly online snapshot of the DB to `data/backups/`
 - `export_workbook.py` — renders a styled `.xlsx` from the DB (needs `openpyxl`)
 - `prune_workbook.py` — MANUAL: soft-deletes all but the best 1–2 roles per company
+- `prune_internships.py` — MANUAL: tombstones internship rows the old profile let in (`--undo` reverses it)
 - `detect_platforms.py` — one-time/manual full ATS detection from a company list
 - `verify_watchlist.py` — manual helper to spot-check detected watchlist entries
 - `paths.py` — defines `CONFIG_DIR` / `DATA_DIR` / `DB_PATH`; the one place paths are set
