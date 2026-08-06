@@ -38,8 +38,8 @@
     "preferences": [
       "TOP PRIORITY: roles located in New York City or Long Island (onsite or hybrid)",
       "REQUIRED: role must be a technical/engineering position where writing or reviewing code is the primary function — software engineering, cybersecurity, AI/ML, data engineering, or similar. Non-technical roles do not qualify regardless of company or location.",
-      "REQUIRED: candidate is a May 2027 college graduate seeking new grad full-time roles starting Summer/Fall 2027, or Summer 2027 internships. Roles requiring prior full-time experience or a 2026 or earlier start date are not suitable.",
-      "REQUIRED: Full-time new grad or Summer 2027 internship",
+      "REQUIRED: candidate is a May 2027 college graduate seeking permanent full-time new grad roles starting Summer/Fall 2027. Roles requiring prior full-time experience or a 2026 or earlier start date are not suitable.",
+      "REQUIRED: Permanent full-time new grad or entry-level role. Internships, co-ops, and other temporary positions do not qualify.",
       "Also acceptable: fully remote roles anywhere in the US",
       "Also acceptable: SRE, DevOps, platform engineering, and infrastructure engineering roles",
       "Also acceptable: fintech or financial technology roles",
@@ -56,7 +56,7 @@
       "TS/SCI required",
       "Unpaid or commission-only",
       "Role is non-technical — title contains any of: Account Executive, Account Manager, Sales, Business Development, Counsel, Attorney, Legal, Recruiter, HR, Designer, Architect (non-software), Marketing, Finance Analyst, Operations, Customer Success, Customer Experience — score must be 1 regardless of company or location",
-      "Internship with a 2026 or earlier start date — already past, not suitable",
+      "Internship, co-op, summer analyst, apprenticeship, or any temporary/seasonal position — score must be 1 regardless of start date, company, or how strong the technical match is",
       "Requires graduation before May 2027",
       "Quantitative trading, quantitative research, or quantitative finance roles — not suitable regardless of company or location",
       "MS/PhD required"
