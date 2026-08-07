@@ -16,7 +16,7 @@ Everything runs on the Pi; your other devices are just browsers pointed at it.
 |---|---|---|
 | **Data** | SQLite (`data/tracker.db`, WAL mode) | The single system of record. File-based, no DB server. `db.py` is the only code that touches it — hand-written SQL, no ORM. |
 | **Scoring** | Ollama + `gemma3:4b` | Local LLM that scores each job. The heavy compute, and the reason it wants a Pi 5. |
-| **Scraping** | Python 3 + `urllib` | Hits ATS APIs (Greenhouse, Lever, Ashby, SmartRecruiters, Workable, Recruitee, Workday, Oracle) directly. No scraping framework. |
+| **Scraping** | Python 3 + `urllib` | Hits ATS APIs (Greenhouse, Lever, Ashby, SmartRecruiters, Workable, Recruitee, Workday, Oracle) directly, plus job-board APIs/feeds and community GitHub job lists. No scraping framework. |
 | **Web app** | Flask + Jinja2, served by Gunicorn | Server-rendered HTML. Plain CSS + a few lines of vanilla JS — no React, no npm, no build step. |
 | **Access** | Tailscale (`tailscale serve`) | Puts the site on your private mesh over HTTPS. Being on the tailnet *is* the auth — no login. |
 | **Process mgmt** | systemd | `jobfilter` (pipeline), `jobfilter-web` (site), `jobfilter-backup.timer` (nightly DB snapshot). |
@@ -342,6 +342,142 @@ python3 scripts/detect_oracle.py --batch companies_with_urls.txt
 It writes verified entries to `data/watchlist_oracle.json`; paste them into the
 watchlist `companies` array. Descriptions are list-only by default — set
 `ORACLE_FETCH_DESCRIPTIONS = True` in `scraper.py` for full text (one request per job).
+
+## Community job lists (GitHub repos)
+
+The `github_list` source type reads the curated new-grad/internship lists people
+maintain as GitHub repos — [speedyapply/2027-SWE-College-Jobs][speedy],
+[vanshb03/New-Grad-2027][ng27], [SimplifyJobs/New-Grad-Positions][simplify], and
+the many forks of all three. These are markdown files, so the "API" is just the
+`raw.githubusercontent.com` URL; one request gets the whole list. It's the
+cheapest source in the pipeline and the only one that surfaces companies you
+never added to `companies.txt`.
+
+[speedy]: https://github.com/speedyapply/2027-SWE-College-Jobs
+[ng27]: https://github.com/vanshb03/New-Grad-2027
+[simplify]: https://github.com/SimplifyJobs/New-Grad-Positions
+
+Add one entry to the `sources` array in `scraper_config.json` per list:
+
+```json
+{
+  "name": "GitHub list - 2027 SWE New Grad USA (speedyapply)",
+  "type": "github_list",
+  "repo": "speedyapply/2027-SWE-College-Jobs",
+  "branch": "main",
+  "path": "NEW_GRAD_USA.md",
+  "enabled": true,
+  "exclude_sections": ["quant"]
+}
+```
+
+`repo` + `branch` + `path` build the raw URL; `branch` defaults to `main` and
+`path` to `README.md`. Two things to check on any new repo: these lists often
+live on a `dev` branch rather than `main`, and a repo may split its listings
+across several files (`NEW_GRAD_USA.md`, `NEW_GRAD_INTL.md`, `Canada.md`, …) —
+`path` is how you pick one, and you add a second source entry for a second file.
+
+### Pasting a URL instead
+
+You can skip `repo`/`branch`/`path` and put a `"url"` in — including the plain
+`github.com` link straight from your browser's address bar. All of these are
+normalised to the same `raw.githubusercontent.com` fetch and produce identical
+rows:
+
+```
+https://github.com/speedyapply/2027-SWE-College-Jobs/blob/main/NEW_GRAD_USA.md
+https://github.com/speedyapply/2027-SWE-College-Jobs/raw/main/NEW_GRAD_USA.md
+https://raw.githubusercontent.com/speedyapply/2027-SWE-College-Jobs/main/NEW_GRAD_USA.md
+```
+
+`?plain=1` and `#L40` fragments are ignored. A bare repo root
+(`https://github.com/vanshb03/New-Grad-2027`) or a `/tree/<branch>` link works
+too — those carry no filename, so they fall back to `branch`/`path`, which is
+where you'd set `"path": "NEW_GRAD_INTL.md"`. A non-GitHub URL is fetched as-is,
+so raw markdown hosted anywhere else still works.
+
+**Why this matters:** fetching a `/blob/` URL without normalising it *looks*
+like it works — GitHub renders the markdown, and the rendered `<table>` parses
+fine — but every `## Section` heading comes back as an `<h3>`, so
+`include_sections`/`exclude_sections` silently become no-ops (13 quant rows leak
+into the speedyapply source) and you pull ~9× the bytes. Hence the rewrite.
+Because the repo is recovered from the URL either way, the `source` field is
+always `github_list/owner/name` — switching an entry between `url` and
+`repo` form won't fork the source in `pipeline_stats.py`.
+
+Optional keys:
+
+| Key | Default | What it does |
+|---|---|---|
+| `include_sections` | *(all)* | Keep only rows under a heading containing one of these (case-insensitive substring), e.g. `["software engineering"]` |
+| `exclude_sections` | *(none)* | Drop rows under a matching heading — `["quantitative", "hardware"]`. Beats `include_sections` |
+| `skip_closed` | `true` | Drop rows marked 🔒 (application closed) |
+| `skip_no_sponsorship` | `false` | Drop rows marked 🛂 (no visa sponsorship) |
+| `skip_citizenship` | `false` | Drop rows marked 🇺🇸 (U.S. citizenship required) |
+| `skip_advanced_degree` | `false` | Drop rows marked 🎓 (Master's/PhD/MBA required) |
+| `tags` | `["new grad", "entry level"]` | Prepended to each description as a `TAGS:` line — see below |
+| `max_jobs` | `0` (no cap) | Stop after N rows; handy for a quick test |
+
+The three `skip_*` flags default to off because the LLM already judges those
+against your `dealbreakers` — but the markers are written into the description
+either way, so the model sees them. Turn a flag on to drop those rows before
+they cost you any LLM time.
+
+### What it can and can't give the LLM
+
+The rows carry **Company / Role / Location / apply link / date (and sometimes a
+salary) only — no job description**. The connector synthesises one from those
+fields, the same list-only shape the Workday and Oracle connectors produce with
+descriptions turned off. Scoring is therefore title-and-location driven; for the
+companies you care about, the watchlist still gets you the full posting text.
+
+That thinness is also why `tags` exists. `keyword_prefilter` matches against
+title + description, and a bare "Software Engineer" title hits none of your
+`include_keywords` — those rows would be dropped before the LLM ever saw them.
+The `TAGS:` line makes them pass, which is correct here: these lists are curated
+new-grad-only by construction. `exclude_keywords` (senior, principal, …) still
+applies. Set `"tags": []` if you'd rather have the include filter judge these
+rows on their titles alone.
+
+### Adding a different repo
+
+Both table dialects in the wild are handled — markdown pipe rows and the HTML
+`<table>` rows SimplifyJobs switched to — as are the shared conventions: `↳`
+repeats the company from the row above, `<details><summary>` collapses
+multi-location cells, `</br>` separates them, and the apply cell's real link is
+picked out from the aggregator trackers beside it.
+
+Columns are matched **by header name**, not position, so a repo that renames,
+reorders, or omits them still works, and a file with several tables of different
+shapes is fine (each table re-reads its own header). Recognised labels:
+
+| Field | Header labels |
+|---|---|
+| company | Company, Employer, Organization |
+| title | Role, Position, Title, Job Title |
+| location | Location, Locations |
+| url | Application, Application/Link, Apply, Apply Link, Link, **Posting** |
+| salary | Salary, Compensation, Pay |
+| date | Date Posted, Date, Posted, Age |
+
+A table whose header has no recognisable Company **and** Role column is skipped
+entirely — which is also the failure mode to watch for on a new repo. If a list
+uses a column name that isn't above, every row silently drops out (this is what
+`Posting` did before it was added), so **always check the listing count against
+the repo before trusting a new source**:
+
+```bash
+python3 scripts/scraper.py --config config/scraper_config.json \
+        --out /tmp/test.json --include-seen --no-prefilter
+```
+
+That prints one line per source (`Fetching <name> ... N listings`). Compare `N`
+to the number of table rows in the file; if it's 0 or obviously short, the
+header labels or `include_sections` are the first thing to check. Add the
+missing label to `_GH_COLUMNS` in `scraper.py` if it's a new one.
+
+Tracking parameters (`utm_*`, `ref`) are stripped from apply links, so the URL —
+which is the pipeline's dedup fingerprint — stays stable if a repo retags.
 
 ## Running pieces by hand
 

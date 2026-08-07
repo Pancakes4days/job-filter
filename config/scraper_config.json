@@ -97,6 +97,42 @@
       "_note": "Auto-finds the latest monthly thread via Algolia"
     },
     {
+      "name": "GitHub list - New Grad 2027 (cvrve)",
+      "type": "github_list",
+      "repo": "vanshb03/New-Grad-2027",
+      "branch": "dev",
+      "path": "README.md",
+      "enabled": true,
+      "skip_closed": true,
+      "tags": ["new grad", "entry level"],
+      "_note": "Curated 2026/2027 US new-grad list. Rows have no description, so 'tags' seeds the keyword prefilter; the LLM scores off title/company/location."
+    },
+    {
+      "name": "GitHub list - 2027 SWE New Grad USA (speedyapply)",
+      "type": "github_list",
+      "repo": "speedyapply/2027-SWE-College-Jobs",
+      "branch": "main",
+      "path": "NEW_GRAD_USA.md",
+      "enabled": true,
+      "skip_closed": true,
+      "exclude_sections": ["quant"],
+      "tags": ["new grad", "entry level"],
+      "_note": "2027 USA SWE new-grad list, one row per posting with a salary column. Sections are FAANG+ / Quant / Other; Quant is excluded to match the dealbreakers in config.json. Sibling files in the same repo: NEW_GRAD_INTL.md, INTERN_USA.md, INTERN_INTL.md."
+    },
+    {
+      "name": "GitHub list - New Grad Positions (Simplify)",
+      "type": "github_list",
+      "repo": "SimplifyJobs/New-Grad-Positions",
+      "branch": "dev",
+      "path": "README.md",
+      "enabled": false,
+      "skip_closed": true,
+      "include_sections": ["software engineering", "data science"],
+      "exclude_sections": ["quantitative", "product management", "hardware"],
+      "tags": ["new grad", "entry level"],
+      "_note": "Same format, HTML-table dialect. Currently a 2026-grad list - enable once it rolls to 2027, or now if you want the overlap."
+    },
+    {
       "name": "Company watchlist",
       "type": "watchlist",
       "enabled": true,

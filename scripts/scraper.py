@@ -5,6 +5,7 @@ Job scraper for the job_filter pipeline. Stdlib only, Python 3.9+.
 Pulls listings from machine-readable sources (no fragile HTML scraping):
   - RemoteOK public JSON API
   - We Work Remotely RSS feeds
+  - Community job-list GitHub repos (raw README tables)
 
 Applies cheap keyword pre-filtering (so the slow LLM step only sees
 plausible candidates), then writes scraped_jobs.json in the exact format
@@ -23,6 +24,7 @@ import re
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
@@ -244,6 +246,351 @@ def scrape_hn_hiring(source_cfg):
             "description": text,
             "source": "hn_hiring",
         })
+    return jobs
+
+
+# Community job-list GitHub repos (SimplifyJobs/New-Grad-Positions,
+# vanshb03/New-Grad-2027, the Summer*-Internships forks, ...). These are curated
+# markdown files whose raw text is one big table of Company / Role / Location /
+# Apply-link, so the "API" is just the raw.githubusercontent.com URL. Two table
+# dialects show up in the wild and both are handled here:
+#   - markdown pipe rows:  | **Company** | Role | Boston, MA | <a href=...> | Aug 05 |
+#   - HTML <table> rows:   <tr><td><strong><a ...>Company</a></strong></td>...
+# Shared conventions: "↳" in the company cell repeats the row above, and the
+# legend emoji 🔒 (closed) / 🛂 (no sponsorship) / 🇺🇸 (citizenship) mark rows.
+GITHUB_RAW = "https://raw.githubusercontent.com/{repo}/{branch}/{path}"
+GITHUB_LIST_DEFAULT_TAGS = ["new grad", "entry level"]
+
+_GH_HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*#*$")
+_GH_CELL_RE = re.compile(r"<t[dh]\b[^>]*>(.*?)</t[dh]>", re.I | re.S)
+_GH_ANCHOR_RE = re.compile(r'<a\b[^>]*\bhref\s*=\s*["\']([^"\']+)["\'][^>]*>(.*?)</a>',
+                           re.I | re.S)
+_GH_HREF_RE = re.compile(r'<a\b[^>]*\bhref\s*=\s*["\']([^"\']+)["\']', re.I)
+_GH_MD_LINK_RE = re.compile(r"(?<!!)\[[^\]]*\]\(\s*<?([^)>\s]+)")
+_GH_MD_IMG_RE = re.compile(r"!\[[^\]]*\]\([^)]*\)")
+_GH_MD_LABEL_RE = re.compile(r"(?<!!)\[([^\]]*)\]\([^)]*\)")
+_GH_BR_RE = re.compile(r"</?br\s*/?>", re.I)
+# Multi-location cells collapse behind <details><summary>5 locations</summary>...
+# The summary is just a count label; the real list is the details body.
+_GH_SUMMARY_RE = re.compile(r"<summary\b[^>]*>.*?</summary>", re.I | re.S)
+_GH_SEP_CELL_RE = re.compile(r"^:?-{2,}:?$")
+_GH_TRACKING_RE = re.compile(r"^(utm_.*|ref)$", re.I)  # not "source" — some ATSes use it
+
+# The URL you actually have in hand is the one in the browser bar:
+#   https://github.com/speedyapply/2027-SWE-College-Jobs/blob/main/NEW_GRAD_USA.md
+# Fetching that verbatim *appears* to work — GitHub renders the markdown, and the
+# rendered table parses as the HTML dialect — but every "## FAANG+" heading comes
+# back as an <h3>, so _gh_iter_rows never sets a section and include_sections /
+# exclude_sections silently become no-ops (measured: 13 quant rows leak into an
+# exclude_sections:["quant"] source). It's also ~9x the bytes. So rewrite any
+# GitHub page URL to raw.githubusercontent.com rather than trusting the caller.
+_GH_BLOB_RE = re.compile(
+    r"^https?://(?:www\.)?github\.com/([^/?#]+)/([^/?#]+)/(?:blob|raw)/([^/?#]+)/([^?#]+)",
+    re.I)
+_GH_TREE_RE = re.compile(
+    r"^https?://(?:www\.)?github\.com/([^/?#]+)/([^/?#]+)/tree/([^/?#]+)/?([^?#]*)", re.I)
+_GH_REPO_RE = re.compile(
+    r"^https?://(?:www\.)?github\.com/([^/?#]+)/([^/?#]+?)(?:\.git)?/?(?:[?#]|$)", re.I)
+_GH_RAW_RE = re.compile(
+    r"^https?://raw\.githubusercontent\.com/([^/?#]+)/([^/?#]+)/", re.I)
+
+
+def _gh_normalize_url(url, branch, path):
+    """Any GitHub URL for a list file -> (raw URL, "owner/name").
+
+    Accepts the raw URL, the /blob/ (or /raw/) file page, a /tree/ directory,
+    and a bare repo root; the last two fall back to the configured branch/path.
+    A non-GitHub URL passes through untouched with an empty repo, so pointing
+    at raw markdown on any other host still works.
+
+    Returning the repo separately is what keeps the "source" field stable: all
+    of these forms then label rows github_list/owner/name, so switching a config
+    entry between "url" and "repo" doesn't fork the source in pipeline_stats.
+    """
+    blob = _GH_BLOB_RE.match(url)
+    if blob:
+        owner, name, ref, file_path = blob.groups()
+        # A branch containing "/" is indistinguishable from the file path here
+        # without hitting the API; these lists all use main/dev, so take one
+        # segment. Pass repo/branch/path explicitly if you have such a branch.
+        return GITHUB_RAW.format(repo=f"{owner}/{name}", branch=ref,
+                                 path=file_path), f"{owner}/{name}"
+    tree = _GH_TREE_RE.match(url)
+    if tree:
+        owner, name, ref, subdir = tree.groups()
+        prefix = f"{subdir.rstrip('/')}/" if subdir else ""
+        return GITHUB_RAW.format(repo=f"{owner}/{name}", branch=ref,
+                                 path=prefix + path), f"{owner}/{name}"
+    bare = _GH_REPO_RE.match(url)
+    if bare:
+        owner, name = bare.groups()
+        return GITHUB_RAW.format(repo=f"{owner}/{name}", branch=branch,
+                                 path=path), f"{owner}/{name}"
+    raw = _GH_RAW_RE.match(url)
+    if raw:
+        return url, "/".join(raw.groups())
+    return url, ""
+
+# Header label -> our field. Covers the variants across these repos.
+_GH_COLUMNS = {
+    "company": "company", "employer": "company", "organization": "company",
+    "role": "title", "position": "title", "title": "title", "job title": "title",
+    "location": "location", "locations": "location",
+    "application": "url", "application/link": "url", "application link": "url",
+    "apply": "url", "apply link": "url", "link": "url", "links": "url",
+    "posting": "url", "postings": "url",
+    "salary": "salary", "compensation": "salary", "pay": "salary",
+    "date posted": "posted", "date": "posted", "posted": "posted", "age": "posted",
+}
+
+# Anchors these lists add alongside the real apply link (referral trackers and
+# the button images). Never the destination we want.
+_GH_LINK_NOISE = ("simplify.jobs", "imgur.com", "github.com", "discord.gg")
+
+_GH_CLOSED = "\U0001F512"       # 🔒 application closed
+_GH_NO_SPONSOR = "\U0001F6C2"   # 🛂 does NOT offer sponsorship
+_GH_CITIZENSHIP = "\U0001F1FA\U0001F1F8"  # 🇺🇸 requires U.S. citizenship
+_GH_ADV_DEGREE = "\U0001F393"   # 🎓 advanced degree required (MS/PhD/MBA)
+
+# Legend markers plus the decorations these lists sprinkle on rows ("🔥 ByteDance",
+# "Engineer 🛂"). Read as flags, then stripped so titles/companies stay clean —
+# they end up in the tracker and the LLM prompt as-is.
+_GH_MARKERS = (_GH_CLOSED, _GH_NO_SPONSOR, _GH_CITIZENSHIP, _GH_ADV_DEGREE,
+               "\U0001F1FA", "\U0001F1F8",   # bare regional indicators
+               "\U0001F525", "⭐", "\U0001F195", "❗")  # 🔥 ⭐ 🆕 ❗
+
+
+def _gh_demark(text):
+    for mark in _GH_MARKERS:
+        text = text.replace(mark, " ")
+    return WS_RE.sub(" ", text).strip(" -–—|")
+
+
+def _gh_cell_text(cell):
+    """One table cell -> plain text. Line-break tags become ' / ' so the
+    multi-location cells ("Chicago, IL</br>New York, NY") stay on one line."""
+    txt = _GH_SUMMARY_RE.sub(" ", cell)
+    txt = _GH_BR_RE.sub(" / ", txt)
+    txt = _GH_MD_IMG_RE.sub(" ", txt)
+    txt = _GH_MD_LABEL_RE.sub(r"\1", txt)   # [label](url) -> label
+    txt = strip_html(txt)
+    txt = txt.replace("**", "").replace("`", "")
+    return WS_RE.sub(" ", txt).strip()
+
+
+def _gh_cell_urls(cell):
+    urls = list(_GH_HREF_RE.findall(cell))
+    urls += _GH_MD_LINK_RE.findall(cell)
+    return [html.unescape(u) for u in urls]
+
+
+def _gh_clean_url(url):
+    """Drop utm_*/ref tracking params. These are per-repo constants, so leaving
+    them in would be harmless for applying but noisy in the tracker — and they
+    make the URL (which is the dedupe fingerprint) churn if a repo retags."""
+    try:
+        parts = urllib.parse.urlsplit(url)
+        pairs = urllib.parse.parse_qsl(parts.query, keep_blank_values=True)
+    except ValueError:
+        return url
+    kept = [(k, v) for k, v in pairs if not _GH_TRACKING_RE.match(k)]
+    if len(kept) == len(pairs):
+        return url  # nothing to strip — never rewrite a URL we didn't change
+    query = urllib.parse.urlencode(kept, quote_via=urllib.parse.quote, safe=":/,;=")
+    return urllib.parse.urlunsplit(
+        (parts.scheme, parts.netloc, parts.path, query, parts.fragment))
+
+
+def _gh_pick_url(cell):
+    """The employer's apply link from an application cell. The button anchor
+    labels itself (alt="Apply"); anything else in the cell is a tracker."""
+    for href, inner in _GH_ANCHOR_RE.findall(cell):
+        if "apply" in inner.lower():
+            return _gh_clean_url(html.unescape(href))
+    for url in _gh_cell_urls(cell):
+        if not any(noise in url.lower() for noise in _GH_LINK_NOISE):
+            return _gh_clean_url(url)
+    return ""
+
+
+def _gh_split_md_row(line):
+    """'| a | b | c |' -> ['a', 'b', 'c']."""
+    return [c.strip() for c in line.strip().strip("|").split("|")]
+
+
+def _gh_header_map(cells):
+    """Header row -> {field: column index}, or None if this isn't a header."""
+    mapping = {}
+    for idx, cell in enumerate(cells):
+        label = _gh_cell_text(cell).lower().strip(" *:")
+        field = _GH_COLUMNS.get(label)
+        if field and field not in mapping:
+            mapping[field] = idx
+    if "company" in mapping and "title" in mapping:
+        return mapping
+    return None
+
+
+def _gh_section_allowed(section, include, exclude):
+    low = section.lower()
+    if exclude and any(x.lower() in low for x in exclude):
+        return False
+    if include and not any(x.lower() in low for x in include):
+        return False
+    return True
+
+
+def _gh_iter_rows(text):
+    """Walk the document yielding (section_heading, cells) for every table row,
+    in both dialects. Heading tracking is why this is a line walk and not a
+    single findall — section is what lets you keep SWE roles and drop quant."""
+    section = ""
+    pending = None   # accumulating a multi-line <tr>...</tr>
+    for raw in text.splitlines():
+        line = raw.strip()
+        if pending is not None:
+            pending.append(line)
+            if "</tr>" in line.lower():
+                yield section, _GH_CELL_RE.findall("\n".join(pending))
+                pending = None
+            continue
+        low = line.lower()
+        if low.startswith("<tr"):
+            if "</tr>" in low:
+                yield section, _GH_CELL_RE.findall(line)
+            else:
+                pending = [line]
+            continue
+        heading = _GH_HEADING_RE.match(line)
+        if heading:
+            section = _gh_cell_text(heading.group(2))
+            continue
+        if line.startswith("|") and line.count("|") >= 3:
+            yield section, _gh_split_md_row(line)
+
+
+def scrape_github_list(source_cfg):
+    """A community job-list GitHub repo's markdown file.
+
+    Config: {"type": "github_list", "repo": "vanshb03/New-Grad-2027",
+             "branch": "dev", "path": "README.md",
+             "include_sections": [...], "exclude_sections": [...],
+             "skip_closed": true, "skip_no_sponsorship": false,
+             "skip_citizenship": false, "skip_advanced_degree": false,
+             "tags": [...], "max_jobs": 0}
+    Or put any GitHub URL for the file in "url" instead of repo/branch/path —
+    the browser-bar /blob/ link included; see _gh_normalize_url.
+
+    Rows carry no job description — only Company / Role / Location / link — so
+    the description is synthesised from those fields, the same list-only shape
+    the Workday and Oracle connectors produce when descriptions are off.
+    """
+    repo = source_cfg.get("repo", "")
+    branch = source_cfg.get("branch", "main")
+    path = source_cfg.get("path", "README.md").lstrip("/")
+    configured_url = source_cfg.get("url", "")
+    if configured_url:
+        url, found_repo = _gh_normalize_url(configured_url, branch, path)
+        repo = repo or found_repo
+    elif repo:
+        url = GITHUB_RAW.format(repo=repo, branch=branch, path=path)
+    else:
+        raise ValueError("github_list source needs a 'repo' (owner/name) or a 'url'")
+
+    include = source_cfg.get("include_sections", [])
+    exclude = source_cfg.get("exclude_sections", [])
+    skip_closed = source_cfg.get("skip_closed", True)
+    skip_no_sponsor = source_cfg.get("skip_no_sponsorship", False)
+    skip_citizen = source_cfg.get("skip_citizenship", False)
+    skip_advanced = source_cfg.get("skip_advanced_degree", False)
+    tags = source_cfg.get("tags", GITHUB_LIST_DEFAULT_TAGS)
+    max_jobs = source_cfg.get("max_jobs", 0)
+    label = repo or urllib.parse.urlsplit(url).path.strip("/")
+    # No ":" — recruitment_watch.py and pipeline_stats.py read that as "watchlist".
+    source_name = f"github_list/{label}"
+
+    text = fetch(url)
+    jobs, cols, last_company = [], None, ""
+    for section, cells in _gh_iter_rows(text):
+        if len(cells) < 3:
+            continue
+        if all(_GH_SEP_CELL_RE.match(c.strip()) for c in cells if c.strip()):
+            continue  # markdown's |---|---| separator
+        header = _gh_header_map(cells)
+        if header:
+            cols, last_company = header, ""
+            continue
+        if cols is None:
+            continue  # a table we never saw a usable header for
+
+        def cell(field):
+            idx = cols.get(field)
+            return cells[idx] if idx is not None and idx < len(cells) else ""
+
+        company = _gh_demark(_gh_cell_text(cell("company")))
+        # "↳" repeats the company from the row above (and blank does too).
+        if not company or company.startswith("↳"):
+            company = last_company
+        else:
+            last_company = company
+
+        title = _gh_demark(_gh_cell_text(cell("title")))
+        if not title:
+            continue
+
+        row_text = " ".join(cells)
+        closed = _GH_CLOSED in row_text
+        no_sponsor = _GH_NO_SPONSOR in row_text
+        citizenship = _GH_CITIZENSHIP in row_text
+        advanced = _GH_ADV_DEGREE in row_text
+        if (skip_closed and closed) or (skip_no_sponsor and no_sponsor) \
+                or (skip_citizen and citizenship) or (skip_advanced and advanced):
+            continue
+        if not _gh_section_allowed(section, include, exclude):
+            continue
+
+        job_url = _gh_pick_url(cell("url"))
+        if not job_url:
+            continue  # closed/withdrawn rows have the emoji instead of a link
+
+        location = _gh_cell_text(cell("location"))
+        posted = _gh_cell_text(cell("posted"))
+        salary = _gh_cell_text(cell("salary"))
+        notes = []
+        if no_sponsor:
+            notes.append("does NOT offer visa sponsorship")
+        if citizenship:
+            notes.append("requires U.S. citizenship")
+        if advanced:
+            notes.append("requires an advanced degree (Master's/PhD/MBA)")
+        desc_lines = []
+        if tags:
+            desc_lines.append("TAGS: " + ", ".join(tags))
+        desc_lines.append(f"{title} at {company or 'unknown company'}")
+        if location:
+            desc_lines.append(f"Location: {location}")
+        if salary:
+            desc_lines.append(f"Salary: {salary}")
+        if posted:
+            desc_lines.append(f"Posted: {posted}")
+        if section:
+            desc_lines.append(f"Category: {section}")
+        if notes:
+            desc_lines.append("Notes: " + "; ".join(notes))
+        desc_lines.append(f"Listed by {label} (curated new-grad job list). "
+                          "Full description is on the linked application page.")
+
+        jobs.append({
+            "title": title,
+            "company": company,
+            "location": location,
+            "salary": salary,
+            "url": job_url,
+            "description": "\n".join(desc_lines)[:MAX_DESC_CHARS],
+            "source": source_name,
+        })
+        if max_jobs and len(jobs) >= max_jobs:
+            break
     return jobs
 
 
@@ -606,6 +953,7 @@ SCRAPERS = {
     "remotive": scrape_remotive,
     "arbeitnow": scrape_arbeitnow,
     "hn_hiring": scrape_hn_hiring,
+    "github_list": scrape_github_list,
     "watchlist": scrape_watchlist,
 }
 
@@ -708,7 +1056,7 @@ def main():
             print(f"{len(jobs)} listings")
             all_jobs.extend(jobs)
         except (urllib.error.URLError, TimeoutError, ET.ParseError,
-                json.JSONDecodeError) as e:
+                json.JSONDecodeError, ValueError) as e:
             print(f"FAILED ({e}) — continuing with other sources")
         time.sleep(cfg.get("delay_between_sources", 2))  # be polite
 
