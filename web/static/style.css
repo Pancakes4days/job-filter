@@ -138,9 +138,58 @@ td { padding: .38rem .5rem; border-bottom: 1px solid var(--line-soft); vertical-
 tr:last-child td { border-bottom: none; }
 td.num { text-align: right; font-family: var(--mono); }
 
-/* Wide tables scroll inside themselves rather than the page. */
-table.jobs { display: block; overflow-x: auto; white-space: nowrap; }
-table.jobs td:nth-child(2) { white-space: normal; min-width: 20rem; }
+/* The jobs table is the one view you make decisions in, so every column has to
+   be on screen at once — a Link column you have to scroll sideways to reach is
+   the whole point of the page, missed.
+   It used to be `display:block; white-space:nowrap`, which let the widest cell
+   set the table's width. One multi-site listing ("Mountain View, CA / Kirkland,
+   WA / Los Angeles, CA / ..." — a dozen sites on one line) was enough to push
+   Found, Status and Link past the right edge on every row of the table.
+   table-layout:fixed takes that power away from the content: the <colgroup> in
+   jobs.html decides the widths, and long values wrap and clamp inside their own
+   column instead of widening it. The wrapper keeps the horizontal scroll as a
+   narrow-window fallback, so nothing is ever truly unreachable. */
+.table-scroll { overflow-x: auto; }
+table.jobs { table-layout: fixed; width: 100%; min-width: 62rem; }
+
+.jobs .c-score { width: 3.5rem; }
+.jobs .c-company { width: 10rem; }
+.jobs .c-loc { width: 15rem; }
+.jobs .c-found { width: 4.75rem; }
+.jobs .c-status { width: 7rem; }
+.jobs .c-link { width: 4rem; }
+/* Title takes whatever is left — no width here, on purpose. It is the column
+   that can afford to give: at a typical window it still gets ~450px, which is
+   more than most titles need, while Location is the column that was actually
+   starved (a multi-site listing truncated after two cities at 12rem). */
+
+/* Clamp the free-text columns to two lines so one verbose listing cannot set
+   the height of the row it is in. The full value stays available as a tooltip
+   (title= in the template), which is why truncating here loses nothing.
+
+   This MUST be applied to an element inside the cell, never to the <td>. A td
+   carries display:table-cell, and -webkit-box replaces it — the cell stops
+   being a cell, drops out of the row, and the columns after it stack vertically
+   instead of sitting side by side. Hence the .clamp span in jobs.html. */
+.jobs .clamp {
+  display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2;
+  -webkit-box-orient: vertical; overflow: hidden;
+  /* A run with no spaces — the seed DB's 40-character company name, or a bare
+     URL — has no break opportunity, so a fixed column would let it spill over
+     its neighbour. This forces the break mid-token. */
+  overflow-wrap: anywhere;
+}
+.jobs td.loc { color: var(--muted); }
+.jobs th, .jobs td.score, .jobs td.found, .jobs td.link { white-space: nowrap; }
+
+/* No sticky header here, deliberately. .table-scroll sets overflow-x, and a
+   box with one axis scrollable computes the other to auto as well — so it, not
+   the viewport, becomes the sticky containing block. Its height is its content,
+   so it never scrolls vertically and `position: sticky` on th would silently do
+   nothing. Making it work means capping .table-scroll's height and scrolling
+   the table's body instead of the page, which is a bigger change than this
+   view needs. (.list-scroll on the dashboard does exactly that, and does have
+   a working sticky header, because it sets max-height.) */
 
 /* The scrolling region of a summary card, so months of accumulated rows never
    stretch the dashboard row or dwarf the compact cards beside them. The header

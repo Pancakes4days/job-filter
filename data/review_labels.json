@@ -1,0 +1,3237 @@
+{
+ "_comment": "Hand-labelled evaluation set: 404 rows from matched_jobs.xlsx, judged against config/config.json on 2026-08-08. action is keep|archive|touched. Used by pipeline_stats.py --eval to measure filter changes. Keyed by lowercased URL (matches.row_key).",
+ "labels": [
+  {
+   "key": "https://apply.workable.com/rokt/j/783a754ddb/",
+   "action": "keep",
+   "why": "NYC junior SWE",
+   "title": "Junior Software Engineer",
+   "company": "ROKT",
+   "location": "New York City, NY"
+  },
+  {
+   "key": "https://apply.workable.com/cvector/j/0d0de27033/",
+   "action": "keep",
+   "why": "NYC full-stack SWE I/II",
+   "title": "Full Stack Software Engineer I or II",
+   "company": "CVector Energy",
+   "location": "New York City, NY"
+  },
+  {
+   "key": "https://apply.workable.com/tickpick/j/5840eceb50/",
+   "action": "keep",
+   "why": "NYC SWE",
+   "title": "Software Engineer",
+   "company": "TickPick",
+   "location": "New York City, NY"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/icapitalnetwork/jobs/8549590002",
+   "action": "keep",
+   "why": "NYC associate full-stack, fintech",
+   "title": "Full Stack Engineer - Associate",
+   "company": "ICONIQ Capital",
+   "location": "New York City, NY"
+  },
+  {
+   "key": "https://clearwateranalytics.wd1.myworkdayjobs.com/en-us/clearwater_analytics_careers/job/office---new-york/quantitative-developer---securitized-products_r7282-1",
+   "action": "archive",
+   "why": "quant",
+   "title": "Quantitative Developer - Securitized Products",
+   "company": "Clearwater Analytics",
+   "location": "New York City, NY"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/traba/e1761ab2-21f1-46d6-8c69-9b4a73d9430f",
+   "action": "keep",
+   "why": "NYC SWE, AI agents",
+   "title": "Software Engineer - AI Agents",
+   "company": "Traba",
+   "location": "New York City, NY"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/astronomer/1d29fe9a-7351-4b82-9017-de16dc86382f",
+   "action": "keep",
+   "why": "NYC SWE",
+   "title": "Software Engineer - Applications",
+   "company": "Astronomer",
+   "location": "New York City, NY"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/runsybil-jobs/fd733ce7-7892-4019-9f6d-b6a75ba2aa59",
+   "action": "keep",
+   "why": "NYC SWE I",
+   "title": "Software Engineer I",
+   "company": "RunSybil",
+   "location": "New York City, NY"
+  },
+  {
+   "key": "https://jobs.smartrecruiters.com/syncreonconsulting/744000140941596-python-developer-with-risk-modelling?oga=true",
+   "action": "archive",
+   "why": "staffing-agency contract role, not new grad",
+   "title": "Python Developer with Risk Modelling",
+   "company": "Syncreon Consulting",
+   "location": "New York City, NY"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/polymarket/c69d06c3-96df-493a-afdc-80636d494cf2",
+   "action": "keep",
+   "why": "NYC backend, fintech",
+   "title": "Backend Engineer - Markets",
+   "company": "Polymarket",
+   "location": "New York City, NY"
+  },
+  {
+   "key": "https://roberthalf.wd1.myworkdayjobs.com/en-us/roberthalfcareers/job/new-york-midtown/software-engineer-i--generative-ai-applications_jr-261077",
+   "action": "archive",
+   "why": "Robert Half = staffing/contract placement",
+   "title": "Software Engineer I - Generative AI Applications",
+   "company": "Robert Half",
+   "location": "New York City, NY"
+  },
+  {
+   "key": "https://www.amazon.jobs/jobs/10486826/apply",
+   "action": "archive",
+   "why": "Amazon FEE II = 2+ yrs",
+   "title": "Front-End Engineer II - Amazon Quick",
+   "company": "Amazon",
+   "location": "New York City, NY"
+  },
+  {
+   "key": "https://www.workatastartup.com/jobs/81052",
+   "action": "keep",
+   "why": "NYC, explicit new grad",
+   "title": "New Grad: Founding Engineer",
+   "company": "InQuery",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://www.workatastartup.com/jobs/85422",
+   "action": "keep",
+   "why": "NYC founding eng - judgment call",
+   "title": "Founding Engineer",
+   "company": "Thera",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://www.workatastartup.com/jobs/88067",
+   "action": "keep",
+   "why": "NYC founding eng - judgment call",
+   "title": "Founding Engineer",
+   "company": "Caddy",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://www.rentec.com/careers.action?jobs=true&selectedposition=researchscientist",
+   "action": "archive",
+   "why": "quant research, PhD",
+   "title": "Research Scientist",
+   "company": "Renaissance Technologies",
+   "location": "East Setauket, NY"
+  },
+  {
+   "key": "https://www.rentec.com/careers.action?jobs=true&selectedposition=realtimetradingprogrammer",
+   "action": "archive",
+   "why": "quant trading",
+   "title": "Real-Time Trading Programmer",
+   "company": "Renaissance Technologies",
+   "location": "East Setauket, NY"
+  },
+  {
+   "key": "https://abnormal.ai/careers/jobs/7829979003?gh_jid=7829979003",
+   "action": "archive",
+   "why": "SWE II = 2+ yrs",
+   "title": "Software Engineer II, Model Platform",
+   "company": "Abnormal Security",
+   "location": "Remote - USA"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/modal/7db771eb-e379-47fe-974f-765a8780dc10",
+   "action": "archive",
+   "why": "MTS research role, experienced/PhD",
+   "title": "Member of Technical Staff - Research, Post-Training",
+   "company": "Modal",
+   "location": "New York"
+  },
+  {
+   "key": "https://job-boards.eu.greenhouse.io/imc/jobs/4947993101",
+   "action": "archive",
+   "why": "Chicago onsite",
+   "title": "Linux Engineer",
+   "company": "IMC Trading",
+   "location": "Chicago, United States"
+  },
+  {
+   "key": "https://www.tower-research.com/open-positions/?gh_jid=7989358",
+   "action": "archive",
+   "why": "quant",
+   "title": "Quantitative Researcher, Central Execution Desk",
+   "company": "Tower Research Capital",
+   "location": "New York"
+  },
+  {
+   "key": "https://boards.greenhouse.io/robinhood/jobs/8088444?t=gh_src=&gh_jid=8088444",
+   "action": "keep",
+   "why": "NYC option, unleveled SWE",
+   "title": "Software Engineer",
+   "company": "Robinhood",
+   "location": "Menlo Park, CA; New York, NY"
+  },
+  {
+   "key": "https://coreweave.com/careers/job?4701742006&board=coreweave&gh_jid=4701742006",
+   "action": "archive",
+   "why": "data-center physical security, experienced",
+   "title": "Data Center Security Engineer - Resiliency",
+   "company": "Weights and Biases",
+   "location": "Livingston, NJ / New York, NY / Sunnyvale, CA / San Francisco, CA / Bellevue, WA"
+  },
+  {
+   "key": "https://jpmc.fa.oraclecloud.com/hcmui/candidateexperience/en/sites/cx_1001/job/210774522",
+   "action": "archive",
+   "why": "quant",
+   "title": "Quantitative Trading and Research - AI Machine Learning Researcher - Associate",
+   "company": "JPMorgan Chase",
+   "location": "New York, NY, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5203023007?gh_jid=5203023007",
+   "action": "archive",
+   "why": "research scientist PhD, Huntsville AL",
+   "title": "Research Scientist",
+   "company": "Anduril",
+   "location": "Huntsville, Alabama, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5129680007?gh_jid=5129680007",
+   "action": "archive",
+   "why": "enterprise PLM admin, experienced",
+   "title": "PLM Developer",
+   "company": "Anduril",
+   "location": "Remote"
+  },
+  {
+   "key": "https://job-boards.eu.greenhouse.io/veeamsoftware/jobs/4744735101",
+   "action": "keep",
+   "why": "SRE, remote US",
+   "title": "Site Reliability Engineer",
+   "company": "Veeam",
+   "location": "Remote, United States"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/openai/ef828b89-41ed-4cde-96a9-94ffe5770d4c",
+   "action": "archive",
+   "why": "OpenAI experienced hire, SF",
+   "title": "Full-Stack Engineer, ChatGPT Education  & Learning",
+   "company": "OpenAI",
+   "location": "San Francisco (Remote)"
+  },
+  {
+   "key": "https://jobs.lever.co/palantir/cf08f44c-bf75-45ed-9fab-f4836e51013e",
+   "action": "archive",
+   "why": "Palantir labels new grad explicitly; this is experienced",
+   "title": "Platform Engineer - Identity Infrastructure",
+   "company": "Palantir",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://boards.greenhouse.io/cloudflare/jobs/8102768?gh_jid=8102768",
+   "action": "archive",
+   "why": "experienced; Cloudflare hybrid hubs outside preferred metros",
+   "title": "Product Security Engineer",
+   "company": "Cloudflare",
+   "location": "Hybrid"
+  },
+  {
+   "key": "https://flatiron.com/careers/open-positions/job?gh_jid=8027593",
+   "action": "archive",
+   "why": "data scientist, experienced",
+   "title": "Data Scientist - Workflow Automation",
+   "company": "Flatiron Health",
+   "location": "NY office"
+  },
+  {
+   "key": "https://www.mongodb.com/careers/job/?gh_jid=8098695",
+   "action": "archive",
+   "why": "experienced product security",
+   "title": "Product Security Engineer, Server",
+   "company": "MongoDB",
+   "location": "New York City; Seattle; United States"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49189557",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "ONSITE (hybrid) Norm Ai, the agentic law company, has a client base with a combined $30 trillion in assets under management. Norm Ai pioneered Legal E",
+   "company": "NYC",
+   "location": ""
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49169017",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "AI Engineer",
+   "company": "Portless",
+   "location": "REMOTE (North America only)"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49158689",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Software Engineer",
+   "company": "Clad (YC W23)",
+   "location": "NYC"
+  },
+  {
+   "key": "https://jpmc.fa.oraclecloud.com/hcmui/candidateexperience/en/sites/cx_1001/job/210773954",
+   "action": "keep",
+   "why": "JPMC 2027 full-time Data & AI program, NYC",
+   "title": "2027 Data & AI Program - Full Time - Analyst - United States",
+   "company": "JPMorgan Chase",
+   "location": "New York, NY, United States"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/virtu/jobs/4205353002",
+   "action": "archive",
+   "why": "quant + PhD",
+   "title": "Quantitative Strategist (PhD)",
+   "company": "Virtu",
+   "location": "Austin, TX; New York"
+  },
+  {
+   "key": "https://boards.greenhouse.io/cloudflare/jobs/7778816?gh_jid=7778816",
+   "action": "archive",
+   "why": "Hebrew language requirement, experienced",
+   "title": "Forward Deployed Engineer, Hebrew speaker",
+   "company": "Cloudflare",
+   "location": "Hybrid"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/reddit/jobs/8093021",
+   "action": "archive",
+   "why": "Frontend III = senior",
+   "title": "Frontend Engineer III, Moderation Enforcement",
+   "company": "Reddit",
+   "location": "Remote - United States"
+  },
+  {
+   "key": "https://www.mongodb.com/careers/job/?gh_jid=8089124",
+   "action": "archive",
+   "why": "2+ yrs stated",
+   "title": "Software Engineer 3",
+   "company": "MongoDB",
+   "location": "United States"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/glydways/jobs/5200159007",
+   "action": "keep",
+   "why": "remote US SWE",
+   "title": "Software Engineer (Safety & Certification Tooling)",
+   "company": "Glydways",
+   "location": "Remote"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8621450002?gh_jid=8621450002",
+   "action": "archive",
+   "why": "trading desk ops",
+   "title": "Trading Desk Operations Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/5869205002?gh_jid=5869205002",
+   "action": "archive",
+   "why": "experienced compiler specialist",
+   "title": "Tools and Compilers Research and Development",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8617344002?gh_jid=8617344002",
+   "action": "archive",
+   "why": "quant",
+   "title": "Quantitative Trader",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8573523002?gh_jid=8573523002",
+   "action": "archive",
+   "why": "quant",
+   "title": "Quantitative Trader",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8573726002?gh_jid=8573726002",
+   "action": "archive",
+   "why": "quant",
+   "title": "Quantitative Researcher",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8498547002?gh_jid=8498547002",
+   "action": "archive",
+   "why": "quant",
+   "title": "Quantitative Researcher",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/6302325002?gh_jid=6302325002",
+   "action": "archive",
+   "why": "quant",
+   "title": "Quantitative Researcher",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/4275921002?gh_jid=4275921002",
+   "action": "archive",
+   "why": "experienced PL specialist",
+   "title": "Programming Language Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/4276720002?gh_jid=4276720002",
+   "action": "archive",
+   "why": "ML research, PhD",
+   "title": "Machine Learning Researcher",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8576928002?gh_jid=8576928002",
+   "action": "archive",
+   "why": "ML research, PhD",
+   "title": "Machine Learning Researcher",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8384490002?gh_jid=8384490002",
+   "action": "archive",
+   "why": "ML research, PhD",
+   "title": "Machine Learning Researcher",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/7449190002?gh_jid=7449190002",
+   "action": "archive",
+   "why": "experienced ML perf specialist",
+   "title": "Machine Learning Performance Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/7449077002?gh_jid=7449077002",
+   "action": "archive",
+   "why": "experienced ML perf specialist",
+   "title": "Machine Learning Performance Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8611307002?gh_jid=8611307002",
+   "action": "archive",
+   "why": "experienced MLE",
+   "title": "Machine Learning Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/6485460002?gh_jid=6485460002",
+   "action": "archive",
+   "why": "experienced MLE",
+   "title": "Machine Learning Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8626260002?gh_jid=8626260002",
+   "action": "archive",
+   "why": "experienced sysadmin",
+   "title": "Linux Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8624440002?gh_jid=8624440002",
+   "action": "archive",
+   "why": "hardware FPGA/ASIC",
+   "title": "Hardware Engineer (FPGA/ASIC)",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8632723002?gh_jid=8632723002",
+   "action": "archive",
+   "why": "experienced version; New Grad posting is separate",
+   "title": "Cybersecurity Analyst",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/rilla/3d356097-80f5-4e19-ae71-852a3b4ed4e1",
+   "action": "archive",
+   "why": "staff",
+   "title": "Staff Software Engineer",
+   "company": "Rilla",
+   "location": "New York City"
+  },
+  {
+   "key": "https://careers.datadoghq.com/detail/8092973/?gh_jid=8092973",
+   "action": "archive",
+   "why": "customer-facing tech solutions, experienced",
+   "title": "Systems Engineer 2, Technical Solutions (US-East)",
+   "company": "Datadog",
+   "location": "New York, New York, USA"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5198418007?gh_jid=5198418007",
+   "action": "archive",
+   "why": "technician, not software",
+   "title": "Production Test Technician",
+   "company": "Anduril",
+   "location": "Lexington, Massachusetts, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5180703007?gh_jid=5180703007",
+   "action": "archive",
+   "why": "Costa Mesa CA, firmware experienced",
+   "title": "Firmware Engineer, Connected Warfare",
+   "company": "Anduril",
+   "location": "Costa Mesa, California, United States"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/pdtpartners/jobs/3914106",
+   "action": "keep",
+   "why": "NYC SWE",
+   "title": "Software Engineer",
+   "company": "PDT Partners",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/verkada/jobs/5195995007",
+   "action": "archive",
+   "why": "San Mateo CA onsite",
+   "title": "Software Engineer - Computer Vision",
+   "company": "Verkada",
+   "location": "San Mateo, CA United States"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/thetradedesk/jobs/5196950007",
+   "action": "archive",
+   "why": "designer, non-technical",
+   "title": "UX Designer II",
+   "company": "The Trade Desk",
+   "location": "New York"
+  },
+  {
+   "key": "https://boards.greenhouse.io/embed/job_app?for=gemini&token=7951195&gh_jid=7951195",
+   "action": "archive",
+   "why": "design role, not core SWE",
+   "title": "Design Developer",
+   "company": "Gemini",
+   "location": "New York, New York"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/rilla/5218306d-fb1a-4ce0-8ac3-4939128f5ae6",
+   "action": "archive",
+   "why": "IT ops, non-engineering",
+   "title": "Founding IT Operations",
+   "company": "Rilla",
+   "location": "New York City"
+  },
+  {
+   "key": "https://boards.greenhouse.io/point72/jobs/8651402002?gh_jid=8651402002",
+   "action": "keep",
+   "why": "NYC AI/ML engineering",
+   "title": "Machine Learning Engineer, GenAI Technology",
+   "company": "Point72",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://flatiron.com/careers/open-positions/job?gh_jid=7855302",
+   "action": "archive",
+   "why": "analyst, non-engineering",
+   "title": "Data Analyst - Product Data Science",
+   "company": "Flatiron Health",
+   "location": "NY office"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/verkada/jobs/5195281007",
+   "action": "archive",
+   "why": "San Mateo CA onsite",
+   "title": "Frontend Engineer - Access Control",
+   "company": "Verkada",
+   "location": "San Mateo, CA United States"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/verkada/jobs/5194598007",
+   "action": "archive",
+   "why": "San Mateo CA onsite",
+   "title": "Backend Engineer - Connectivity",
+   "company": "Verkada",
+   "location": "San Mateo, CA United States"
+  },
+  {
+   "key": "https://mthree.com/careers/job/?gh_jid=4699359006",
+   "action": "keep",
+   "why": "mthree places new grads, NYC - judgment call",
+   "title": "Python Developer",
+   "company": "mthree",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/openai/a0ccedf1-2bb7-4f10-8be8-db50f9ae02c3",
+   "action": "archive",
+   "why": "OpenAI experienced, SF",
+   "title": "Software Engineer, Privacy Engineering (Lawful Access)",
+   "company": "OpenAI",
+   "location": "San Francisco (Remote)"
+  },
+  {
+   "key": "https://epicgames.com/careers/jobs/6020369004?gh_jid=6020369004",
+   "action": "archive",
+   "why": "Cary NC onsite",
+   "title": "Build Programmer",
+   "company": "Epic Games",
+   "location": "Cary,North Carolina,United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5194570007?gh_jid=5194570007",
+   "action": "keep",
+   "why": "Broomfield CO, scientific SWE",
+   "title": "Scientific Software Engineer",
+   "company": "Anduril",
+   "location": "Broomfield, Colorado, United States; Fort Collins, Colorado, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5178398007?gh_jid=5178398007",
+   "action": "archive",
+   "why": "research scientist PhD",
+   "title": "Research Scientist, Battlespace Awareness",
+   "company": "Anduril",
+   "location": "Broomfield, Colorado, United States; Fort Collins, Colorado, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5150299007?gh_jid=5150299007",
+   "action": "archive",
+   "why": "research scientist PhD",
+   "title": "Research Scientist",
+   "company": "Anduril",
+   "location": "Broomfield, Colorado, United States; Fort Collins, Colorado, United States"
+  },
+  {
+   "key": "https://jobs.elastic.co/jobs?gh_jid=8079636&gh_jid=8079636",
+   "action": "keep",
+   "why": "remote US, AI engineering",
+   "title": "Agentic AI Engineer",
+   "company": "Elastic",
+   "location": "United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5193934007?gh_jid=5193934007",
+   "action": "keep",
+   "why": "Broomfield CO, scientific SWE",
+   "title": "Scientific Software Engineer",
+   "company": "Anduril",
+   "location": "Broomfield, Colorado, United States; Fort Collins, Colorado, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5156719007?gh_jid=5156719007",
+   "action": "archive",
+   "why": "electrical test, Costa Mesa CA",
+   "title": "Electrical System Test Engineer",
+   "company": "Anduril",
+   "location": "Costa Mesa, California, United States"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/cohere/e4603bb7-5bbe-4f73-9556-02c93f78b2af",
+   "action": "archive",
+   "why": "data scientist, experienced",
+   "title": "Data Scientist, North Insights",
+   "company": "Cohere",
+   "location": "United States (Remote)"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5192574007?gh_jid=5192574007",
+   "action": "touched",
+   "why": "status=In Progress",
+   "title": "Mission Software Engineer",
+   "company": "Anduril",
+   "location": "Reston, Virginia, United States"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/anthropic/jobs/5364804008",
+   "action": "archive",
+   "why": "Anthropic safeguards infra = experienced hire",
+   "title": "Machine Learning Infrastructure Engineer, Safeguards Research",
+   "company": "Anthropic",
+   "location": "San Francisco, CA | New York City, NY"
+  },
+  {
+   "key": "https://www.tower-research.com/open-positions/?gh_jid=8078008",
+   "action": "keep",
+   "why": "NYC SWE",
+   "title": "Software Engineer",
+   "company": "Tower Research Capital",
+   "location": "New York"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/openai/a6363571-e090-43a7-b758-ee3386a096c1",
+   "action": "archive",
+   "why": "OpenAI experienced, SF",
+   "title": "Software Engineer, Enterprise AI Platform",
+   "company": "OpenAI",
+   "location": "San Francisco (Remote)"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/verkada/jobs/5191604007",
+   "action": "archive",
+   "why": "San Mateo CA onsite",
+   "title": "Backend Engineer, Alarms",
+   "company": "Verkada",
+   "location": "San Mateo, CA United States"
+  },
+  {
+   "key": "https://www.asana.com/jobs/apply/7964275?gh_jid=7964275",
+   "action": "keep",
+   "why": "NYC SWE, AI devex",
+   "title": "Software Engineer, AI Developer Experience",
+   "company": "Asana",
+   "location": "New York City"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/bedrock-robotics/5516dd68-5507-421a-8b10-4f45bc9b7bd5",
+   "action": "archive",
+   "why": "experienced robotics ML, SF",
+   "title": "Machine Learning Engineer: Perception Analytics",
+   "company": "Bedrock Robotics",
+   "location": "San Francisco, CA (Remote)"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/replit/07c4c890-0dd4-4022-bba4-8dfba6ff16ee",
+   "action": "archive",
+   "why": "data scientist, CA",
+   "title": "Data Scientist, Trust & Safety",
+   "company": "Replit",
+   "location": "Foster City, CA (Remote)"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/dragos/jobs/5311375008",
+   "action": "archive",
+   "why": "staff",
+   "title": "Staff AI/ML Engineer",
+   "company": "Dragos",
+   "location": "United States"
+  },
+  {
+   "key": "https://careers.airbnb.com/positions/8074955?gh_jid=8074955",
+   "action": "archive",
+   "why": "BizTech ops, experienced",
+   "title": "Operations Engineer, BizTech",
+   "company": "Airbnb",
+   "location": "Remote- USA"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/janestreet/jobs/8632723002",
+   "action": "archive",
+   "why": "duplicate of 59",
+   "title": "Cybersecurity Analyst",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5189844007?gh_jid=5189844007",
+   "action": "archive",
+   "why": "technician, not software",
+   "title": "Production Test Technician",
+   "company": "Anduril",
+   "location": "Lexington, Massachusetts, United States"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/twilio/jobs/7434770",
+   "action": "keep",
+   "why": "L2 cloud infra, remote US",
+   "title": "Software Engineer L2 - Cloud Infrastructure",
+   "company": "Twilio",
+   "location": "Remote - US"
+  },
+  {
+   "key": "https://databricks.com/company/careers/open-positions/job?gh_jid=8546367002",
+   "action": "archive",
+   "why": "Databricks FDE = experienced",
+   "title": "AI Engineer - FDE (Forward Deployed Engineer)",
+   "company": "Databricks",
+   "location": "United States"
+  },
+  {
+   "key": "https://careers.airbnb.com/positions/8059212?gh_jid=8059212",
+   "action": "archive",
+   "why": "experienced data scientist",
+   "title": "Data Scientist, Trust (ML/Algorithms)",
+   "company": "Airbnb",
+   "location": "Remote - USA"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/janestreet/jobs/8626260002",
+   "action": "archive",
+   "why": "experienced sysadmin",
+   "title": "Linux Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/rilla/9b2464e4-0a5a-4a25-b910-2f7da1a08ee0",
+   "action": "keep",
+   "why": "NYC SWE",
+   "title": "Software Engineer, Integrations",
+   "company": "Rilla",
+   "location": "New York City"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/ramp/1540a41f-d88f-4c89-9b08-5b9fade1ee81",
+   "action": "archive",
+   "why": "same req as 241, 2+ yrs",
+   "title": "Software Engineer, GTM Platform, Frontend",
+   "company": "Ramp",
+   "location": "New York, NY (HQ) (Remote)"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/northslope-technologies/80b82167-7101-4f78-9006-7755dd2ca01e",
+   "action": "keep",
+   "why": "explicit new grad, NYC",
+   "title": "Forward Deployed Software Engineer, New Grad",
+   "company": "Northslope",
+   "location": "New York"
+  },
+  {
+   "key": "https://jpmc.fa.oraclecloud.com/hcmui/candidateexperience/en/sites/cx_1001/job/210704214",
+   "action": "archive",
+   "why": "JPMC SWE II = post-new-grad",
+   "title": "AI/ML Software Engineer II",
+   "company": "JPMorgan Chase",
+   "location": "New York, NY, United States"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/anthropic/jobs/5320469008",
+   "action": "archive",
+   "why": "Anthropic red team = experienced",
+   "title": "Red Team Engineer, Safeguards",
+   "company": "Anthropic",
+   "location": "Remote-Friendly (Travel Required) | San Francisco, CA"
+  },
+  {
+   "key": "https://careers.duolingo.com/jobs/8628670002?gh_jid=8628670002",
+   "action": "archive",
+   "why": "SWE II = 2+ yrs",
+   "title": "Software Engineer II, Android",
+   "company": "Duolingo",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://boards.greenhouse.io/chime/jobs/8616359002?gh_jid=8616359002",
+   "action": "archive",
+   "why": "SF onsite",
+   "title": "Software Engineer, Infrastructure",
+   "company": "Chime",
+   "location": "San Francisco, CA, USA"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/soundcloud71/jobs/8624962002",
+   "action": "keep",
+   "why": "NYC iOS",
+   "title": "iOS Engineer - Fan Monetization",
+   "company": "SoundCloud",
+   "location": "New York"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/soundcloud71/jobs/8624945002",
+   "action": "keep",
+   "why": "NYC Android",
+   "title": "Android Engineer - Fan Monetization",
+   "company": "SoundCloud",
+   "location": "New York"
+  },
+  {
+   "key": "https://mthree.com/careers/job/?gh_jid=4695901006",
+   "action": "keep",
+   "why": "mthree places new grads, NYC - judgment call",
+   "title": "Python Developer",
+   "company": "mthree",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://jobs.elastic.co/jobs?gh_jid=8047349&gh_jid=8047349",
+   "action": "keep",
+   "why": "remote US platform/k8s",
+   "title": "Platform Engineer - Kubernetes",
+   "company": "Elastic",
+   "location": "United States"
+  },
+  {
+   "key": "https://www.klaviyo.com/careers/jobs/7792539003?gh_jid=7792539003",
+   "action": "archive",
+   "why": "SWE II, Android-first experience required",
+   "title": "Software Engineer II (Mobile Developer - Android/Kotlin) - Mobile App Growth",
+   "company": "Klaviyo",
+   "location": "Boston, MA"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/fireworksai/jobs/4308305009",
+   "action": "archive",
+   "why": "MTS research = experienced",
+   "title": "MTS, Research Engineer",
+   "company": "Fireworks AI",
+   "location": "New York, NY; San Mateo, CA"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=48825294",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Founding Engineer #5",
+   "company": "String (https://www.usestring.ai/)",
+   "location": "ONSITE - NYC"
+  },
+  {
+   "key": "https://www.hudsonrivertrading.com/careers/job/?gh_jid=7972584",
+   "action": "touched",
+   "why": "applied, rejected",
+   "title": "AI Research Engineer, Pre-Training",
+   "company": "Hudson River Trading",
+   "location": "New York, NY, United States"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/vercel/jobs/5430088004",
+   "action": "touched",
+   "why": "applied 2026-07-03",
+   "title": "Software Engineer, Backend",
+   "company": "Vercel",
+   "location": "Remote - United States"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/auctor/9d67c881-3ca7-4616-a059-e94c03e19607",
+   "action": "touched",
+   "why": "applied 2026-06-24",
+   "title": "Software Engineering Intern",
+   "company": "Auctor",
+   "location": "New York"
+  },
+  {
+   "key": "https://jpmc.fa.oraclecloud.com/hcmui/candidateexperience/en/sites/cx_1001/job/210710350",
+   "action": "archive",
+   "why": "SWE III, Plano TX",
+   "title": "Software Engineer III - Python/AWS",
+   "company": "JPMorgan Chase",
+   "location": "Plano, TX, United States"
+  },
+  {
+   "key": "https://abnormal.ai/careers/jobs/7833508003?gh_jid=7833508003",
+   "action": "archive",
+   "why": "2+ yrs stated",
+   "title": "Enterprise Platform Engineer",
+   "company": "Abnormal Security",
+   "location": "Remote - USA"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/plaid/7e10c0b5-a09a-4e07-aaa8-899a7f82a0c9",
+   "action": "keep",
+   "why": "Plaid new grad backend, NYC",
+   "title": "Software Engineer - Backend",
+   "company": "Plaid",
+   "location": "New York City, NY"
+  },
+  {
+   "key": "https://blackstone.wd1.myworkdayjobs.com/en-us/blackstone_careers/job/new-york/platform-engineer--associate---physical-security_41692-1",
+   "action": "keep",
+   "why": "Blackstone associate SWE, NYC - LLM misread as non-technical",
+   "title": "Software Engineer - Associate - Enterprise Technology",
+   "company": "Blackstone",
+   "location": "New York City, NY"
+  },
+  {
+   "key": "https://careers.cargurus.com/us/en/job/8050961?gh_jid=8050961",
+   "action": "archive",
+   "why": "SDE II + architect = experienced",
+   "title": "Software Development Engineer II - Developer Experience Architecture",
+   "company": "CarGurus",
+   "location": "Boston, MA"
+  },
+  {
+   "key": "https://massmutual.wd1.myworkdayjobs.com/en-us/mmcareers/job/new-york-ny/quantitative-developer_r20872",
+   "action": "archive",
+   "why": "quant",
+   "title": "Quantitative Developer",
+   "company": "MassMutual",
+   "location": "New York City, NY"
+  },
+  {
+   "key": "https://acrisure.wd1.myworkdayjobs.com/en-us/acrisure/job/333-earle-ovington-blvd---uniondale-ny/software-engineer-i_jr113871",
+   "action": "keep",
+   "why": "SWE I, Uniondale NY - Long Island",
+   "title": "Software Engineer I",
+   "company": "Acrisure",
+   "location": "Uniondale, NY +3"
+  },
+  {
+   "key": "https://ms.wd5.myworkdayjobs.com/en-us/private/job/new-york-new-york-united-states-of-america/junior-full-stack-developer_pt-jr041853",
+   "action": "keep",
+   "why": "junior full-stack, NYC",
+   "title": "Junior Full Stack Developer",
+   "company": "Morgan Stanley",
+   "location": "New York City, NY"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/creditgenie/016056e0-61cd-4a19-9d42-5f3cd88fed02",
+   "action": "keep",
+   "why": "new grad, NYC",
+   "title": "New Grad: Software Engineer",
+   "company": "Credit Genie",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://www.drw.com/work-at-drw/listings/research-engineer-2930985",
+   "action": "archive",
+   "why": "DRW research engineer = quant-adjacent trading",
+   "title": "Research Engineer",
+   "company": "DRW",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://www.workatastartup.com/jobs/75855",
+   "action": "keep",
+   "why": "new grad, NYC",
+   "title": "New Grad: Software Engineer",
+   "company": "Greenboard (W24)",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://careers.point72.com/csjobdetail?jobname=quantitative-developer&jobcode=css-0013369&location=new%20york&locale=english",
+   "action": "archive",
+   "why": "quant",
+   "title": "Quantitative Developer",
+   "company": "Point72",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/n1/2213cef6-fbcd-42f7-8e0e-c6a23bfc1119",
+   "action": "keep",
+   "why": "NYC SWE",
+   "title": "Software Engineer (Full Stack)",
+   "company": "N1",
+   "location": "New York City"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/n1/99a78724-a7eb-4801-9e75-cf4465950567",
+   "action": "keep",
+   "why": "NYC SWE",
+   "title": "Software Engineer (Backend Rust)",
+   "company": "N1",
+   "location": "New York City"
+  },
+  {
+   "key": "https://app.careerpuck.com/job-board/lyft/job/8022809002",
+   "action": "keep",
+   "why": "Lyft new grad, NYC",
+   "title": "Software Engineer, Rider",
+   "company": "Lyft",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://www.amazon.jobs/en/jobs/3012833/security-engineer-appsec-testing-automation-and-insights",
+   "action": "keep",
+   "why": "AppSec, NYC, cyber positive",
+   "title": "Security Engineer, AppSec Testing Automation and Insights",
+   "company": "Amazon",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://bambusdev.my.site.com/s/details?jobreq=systematic-equities-quantitative-researcher---developer_req6955",
+   "action": "archive",
+   "why": "quant",
+   "title": "Systematic Equities Quantitative Researcher / Developer",
+   "company": "Balyasny Asset Management",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://jobs.lever.co/palantir/e1a6c138-98bf-45e2-97f7-2c70371cc38a",
+   "action": "keep",
+   "why": "Palantir new grad, NYC",
+   "title": "New Grad: Software Engineer",
+   "company": "Palantir",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://www.ycombinator.com/companies/porter/jobs/6qhplsz-full-stack-engineer",
+   "action": "keep",
+   "why": "NYC full-stack",
+   "title": "Full Stack Engineer",
+   "company": "Porter",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://www.hudsonrivertrading.com/hrt-job/junior-electronic-trading-support-engineer-2/",
+   "action": "archive",
+   "why": "trade ops, non-technical",
+   "title": "Trade Operations",
+   "company": "Hudson River Trading",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/ramp/83075cf0-9c22-4475-9c6b-e21923a96df8",
+   "action": "archive",
+   "why": "2026 start",
+   "title": "New Grad 2026: Software Engineer - Backend",
+   "company": "Ramp",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/ramp/a1229aec-1105-4c47-8533-b912e732ed89",
+   "action": "archive",
+   "why": "2026 start",
+   "title": "New Grad 2026: Software Engineer - Frontend",
+   "company": "Ramp",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/suno/991c9785-9bd5-499a-98aa-146e8c947752",
+   "action": "keep",
+   "why": "early career, Boston/NYC",
+   "title": "Software Engineer, Early Career",
+   "company": "Suno",
+   "location": "Boston, MA / New York, NY"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/notion/4b10e40a-6136-4efe-8b05-cad43458e9e9",
+   "action": "archive",
+   "why": "not early-career track; experienced",
+   "title": "Software Engineer, Search Platform",
+   "company": "Notion",
+   "location": "New York, NY / San Francisco, CA"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/cape/bd280ded-4298-47de-a186-1aebd1bd94b8",
+   "action": "keep",
+   "why": "new grad, NYC",
+   "title": "New Grad: Software Engineer",
+   "company": "Cape",
+   "location": "New York, NY / Washington, DC"
+  },
+  {
+   "key": "https://ibmglobal.avature.net/en_us/careers/jobdetail?jobid=56285",
+   "action": "keep",
+   "why": "IBM entry developer",
+   "title": "Software Developer",
+   "company": "IBM",
+   "location": "Sandy Springs, GA / Poughkeepsie, NY / Lowell, MA / Rochester, MN / Tucson, AZ / Research Triangle Park, NC / Durham, NC / Hopewell Junction, NY / San Jose, CA / Dallas, TX / Houston, TX / Austin, TX / Herndon, VA / New York, NY"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/gecko-robotics/7d9ce912-14c3-405b-9f8a-7f261fe8230d/application",
+   "action": "keep",
+   "why": "new grad rotational, Boston/NYC",
+   "title": "Software Engineer - New Graduate Rotational Development Program",
+   "company": "Gecko Robotics",
+   "location": "Boston, MA / NYC"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/ellipsislabs/caa49297-d5a3-4d03-b8c9-bdc7b77fb0bb/application",
+   "action": "keep",
+   "why": "NYC SWE",
+   "title": "Software Engineer",
+   "company": "Ellipsis Labs",
+   "location": "NYC"
+  },
+  {
+   "key": "https://www.disneycareers.com/en/job/-/-/391/85823385568",
+   "action": "keep",
+   "why": "SWE I, NYC option",
+   "title": "Software Engineer I",
+   "company": "Disney",
+   "location": "Glendale, CA / New York, NY"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/position/8053215002/",
+   "action": "archive",
+   "why": "duplicate of 59",
+   "title": "Cybersecurity Analyst",
+   "company": "Jane Street",
+   "location": "New York"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/eliseai/1ffbd278-a5fe-443c-984f-521d61a97353",
+   "action": "keep",
+   "why": "NYC SWE",
+   "title": "Software Engineer",
+   "company": "EliseAI",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://www.workatastartup.com/jobs/80837",
+   "action": "keep",
+   "why": "NYC founding eng - judgment call",
+   "title": "Founding Engineer",
+   "company": "Channel3",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/notion/add58865-8b9f-4cf7-9720-2908ba5f4d80",
+   "action": "keep",
+   "why": "early career, NYC option",
+   "title": "Software Engineer, Infrastructure, Early Career",
+   "company": "Notion",
+   "location": "San Francisco, CA / New York, NY"
+  },
+  {
+   "key": "https://careersatdoordash.com/jobs/software-engineer-i-entry-level-graduation-date-fall-2025-summer-2026/7263610/",
+   "action": "archive",
+   "why": "listing requires Fall 2025-Summer 2026 graduation",
+   "title": "New Grad: Software Engineer I",
+   "company": "DoorDash",
+   "location": "New York, NY / San Francisco, CA / Los Angeles, CA / Seattle, WA / Sunnyvale, CA"
+  },
+  {
+   "key": "https://www.workatastartup.com/jobs/83842",
+   "action": "keep",
+   "why": "NYC founding eng - judgment call",
+   "title": "Founding Engineer",
+   "company": "Claim Health (X25)",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://www.boerboeltrading.com/jobs.html?gh_jid=5670371004",
+   "action": "keep",
+   "why": "new grad developer, NYC option",
+   "title": "New Grad: Developer",
+   "company": "Boerboel",
+   "location": "New York, NY / Chicago, IL"
+  },
+  {
+   "key": "https://www.spotandtango.com/careers?gh_jid=4620638005",
+   "action": "keep",
+   "why": "jr SWE, NYC",
+   "title": "Jr. Software Engineer",
+   "company": "Spot & Tango",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://www.metacareers.com/jobs/2578176955882259",
+   "action": "keep",
+   "why": "Meta data engineering, NYC, entry",
+   "title": "Data Engineer, Analytics",
+   "company": "Meta",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://www.databricks.com/company/careers/professional-services-operations/ai-tooling-program-engineer--8295414002",
+   "action": "archive",
+   "why": "professional-services program role, experienced",
+   "title": "AI Tooling Program Engineer",
+   "company": "Databricks",
+   "location": "Northeast, United States"
+  },
+  {
+   "key": "https://www.workatastartup.com/jobs/79286",
+   "action": "keep",
+   "why": "NYC founding product eng - judgment call",
+   "title": "Founding Product Engineer",
+   "company": "Emerge Career",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://careers.capgemini.com/job/new-york%2c-ny-full-stack-ai-engineer-ny-10001/1275242401",
+   "action": "keep",
+   "why": "NYC, entry-friendly consultancy",
+   "title": "Full Stack AI Engineer",
+   "company": "Capgemini",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://www.tryprofound.com/careers/1d4a905b-7b91-4763-88dd-7abc7562fbcd",
+   "action": "keep",
+   "why": "new grad, NYC",
+   "title": "New Grad: Software Engineer",
+   "company": "Profound",
+   "location": "New York City, NY / San Francisco, CA"
+  },
+  {
+   "key": "https://www.google.com/about/careers/applications/jobs/results/143333237156913862-software-engineer-ii/",
+   "action": "keep",
+   "why": "Google early career, NYC option",
+   "title": "Software Engineer II, Early Career",
+   "company": "Google",
+   "location": "Mountain View, CA / Kirkland, WA / Los Angeles, CA / Madison, WI / New York, NY / Palo Alto, CA / Pittsburgh, PA / Raleigh, NC / Durham, NC / San Bruno, CA / Seattle, WA / Sunnyvale, CA"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/simplisafe/jobs/8049515",
+   "action": "keep",
+   "why": "SWE I, Boston",
+   "title": "Software Engineer I",
+   "company": "SimpliSafe",
+   "location": "Boston, MA"
+  },
+  {
+   "key": "https://boards.greenhouse.io/cloudflare/jobs/8099671?gh_jid=8099671",
+   "action": "archive",
+   "why": "2+ yrs, network deployment",
+   "title": "Network Deployment Engineer",
+   "company": "Cloudflare",
+   "location": "Hybrid"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/openai/e961c9df-caa0-4b29-b37c-a3e02c564615",
+   "action": "archive",
+   "why": "silicon design, SF, experienced",
+   "title": "Software Engineer, Silicon Design Methodology",
+   "company": "OpenAI",
+   "location": "San Francisco (Remote)"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49207409",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "2 Full Stack AI Engineer, 1 GTM",
+   "company": "Interview Resources",
+   "location": "REMOTE"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5203148007?gh_jid=5203148007",
+   "action": "archive",
+   "why": "technician, not software",
+   "title": "Engineering Test Technician",
+   "company": "Anduril",
+   "location": "Quonset, Rhode Island, United States"
+  },
+  {
+   "key": "https://wexinc.wd5.myworkdayjobs.com/wexinc/job/us---remote/staff-ai-engineer---l4-_r22452",
+   "action": "archive",
+   "why": "staff",
+   "title": "Staff AI Engineer  (L4)",
+   "company": "WEX",
+   "location": "US - Remote"
+  },
+  {
+   "key": "https://jpmc.fa.oraclecloud.com/hcmui/candidateexperience/en/sites/cx_1001/job/210744379",
+   "action": "archive",
+   "why": "JPMC SWE II = post-new-grad",
+   "title": "Software Engineer II (Java/React)",
+   "company": "JPMorgan Chase",
+   "location": "New York, NY, United States"
+  },
+  {
+   "key": "https://jpmc.fa.oraclecloud.com/hcmui/candidateexperience/en/sites/cx_1001/job/210751403",
+   "action": "archive",
+   "why": "JPMC SWE II = post-new-grad",
+   "title": "Software Engineer II - Test Automation Engineer",
+   "company": "JPMorgan Chase",
+   "location": "New York, NY, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/4916417007?gh_jid=4916417007",
+   "action": "archive",
+   "why": "post-sales field ops",
+   "title": "Mission Operations Engineer, Connected Warfare",
+   "company": "Anduril",
+   "location": "Herndon, Virginia, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5203392007?gh_jid=5203392007",
+   "action": "archive",
+   "why": "electrical, Irvine CA",
+   "title": "Electrical Engineer",
+   "company": "Anduril",
+   "location": "Irvine, California, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5201425007?gh_jid=5201425007",
+   "action": "archive",
+   "why": "calibration eng, Ashville OH",
+   "title": "Calibration Engineer",
+   "company": "Anduril",
+   "location": "Ashville, Ohio, United States"
+  },
+  {
+   "key": "https://job-boards.eu.greenhouse.io/imc/jobs/4826897101",
+   "action": "archive",
+   "why": "3+ yrs, Chicago",
+   "title": "Data Platform Operations Engineer \u2013 Performance",
+   "company": "IMC Trading",
+   "location": "Chicago, United States"
+  },
+  {
+   "key": "http://www.bishopfox.com/jobs?gh_jid=8110348",
+   "action": "archive",
+   "why": "pre-sales solutions engineer",
+   "title": "Solutions Engineer",
+   "company": "Bishop Fox",
+   "location": "U.S. Remote"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/cursor/41f0d1a2-9449-4980-8592-f23290a9b65e",
+   "action": "archive",
+   "why": "field engineer, not full-time SWE",
+   "title": "Field Engineer, Life Sciences",
+   "company": "Cursor",
+   "location": "Remote (Remote)"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/rilla/d5f79400-1198-4414-b7f0-fb53cfb0eebc",
+   "action": "archive",
+   "why": "workplace ops, non-technical",
+   "title": "Founding Office & Workplace Operations",
+   "company": "Rilla",
+   "location": "New York City"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/ramp/4d3197eb-49dc-4827-a1e6-26cf0ff24b55",
+   "action": "archive",
+   "why": "product ops, non-technical, 3+ yrs",
+   "title": "Product Operations | Customer Setup",
+   "company": "Ramp",
+   "location": "New York, NY (HQ) (Remote)"
+  },
+  {
+   "key": "https://www.fireblocks.com/careers/position?gh_jid=4626035006",
+   "action": "keep",
+   "why": "Miami FL / NY, fintech mobile",
+   "title": "Mobile Engineer",
+   "company": "Fireblocks",
+   "location": "Miami, Florida, United States; New York; San Francisco, California, United States"
+  },
+  {
+   "key": "https://www.fireblocks.com/careers/position?gh_jid=4626033006",
+   "action": "keep",
+   "why": "fintech mobile, US",
+   "title": "Mobile Engineer",
+   "company": "Fireblocks",
+   "location": "United States"
+  },
+  {
+   "key": "https://jobs.lever.co/shieldai/93f53ebc-7b99-468e-956b-07a82af2a315",
+   "action": "archive",
+   "why": "staff",
+   "title": "Staff Software Engineer, Autonomy Capabilities - Space",
+   "company": "Shield AI",
+   "location": "Boston, MA"
+  },
+  {
+   "key": "https://boards.greenhouse.io/cloudflare/jobs/8074364?gh_jid=8074364",
+   "action": "archive",
+   "why": "data center eng, not software",
+   "title": "Data Center Engineer",
+   "company": "Cloudflare",
+   "location": "Hybrid"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/buildkite/jobs/5122275008",
+   "action": "archive",
+   "why": "staff DevRel",
+   "title": "Staff Developer Advocate",
+   "company": "Buildkite",
+   "location": "USA - Pacific Time"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49185076",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Location: Dallas, TX",
+   "company": "",
+   "location": ""
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49174463",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "ML Ops, AI, Platform/Core",
+   "company": "Confido",
+   "location": "NYC (Chelsea)"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49173075",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "full-time",
+   "company": "forus - founding security engineer",
+   "location": "onsite in NYC!https://jobs.ashbyhq.com/forus/da672861-890d-44d2-ab5e-a6747...Forus is building an AI"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49165359",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Backend Systems Engineer (Rust)",
+   "company": "Proxybase",
+   "location": "Remote (Global)"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49165870",
+   "action": "archive",
+   "why": "Belgium hybrid",
+   "title": "Software Developer",
+   "company": "Odoo",
+   "location": "Hybrid (Belgium, 3 days/week)"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49163946",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Product Engineer",
+   "company": "Phaselaw",
+   "location": "Remote (US) or Hybrid (NYC)"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49162990",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Founding Engineer",
+   "company": "Octozi",
+   "location": "Brooklyn, NY"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49162047",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Product Engineer",
+   "company": "Hatchet",
+   "location": "NYC or SF or REMOTE (US and EU)"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49161868",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Site Reliability Engineer (SRE)",
+   "company": "GetEpic.com",
+   "location": "US located only"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49158552",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Full-time Engineer",
+   "company": "Vitalize",
+   "location": "San Francisco (hybrid)What we do:"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49157182",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Sumble is the newco from the founders of Kaggle. We are hiring full stack engineers, ai/ml engineers and growth/marketin",
+   "company": "",
+   "location": ""
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49156724",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "150-250k+ + equity + benefits",
+   "company": "SmarterDx",
+   "location": "Remote (US only)"
+  },
+  {
+   "key": "https://job-boards.eu.greenhouse.io/veeamsoftware/jobs/4943165101",
+   "action": "archive",
+   "why": "solutions architect, Belgium",
+   "title": "Solutions Architect",
+   "company": "Veeam",
+   "location": "Remote, Belgium"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/temporal/03eaf919-bf0a-48fe-be74-15e7dd889f9c",
+   "action": "archive",
+   "why": "SWE II = 2+ yrs",
+   "title": "Software Engineer II, AI Foundations",
+   "company": "Temporal",
+   "location": "United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5201026007?gh_jid=5201026007",
+   "action": "archive",
+   "why": "supply chain sourcing",
+   "title": "Product Sourcing Engineer",
+   "company": "Anduril",
+   "location": "Fort Collins, Colorado, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5201036007?gh_jid=5201036007",
+   "action": "archive",
+   "why": "supply planner, non-technical",
+   "title": "Supply Planner",
+   "company": "Anduril",
+   "location": "Fort Collins, Colorado, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5201025007?gh_jid=5201025007",
+   "action": "archive",
+   "why": "research scientist PhD",
+   "title": "Research Scientist",
+   "company": "Anduril",
+   "location": "Fort Collins, Colorado, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5201029007?gh_jid=5201029007",
+   "action": "archive",
+   "why": "sourcing, non-technical",
+   "title": "Product Sourcing Specialist",
+   "company": "Anduril",
+   "location": "Fort Collins, Colorado, United States"
+  },
+  {
+   "key": "https://cisco.wd5.myworkdayjobs.com/cisco_careers/job/milpitas-california-us/ai-operations-engineering-technical-leader_2020998",
+   "action": "archive",
+   "why": "technical leader, Milpitas CA",
+   "title": "AI Operations Engineering Technical Leader",
+   "company": "Cisco (Splunk)",
+   "location": "Milpitas, California, US"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/scaleai/jobs/4720487005",
+   "action": "archive",
+   "why": "staff",
+   "title": "Staff Frontier Agents Engineer (Applied AI)",
+   "company": "Scale AI",
+   "location": "San Francisco, CA; Seattle, WA; New York, NY"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/baseten/3677992a-2a97-4a55-98ce-e2719922f263",
+   "action": "archive",
+   "why": "finance, non-technical",
+   "title": "Strategic Finance, GTM",
+   "company": "Baseten",
+   "location": "San Francisco (Remote)"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/openai/6d7ece77-bf25-4f5e-9a84-c5ce26e18c37",
+   "action": "archive",
+   "why": "vague/experienced, OpenAI",
+   "title": "Industrial Compute",
+   "company": "OpenAI",
+   "location": "Remote - US (Remote)"
+  },
+  {
+   "key": "https://jpmc.fa.oraclecloud.com/hcmui/candidateexperience/en/sites/cx_1001/job/210757578",
+   "action": "archive",
+   "why": "JPMC SWE II = post-new-grad",
+   "title": "Software Engineer II (Java/React)",
+   "company": "JPMorgan Chase",
+   "location": "New York, NY, United States"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/harvey/19db4c0a-8883-43c3-b667-60463098feb2",
+   "action": "archive",
+   "why": "experienced, SF",
+   "title": "Frontend Platform Engineer",
+   "company": "Harvey",
+   "location": "San Francisco (Remote)"
+  },
+  {
+   "key": "https://boards.greenhouse.io/chime/jobs/8606649002?gh_jid=8606649002",
+   "action": "archive",
+   "why": "SF onsite",
+   "title": "Full-Stack Engineer, Human Agent Tooling",
+   "company": "Chime",
+   "location": "San Francisco, CA, USA"
+  },
+  {
+   "key": "https://jobs.elastic.co/jobs?gh_jid=8077634&gh_jid=8077634",
+   "action": "archive",
+   "why": "SWE II = 2+ yrs",
+   "title": "Fullstack Software Engineer II - Admin UX - Platform Applications",
+   "company": "Elastic",
+   "location": "United States"
+  },
+  {
+   "key": "https://careers.datadoghq.com/detail/8088995/?gh_jid=8088995",
+   "action": "archive",
+   "why": "sales engineer",
+   "title": "Mid-Market Sales Engineer (AMER - East)",
+   "company": "Datadog",
+   "location": "Boston, Massachusetts, USA"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5144554007?gh_jid=5144554007",
+   "action": "archive",
+   "why": "supplier quality, not software",
+   "title": "Supplier Quality Engineer",
+   "company": "Anduril",
+   "location": "Quonset, Rhode Island, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5198419007?gh_jid=5198419007",
+   "action": "archive",
+   "why": "technician, not software",
+   "title": "Manufacturing Test Technician",
+   "company": "Anduril",
+   "location": "Lexington, Massachusetts, United States"
+  },
+  {
+   "key": "https://salesforce.wd12.myworkdayjobs.com/external_career_site/job/spain---madrid/ai-builder--emerging-talent---greek-market_jr354374-2",
+   "action": "archive",
+   "why": "Greek-market role, language requirement",
+   "title": "AI Builder, Emerging Talent - Greek Market",
+   "company": "Salesforce",
+   "location": "Spain - Madrid"
+  },
+  {
+   "key": "https://careers.roblox.com/jobs/8080438?gh_jid=8080438",
+   "action": "archive",
+   "why": "San Mateo CA onsite",
+   "title": "Software Engineer, User Frameworks",
+   "company": "Roblox",
+   "location": "San Mateo, CA, United States"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/reddit/jobs/8094764",
+   "action": "archive",
+   "why": "staff, HR systems",
+   "title": "Staff People Integrations Engineer",
+   "company": "Reddit",
+   "location": "Remote - United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8360490002?gh_jid=8360490002",
+   "action": "archive",
+   "why": "non-technical, 2+ yrs",
+   "title": "Operations Specialist",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8620793002?gh_jid=8620793002",
+   "action": "archive",
+   "why": "network engineering, experienced",
+   "title": "Network Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8155302002?gh_jid=8155302002",
+   "action": "archive",
+   "why": "IT security ops, experienced",
+   "title": "IT Security Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/gusto/jobs/8075990",
+   "action": "archive",
+   "why": "platform ops analyst, non-engineering",
+   "title": "Platform Operations Analyst",
+   "company": "Gusto",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5193761007?gh_jid=5193761007",
+   "action": "archive",
+   "why": "field ops, Waltham MA",
+   "title": "Technical Field Operations Engineer",
+   "company": "Anduril",
+   "location": "Waltham, Massachusetts, United States"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/elevenlabs/c0eef3e3-2335-41bd-b06e-db333e916636",
+   "action": "archive",
+   "why": "onboarding/ops, non-technical",
+   "title": "Global Onboarding",
+   "company": "ElevenLabs",
+   "location": "United States (Remote)"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/vonage/jobs/8626551002",
+   "action": "archive",
+   "why": "Spain WFH but experienced hire",
+   "title": "Java Software Engineer",
+   "company": "Vonage",
+   "location": "Work from Home - Spain"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/4274288002?gh_jid=4274288002",
+   "action": "keep",
+   "why": "Jane Street SWE, NYC",
+   "title": "Software Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8419303002?gh_jid=8419303002",
+   "action": "keep",
+   "why": "Jane Street SWE, NYC",
+   "title": "Software Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8428218002?gh_jid=8428218002",
+   "action": "archive",
+   "why": "5-7 yrs",
+   "title": "Security Operations Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8056588002?gh_jid=8056588002",
+   "action": "archive",
+   "why": "educator, not engineering",
+   "title": "Machine Learning Educator",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8635672002?gh_jid=8635672002",
+   "action": "archive",
+   "why": "experienced sysadmin",
+   "title": "Linux Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/4276248002?gh_jid=4276248002",
+   "action": "archive",
+   "why": "experienced sysadmin",
+   "title": "Linux Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8018160002?gh_jid=8018160002",
+   "action": "archive",
+   "why": "IT ops",
+   "title": "IT Operations Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/6184529002?gh_jid=6184529002",
+   "action": "keep",
+   "why": "Jane Street front-end SWE, NYC",
+   "title": "Front End Software Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/7921972002?gh_jid=7921972002",
+   "action": "archive",
+   "why": "non-technical, 1+ yrs",
+   "title": "Financial Resource Management Specialist",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/6558007002?gh_jid=6558007002",
+   "action": "keep",
+   "why": "data engineering, NYC",
+   "title": "Data Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8631973002?gh_jid=8631973002",
+   "action": "keep",
+   "why": "data engineering, NYC",
+   "title": "Data Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8596433002?gh_jid=8596433002",
+   "action": "keep",
+   "why": "cyber vuln management, NYC",
+   "title": "Cybersecurity Engineer - Vulnerability Management",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8613910002?gh_jid=8613910002",
+   "action": "archive",
+   "why": "same role already applied to and rejected (row 338)",
+   "title": "Cybersecurity Analyst: New Grad",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8596349002?gh_jid=8596349002",
+   "action": "archive",
+   "why": "experienced compiler specialist",
+   "title": "Compiler Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8213653002?gh_jid=8213653002",
+   "action": "archive",
+   "why": "hardware ASIC",
+   "title": "ASIC Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.harness.io/company/jobs/apply?gh_jid=5198641007&gh_jid=5198641007",
+   "action": "archive",
+   "why": "DevRel, not core engineering",
+   "title": "Developer Advocate, DevSecOps",
+   "company": "Harness",
+   "location": "U.S. (Remote)"
+  },
+  {
+   "key": "https://jpmc.fa.oraclecloud.com/hcmui/candidateexperience/en/sites/cx_1001/job/210736643",
+   "action": "archive",
+   "why": "VP, product owner",
+   "title": "Data Product Owner-Vice President",
+   "company": "JPMorgan Chase",
+   "location": "New York, NY, United States"
+  },
+  {
+   "key": "https://www.payoneer.com/careers/position/8081490/?gh_jid=8081490",
+   "action": "archive",
+   "why": "analyst, 3+ yrs",
+   "title": "Data Analyst",
+   "company": "Payoneer",
+   "location": "Madrid, Spain"
+  },
+  {
+   "key": "https://jobs.lever.co/veeva/bd25fa26-0de8-496c-98a4-38101dfeadb1",
+   "action": "archive",
+   "why": "consultant, non-engineering",
+   "title": "AI Consultant - Pharmacovigilance/Safety Systems Implementation",
+   "company": "Veeva",
+   "location": "Massachusetts - Boston"
+  },
+  {
+   "key": "https://boards.greenhouse.io/cloudflare/jobs/8088046?gh_jid=8088046",
+   "action": "archive",
+   "why": "network deployment, experienced",
+   "title": "Network Deployment Engineer - APJC",
+   "company": "Cloudflare",
+   "location": "Hybrid"
+  },
+  {
+   "key": "https://jpmc.fa.oraclecloud.com/hcmui/candidateexperience/en/sites/cx_1001/job/210772823",
+   "action": "archive",
+   "why": "controls strategy, non-technical",
+   "title": "Asset & Wealth Management Controls Strategy & Innovation (CSI) \u2013 AI Controls Enablement (Associate)",
+   "company": "JPMorgan Chase",
+   "location": "NY, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5198420007?gh_jid=5198420007",
+   "action": "archive",
+   "why": "technician, not software",
+   "title": "Engineering Test Technician",
+   "company": "Anduril",
+   "location": "Lexington, Massachusetts, United States"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/ramp/dbc6e470-3ec3-4605-b511-8ae166fea7b9",
+   "action": "archive",
+   "why": "2+ yrs, SF",
+   "title": "Software Engineer, GTM Platform",
+   "company": "Ramp",
+   "location": "San Francisco, CA (Remote)"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/gusto/jobs/8092845",
+   "action": "archive",
+   "why": "legal",
+   "title": "Product Counsel - HR Apps/Employment Law",
+   "company": "Gusto",
+   "location": "Denver, CO;San Francisco, CA;New York, NY"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/snowflake/db1375f0-ea5d-404a-b640-259f94dbc995",
+   "action": "archive",
+   "why": "2+ yrs, Menlo Park CA",
+   "title": "Software Engineer - Database Engineering",
+   "company": "Snowflake",
+   "location": "US-CA-Menlo Park"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/ramp/f36f233b-bb27-4334-87df-8dc02b897724",
+   "action": "archive",
+   "why": "sales",
+   "title": "Solutions Consultant, Mid-Market",
+   "company": "Ramp",
+   "location": "New York, NY (HQ) (Remote)"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/snowflake/2b3e7582-84c9-4fd1-969c-16ae1a4f61e6",
+   "action": "archive",
+   "why": "Bellevue WA, experienced",
+   "title": "Software Engineer - Data Clean Room/ AI Data Hub",
+   "company": "Snowflake",
+   "location": "US-WA-Bellevue (Remote)"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/mixpanel/jobs/8064216",
+   "action": "archive",
+   "why": "SF hybrid",
+   "title": "Software Engineer, AI Platform",
+   "company": "Mixpanel",
+   "location": "San Francisco, US (Hybrid)"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/elevenlabs/f1427164-3037-47d1-a768-11cfb87953ae",
+   "action": "archive",
+   "why": "non-technical",
+   "title": "Private Equity Partnerships",
+   "company": "ElevenLabs",
+   "location": "New York"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/affirm/jobs/7796534003",
+   "action": "keep",
+   "why": "product security, remote US, 0-2 yrs",
+   "title": "Product Security Engineer II",
+   "company": "Affirm",
+   "location": "Remote US"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/clear/jobs/8070543",
+   "action": "archive",
+   "why": "3+ yrs",
+   "title": "Machine Learning Engineer II",
+   "company": "CLEAR",
+   "location": "New York, NY, United States"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/notion/a1e9f265-7a8d-4acd-9503-3c36b6f7008b",
+   "action": "archive",
+   "why": "sales",
+   "title": "Commercial Solutions Consultant, New York",
+   "company": "Notion",
+   "location": "New York, New York"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/notion/43b37ac5-1ce9-4106-8df1-1ae8515087ee",
+   "action": "archive",
+   "why": "sales, 8-15 yrs",
+   "title": "Enterprise Solutions Consultant, New York",
+   "company": "Notion",
+   "location": "New York, New York"
+  },
+  {
+   "key": "https://cisco.wd5.myworkdayjobs.com/cisco_careers/job/rtp-north-carolina-us/data-engineer---ai--hybrid_2018109",
+   "action": "archive",
+   "why": "RTP NC hybrid",
+   "title": "Data Engineer - AI, Hybrid",
+   "company": "Cisco (Splunk)",
+   "location": "RTP, North Carolina, US"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/rilla/bad787f7-83ef-471b-9f9a-054799ba7476",
+   "action": "archive",
+   "why": "GTM/sales engineering",
+   "title": "GTM Engineer",
+   "company": "Rilla",
+   "location": "New York City"
+  },
+  {
+   "key": "https://boards.greenhouse.io/cloudflare/jobs/8015230?gh_jid=8015230",
+   "action": "archive",
+   "why": "experienced, hybrid location unstated",
+   "title": "Systems Engineer - Global Resource Management (Data Residency)",
+   "company": "Cloudflare",
+   "location": "Hybrid"
+  },
+  {
+   "key": "https://www.hudsonrivertrading.com/careers/job/?gh_jid=7798233",
+   "action": "keep",
+   "why": "HRT SWE, NYC",
+   "title": "Software Engineer - Enterprise Technology",
+   "company": "Hudson River Trading",
+   "location": "New York, NY, United States"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/anthropic/jobs/5367436008",
+   "action": "archive",
+   "why": "staff",
+   "title": "Staff Software Engineer, Environments Infrastructure",
+   "company": "Anthropic",
+   "location": "San Francisco, CA | New York City, NY"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/anthropic/jobs/5370690008",
+   "action": "archive",
+   "why": "staff",
+   "title": "Staff Software Engineer, Code RL",
+   "company": "Anthropic",
+   "location": "San Francisco, CA | New York City, NY | Seattle, WA"
+  },
+  {
+   "key": "https://jobs.lever.co/palantir/91117724-9389-48dc-912f-98e48d4d45d8",
+   "action": "keep",
+   "why": "Palantir new grad FDE infra, NYC",
+   "title": "Forward Deployed Infrastructure Engineer, New Grad - US Government",
+   "company": "Palantir",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://jobs.smartrecruiters.com/experian/744000139809482",
+   "action": "archive",
+   "why": "staff architect, senior",
+   "title": "Staff Platform Architect, Data & AI (Remote)",
+   "company": "Experian",
+   "location": "United States, UNITED STATES, us (Remote)"
+  },
+  {
+   "key": "https://www.klaviyo.com/careers/jobs/7811667003?gh_jid=7811667003",
+   "action": "archive",
+   "why": "2+ yrs",
+   "title": "Software Engineer - Advanced Reporting",
+   "company": "Klaviyo",
+   "location": "Boston, MA"
+  },
+  {
+   "key": "https://www.pinterestcareers.com/jobs/?gh_jid=8071670",
+   "action": "archive",
+   "why": "2+ yrs, Palo Alto",
+   "title": "Data Scientist II, ML Infrastructure",
+   "company": "Pinterest",
+   "location": "Palo Alto, CA, US; Remote, US"
+  },
+  {
+   "key": "https://jpmc.fa.oraclecloud.com/hcmui/candidateexperience/en/sites/cx_1001/job/210773535",
+   "action": "archive",
+   "why": "ops analyst, non-technical",
+   "title": "Data Operations Analyst",
+   "company": "JPMorgan Chase",
+   "location": "Brooklyn, NY, United States"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/harvey/5960be42-443f-42f2-a771-266810e3d263",
+   "action": "archive",
+   "why": "5+ yrs, non-engineering",
+   "title": "Technology Enablement Analyst",
+   "company": "Harvey",
+   "location": "New York (Remote)"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/verkada/jobs/5194716007",
+   "action": "archive",
+   "why": "San Mateo CA onsite",
+   "title": "Embedded Software Engineer, Access Control",
+   "company": "Verkada",
+   "location": "San Mateo, CA United States"
+  },
+  {
+   "key": "https://epicgames.com/careers/jobs/6119870004?gh_jid=6119870004",
+   "action": "archive",
+   "why": "Cary NC onsite",
+   "title": "AI Programmer",
+   "company": "Epic Games",
+   "location": "Cary,North Carolina,United States"
+  },
+  {
+   "key": "https://jpmc.fa.oraclecloud.com/hcmui/candidateexperience/en/sites/cx_1001/job/210770939",
+   "action": "archive",
+   "why": "experienced data science, quant-adjacent",
+   "title": "Data Scientist [Multiple Positions Available]",
+   "company": "JPMorgan Chase",
+   "location": "New York, NY, United States"
+  },
+  {
+   "key": "https://jpmc.fa.oraclecloud.com/hcmui/candidateexperience/en/sites/cx_1001/job/210760696",
+   "action": "archive",
+   "why": "JPMC SWE II = post-new-grad",
+   "title": "Software Engineer II - Automation Engineer",
+   "company": "JPMorgan Chase",
+   "location": "New York, NY, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5193760007?gh_jid=5193760007",
+   "action": "archive",
+   "why": "field ops, Waltham MA",
+   "title": "Technical Operations Engineer",
+   "company": "Anduril",
+   "location": "Waltham, Massachusetts, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5189532007?gh_jid=5189532007",
+   "action": "archive",
+   "why": "RF manufacturing, not software",
+   "title": "RF Manufacturing Engineer",
+   "company": "Anduril",
+   "location": "Fort Collins, Colorado, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5193749007?gh_jid=5193749007",
+   "action": "archive",
+   "why": "technician, not software",
+   "title": "Engineering Test Technician",
+   "company": "Anduril",
+   "location": "Lexington, Massachusetts, United States"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/virtu/jobs/5499653002",
+   "action": "keep",
+   "why": "SRE, NYC, 1-3 yrs",
+   "title": "Site Reliability Engineer",
+   "company": "Virtu",
+   "location": "New York"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/newrelic/jobs/5367469008",
+   "action": "keep",
+   "why": "Barcelona Spain - acceptable location",
+   "title": "Software Engineer II",
+   "company": "New Relic",
+   "location": "Barcelona, Spain"
+  },
+  {
+   "key": "https://www.harness.io/company/jobs/apply?gh_jid=5194077007&gh_jid=5194077007",
+   "action": "archive",
+   "why": "sales engineer",
+   "title": "AppSec Sales Engineer - East",
+   "company": "Harness",
+   "location": "Raleigh, North Carolina, United States"
+  },
+  {
+   "key": "https://www.harness.io/company/jobs/apply?gh_jid=5193863007&gh_jid=5193863007",
+   "action": "archive",
+   "why": "sales engineer",
+   "title": "AppSec Sales Engineer - East",
+   "company": "Harness",
+   "location": "Tampa, Florida, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5192035007?gh_jid=5192035007",
+   "action": "archive",
+   "why": "sourcing, non-technical",
+   "title": "Product Sourcing Engineer",
+   "company": "Anduril",
+   "location": "Fort Collins, Colorado, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5193750007?gh_jid=5193750007",
+   "action": "archive",
+   "why": "technician, not software",
+   "title": "Production Test Technician",
+   "company": "Anduril",
+   "location": "Lexington, Massachusetts, United States"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/anthropic/jobs/5368041008",
+   "action": "archive",
+   "why": "GRC analyst, non-engineering",
+   "title": "Third Party Risk Analyst, Security GRC",
+   "company": "Anthropic",
+   "location": "Remote-Friendly (Travel Required) | San Francisco, CA"
+  },
+  {
+   "key": "https://jobs.elastic.co/jobs?gh_jid=8080263&gh_jid=8080263",
+   "action": "keep",
+   "why": "Spain - acceptable location",
+   "title": "Software Engineer II - Full Stack - Web Engineering",
+   "company": "Elastic",
+   "location": "Spain"
+  },
+  {
+   "key": "https://instacart.careers/job/?gh_jid=8080512",
+   "action": "keep",
+   "why": "detection engineering, cyber, remote US",
+   "title": "Detection Engineer II",
+   "company": "Instacart",
+   "location": "United States - Remote"
+  },
+  {
+   "key": "https://www.asana.com/jobs/apply/8027400?gh_jid=8027400",
+   "action": "archive",
+   "why": "account executive",
+   "title": "Enterprise Account Executive, Command",
+   "company": "Asana",
+   "location": "New York City"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/galileo/jobs/8646373002",
+   "action": "archive",
+   "why": "clinical role, not technical",
+   "title": "Nurse Practitioner (Remote, NJ License Required)",
+   "company": "Galileo",
+   "location": "Remote, United States"
+  },
+  {
+   "key": "https://ngc.wd1.myworkdayjobs.com/northrop_grumman_external_site/job/united-states-colorado-colorado-springs/industrial-security-analyst---level-3-or-4_r10241468",
+   "action": "archive",
+   "why": "clearance, senior level, non-engineering",
+   "title": "Industrial Security Analyst - Level 3 or 4",
+   "company": "Northrop Grumman",
+   "location": "United States-Colorado-Colorado Springs"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/snowflake/50d4f7da-1ae2-4ffb-b9ac-176bbc7a22cc",
+   "action": "archive",
+   "why": "pre-sales solution engineer",
+   "title": "Solution Engineer",
+   "company": "Snowflake",
+   "location": "US-CO-Denver"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/snowflake/74466b25-9cc8-4e9b-b60b-234c539c455c",
+   "action": "archive",
+   "why": "Menlo Park CA, experienced",
+   "title": "Software Engineer",
+   "company": "Snowflake",
+   "location": "US-CA-Menlo Park (Remote)"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/openai/759dd316-cbe9-4e73-af57-808502568b29",
+   "action": "archive",
+   "why": "support engineer, SF",
+   "title": "AI Support Engineer, Biosciences - San Francisco",
+   "company": "OpenAI",
+   "location": "San Francisco (Remote)"
+  },
+  {
+   "key": "https://careers.airbnb.com/positions/8077787?gh_jid=8077787",
+   "action": "keep",
+   "why": "remote US SWE, dev tools",
+   "title": "Software Engineer, Dev Tools",
+   "company": "Airbnb",
+   "location": "United States"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/garnerhealth/jobs/6111789004",
+   "action": "archive",
+   "why": "analyst, non-engineering",
+   "title": "Data Analyst II, Reporting & Analytics",
+   "company": "Garner Health",
+   "location": "New York City, New York"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/garnerhealth/jobs/6118265004",
+   "action": "archive",
+   "why": "analyst III, non-engineering",
+   "title": "Data Analyst III, Reporting & Analytics",
+   "company": "Garner Health",
+   "location": "New York City, New York"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/garnerhealth/jobs/6118254004",
+   "action": "archive",
+   "why": "analyst, 3+ yrs",
+   "title": "Data Analyst II, Business Insights",
+   "company": "Garner Health",
+   "location": "New York City, New York"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/vanta/dad058bc-c45a-4723-9e22-405b65c07a3a",
+   "action": "archive",
+   "why": "HR ops, non-engineering",
+   "title": "People Automation & AI Partner",
+   "company": "Vanta",
+   "location": "Remote U.S. (Remote)"
+  },
+  {
+   "key": "https://jobs.lever.co/spotify/1689082c-9265-431f-9e55-ef7666e41283",
+   "action": "keep",
+   "why": "Spotify backend, NYC",
+   "title": "Backend Engineer - Advertising",
+   "company": "Spotify",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/janestreet/jobs/8628843002",
+   "action": "archive",
+   "why": "Windows sysadmin, experienced",
+   "title": "Windows Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/garage/92428ffb-060c-470a-94a6-c2b93aa49cf1",
+   "action": "archive",
+   "why": "recruiter",
+   "title": "Founding Technical Recruiter",
+   "company": "Garage",
+   "location": "New York City"
+  },
+  {
+   "key": "https://jobs.smartrecruiters.com/experian/744000138891038",
+   "action": "archive",
+   "why": "Brazil",
+   "title": "Jr. DevOps Engineer",
+   "company": "Experian",
+   "location": "S\u00e3o Carlos, SP, br (Remote)"
+  },
+  {
+   "key": "https://tempus.wd5.myworkdayjobs.com/tempus_careers/job/new-york-city/data-abstractor-i_jr202600679",
+   "action": "archive",
+   "why": "data abstraction, non-engineering",
+   "title": "Data Abstractor I",
+   "company": "Tempus",
+   "location": "New York City"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/openai/44d19f5f-a5da-4226-9d1a-0147604773eb",
+   "action": "archive",
+   "why": "Sao Paulo",
+   "title": "AI Deployment Engineer, Enterprise",
+   "company": "OpenAI",
+   "location": "S\u00e3o Paulo (Remote)"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/handshake/e8892f86-d67f-492b-925a-b9d6bd43e154",
+   "action": "archive",
+   "why": "contract tutor, PhD",
+   "title": "AI Tutor, Physics Specialist (contract), Handshake AI",
+   "company": "Handshake",
+   "location": "Remote (USA) (Remote)"
+  },
+  {
+   "key": "https://epicgames.com/careers/jobs/6102277004?gh_jid=6102277004",
+   "action": "archive",
+   "why": "Cary NC onsite",
+   "title": "Engine Programmer",
+   "company": "Epic Games",
+   "location": "Cary,North Carolina,United States"
+  },
+  {
+   "key": "https://jobs.lever.co/veeva/ff058e1b-91b6-44b0-8ecd-be56445e987c",
+   "action": "archive",
+   "why": "business consultant, non-technical",
+   "title": "Associate Business Consultant - Life Sciences Quality",
+   "company": "Veeva",
+   "location": "New York - New York City"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/clickup/588872c1-eaad-4e2a-b71d-759992aef6e3",
+   "action": "archive",
+   "why": "executive role",
+   "title": "100x Operator - Chief Operating Officer",
+   "company": "ClickUp",
+   "location": "United States (Remote)"
+  },
+  {
+   "key": "https://careers.datadoghq.com/detail/8075709/?gh_jid=8075709",
+   "action": "archive",
+   "why": "designer",
+   "title": "Product Designer II, Metrics",
+   "company": "Datadog",
+   "location": "New York, New York, USA"
+  },
+  {
+   "key": "https://stripe.com/jobs/search?gh_jid=8070570",
+   "action": "keep",
+   "why": "bug bounty security analyst, remote NA",
+   "title": "Security Analyst, Bug Bounty",
+   "company": "Stripe",
+   "location": "Remote, North America"
+  },
+  {
+   "key": "https://boards.greenhouse.io/robinhood/jobs/8072766?t=gh_src=&gh_jid=8072766",
+   "action": "archive",
+   "why": "staff",
+   "title": "Staff Data Scientist, ML (People Analytics & Insights)",
+   "company": "Robinhood",
+   "location": "Chicago, IL; Menlo Park, CA; New York, NY"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/dune/3b55c339-d6f0-4713-92f5-bf74dcfb39d9",
+   "action": "keep",
+   "why": "data engineering, remote",
+   "title": "Software Engineer - Data",
+   "company": "Dune Analytics",
+   "location": "Europe and US based (Remote)"
+  },
+  {
+   "key": "https://job-boards.eu.greenhouse.io/imc/jobs/4932192101",
+   "action": "keep",
+   "why": "graduate SWE, Zug Switzerland",
+   "title": "Graduate Software Engineer (Digital Assets)",
+   "company": "IMC Trading",
+   "location": "Zug, Switzerland"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5181564007?gh_jid=5181564007",
+   "action": "archive",
+   "why": "field ops, Costa Mesa CA",
+   "title": "Technical Operations Engineer, USMC",
+   "company": "Anduril",
+   "location": "Costa Mesa, California, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5189898007?gh_jid=5189898007",
+   "action": "archive",
+   "why": "field ops, Waltham MA",
+   "title": "Technical Field Operations Engineer",
+   "company": "Anduril",
+   "location": "Waltham, Massachusetts, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5189845007?gh_jid=5189845007",
+   "action": "archive",
+   "why": "technician, not software",
+   "title": "Manufacturing Test Technician",
+   "company": "Anduril",
+   "location": "Lexington, Massachusetts, United States"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5189848007?gh_jid=5189848007",
+   "action": "archive",
+   "why": "technician, not software",
+   "title": "Engineering Test Technician",
+   "company": "Anduril",
+   "location": "Lexington, Massachusetts, United States"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/synack/jobs/8069228",
+   "action": "archive",
+   "why": "part-time temporary",
+   "title": "Security Analyst, Part-Time (Temporary)",
+   "company": "Synack",
+   "location": "Remote in the US"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/deepgram/c0a4b3fb-2c15-4b03-86f9-688eec8a8187",
+   "action": "archive",
+   "why": "staff",
+   "title": "Staff Developer Experience (DX) Engineer",
+   "company": "Deepgram",
+   "location": "USA | Remote (Remote)"
+  },
+  {
+   "key": "https://www.mongodb.com/careers/job/?gh_jid=8045688",
+   "action": "archive",
+   "why": "2nd shift/weekend cloud ops",
+   "title": "Cloud Operations Engineer (2nd Shift, Weekend)",
+   "company": "MongoDB",
+   "location": "United States"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/elevenlabs/9f600230-18e9-46a8-9812-23e179ecbf77",
+   "action": "archive",
+   "why": "procurement",
+   "title": "Procurement",
+   "company": "ElevenLabs",
+   "location": "United States (Remote)"
+  },
+  {
+   "key": "https://jobs.lever.co/shieldai/b9e7d0a8-0f46-4d41-a09d-12d77470fc4a",
+   "action": "archive",
+   "why": "aerospace mechanical engineering",
+   "title": "Aerostructures Design Engineer I (R5155)",
+   "company": "Shield AI",
+   "location": "United States"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/galileo/jobs/8633124002",
+   "action": "archive",
+   "why": "clinical role, not technical",
+   "title": "Nurse Practitioner (Remote, SC License Required)",
+   "company": "Galileo",
+   "location": "Remote, United States"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/openai/fff02c39-1185-427c-bf89-70d7eaa5e3db",
+   "action": "archive",
+   "why": "OpenAI experienced, SF",
+   "title": "Software Engineer, Codex -Enterprise Controls",
+   "company": "OpenAI",
+   "location": "San Francisco (Remote)"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/paxos/f0eece71-5927-4f49-bed2-9932af8edd9f",
+   "action": "archive",
+   "why": "3+ yrs",
+   "title": "Security Operations Engineer",
+   "company": "Paxos",
+   "location": "Remote - United States (Remote)"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=48900749",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Founding Voice AI Engineer (part-time, path to CAIO)",
+   "company": "Namecoach/Euphonia",
+   "location": "SF or Remote"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=48893278",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Full-stack Developer",
+   "company": "US enterprise software company",
+   "location": "Remote LATAM"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=48889875",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "AI Engineer (Founding seat)",
+   "company": "Portless",
+   "location": "Remote (North America)"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=48885246",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Founding Engineer / CTO",
+   "company": "Sports Trading Exchange",
+   "location": "Remote USA"
+  },
+  {
+   "key": "https://blackstone.wd1.myworkdayjobs.com/blackstone_careers/job/new-york/threat-intelligence-analyst--associate---security-operations_43986-1",
+   "action": "keep",
+   "why": "associate threat intel, cyber, NYC",
+   "title": "Threat Intelligence Analyst, Associate - Security Operations",
+   "company": "Blackstone",
+   "location": "New York"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/thetradedesk/jobs/5165087007",
+   "action": "keep",
+   "why": "SWE with NY location option",
+   "title": "Software Engineer, Commercial Intelligence and Analytics",
+   "company": "The Trade Desk",
+   "location": "Bellevue; Chicago; Los Angeles; New York; San Francisco"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/reddit/jobs/7922994",
+   "action": "archive",
+   "why": "2-5 yrs",
+   "title": "Backend Engineer, Moderation Enforcement",
+   "company": "Reddit",
+   "location": "Remote - United States"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/janestreet/jobs/8624440002",
+   "action": "archive",
+   "why": "hardware FPGA/ASIC",
+   "title": "Hardware Engineer (FPGA/ASIC)",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://coreweave.com/careers/job?4695714006&board=coreweave&gh_jid=4695714006",
+   "action": "keep",
+   "why": "W&B SWE, NYC",
+   "title": "Software Engineer, Console",
+   "company": "Weights and Biases",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://boards.greenhouse.io/andurilindustries/jobs/5183808007?gh_jid=5183808007",
+   "action": "keep",
+   "why": "product security, Quincy MA = Boston metro",
+   "title": "Product Security Engineer, Programs",
+   "company": "Anduril",
+   "location": "Quincy, Massachusetts, United States"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/temporal/3b5595a4-87ec-4a5d-8a25-1be00e28c0a4",
+   "action": "keep",
+   "why": "remote US SWE, AI devex",
+   "title": "Software Engineer, AI Developer Experience",
+   "company": "Temporal",
+   "location": "United States"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/bedrock-robotics/1dcb4a02-a789-4d15-a42f-6de115410397",
+   "action": "archive",
+   "why": "4+ yrs",
+   "title": "Software Engineer, Simulation",
+   "company": "Bedrock Robotics",
+   "location": "New York, NY (Remote)"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/openai/ca54cd23-2bcc-4327-bcb6-46d81ed414a8",
+   "action": "archive",
+   "why": "OpenAI experienced, SF",
+   "title": "Software Engineer, ChatGPT Lifestyle",
+   "company": "OpenAI",
+   "location": "San Francisco (Remote)"
+  },
+  {
+   "key": "https://jobs.smartrecruiters.com/servicenow/744000136859780",
+   "action": "archive",
+   "why": "account executive",
+   "title": "Enterprise Account Exec, Cybersecurity (Financial Services)",
+   "company": "ServiceNow",
+   "location": "New York City , New York , us"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/ramp/b68aca53-16c0-4ced-ab1d-e8beb2940b4f",
+   "action": "archive",
+   "why": "design-led role",
+   "title": "Design Engineer",
+   "company": "Ramp",
+   "location": "New York, NY (HQ) (Remote)"
+  },
+  {
+   "key": "https://www.pinterestcareers.com/jobs/?gh_jid=7732971",
+   "action": "archive",
+   "why": "SWE II, SF",
+   "title": "Security Software Engineer II, Corporate Security",
+   "company": "Pinterest",
+   "location": "San Francisco, CA, US; Remote, US"
+  },
+  {
+   "key": "https://jobs.lever.co/certik/173cd956-bef3-43b7-80a5-21a69ac40f7c",
+   "action": "keep",
+   "why": "security research, remote US",
+   "title": "Public Facing Security Researcher",
+   "company": "CertiK",
+   "location": "US / Remote"
+  },
+  {
+   "key": "https://iex.io/careers/apply?gh_jid=7826190",
+   "action": "archive",
+   "why": "3+ yrs",
+   "title": "Software Engineer, Data",
+   "company": "IEX",
+   "location": "New York"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/notion/85947779-6b87-466a-98bc-30a640448c28",
+   "action": "keep",
+   "why": "early career AI, remote listed",
+   "title": "Software Engineer, Early Career (AI)",
+   "company": "Notion",
+   "location": "San Francisco, California (Remote)"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=48811937",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Founding Full Stack / Applied AI Engineer",
+   "company": "Cora AI",
+   "location": "REMOTE (US ONLY, LA/SF preferred)"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/janestreet/jobs/8613910002",
+   "action": "touched",
+   "why": "applied, rejected",
+   "title": "Cybersecurity Analyst: New Grad",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=48806120",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Fullstack engineer",
+   "company": "Rivet",
+   "location": "Remote (US)"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/notion/d41b635b-c17b-4efd-89fd-fdb2ddb62e9a",
+   "action": "touched",
+   "why": "applied 2026-07-03",
+   "title": "Software Engineer, Product Infrastructure",
+   "company": "Notion",
+   "location": "San Francisco, California (Remote)"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/wealth-com/1899d513-4c4a-43b2-a307-8c8e4b877622",
+   "action": "touched",
+   "why": "applied 2026-07-03",
+   "title": "Applied Scientist- AI/ML Intern",
+   "company": "Wealth.com",
+   "location": "Remote, United States (Remote)"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/clear/jobs/7901600",
+   "action": "touched",
+   "why": "applied 2026-07-03",
+   "title": "Software Engineer, Infrastructure",
+   "company": "CLEAR",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/rilla/123a6a38-c7f9-4378-b00d-c6ae54688bd5",
+   "action": "touched",
+   "why": "status=Applied",
+   "title": "Software Engineering Intern - 2027 Graduates",
+   "company": "Rilla",
+   "location": "New York City"
+  },
+  {
+   "key": "https://jobs.lever.co/palantir/e0010393-c300-446f-bf67-fa2ef067f16f",
+   "action": "touched",
+   "why": "engaged",
+   "title": "Forward Deployed Software Engineer, Internship - US Government",
+   "company": "Palantir",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49216288",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Hiring Frontend, Backend, AI founding engineers",
+   "company": "Tyce AI",
+   "location": "Toronto (HYBRID)"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/whoop/ede8ba03-c763-49a1-9e6c-4a296fefd087",
+   "action": "keep",
+   "why": "SWE I, Boston",
+   "title": "Software Engineer I - Frontend - Growth",
+   "company": "WHOOP",
+   "location": "Boston, MA"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/whoop/0623a9e9-d7bb-4ee5-8100-51c68df81133",
+   "action": "keep",
+   "why": "SWE I, Boston",
+   "title": "Software Engineer I - Backend",
+   "company": "WHOOP",
+   "location": "Boston, MA"
+  },
+  {
+   "key": "https://kbr.wd5.myworkdayjobs.com/en-us/kbr_careers/job/colorado-springs-colorado/associate-devops-engineer_r2125617",
+   "action": "keep",
+   "why": "associate DevOps, Colorado Springs",
+   "title": "Associate DevOps Engineer",
+   "company": "KBR",
+   "location": "Colorado Springs, CO"
+  },
+  {
+   "key": "https://kbr.wd5.myworkdayjobs.com/en-us/kbr_careers/job/colorado-springs-colorado/junior-software-engineer_r2126608",
+   "action": "keep",
+   "why": "junior SWE, Colorado Springs",
+   "title": "Junior Software Engineer",
+   "company": "KBR",
+   "location": "Colorado Springs, CO"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/simplisafe/jobs/8095181",
+   "action": "keep",
+   "why": "SWE I, Boston",
+   "title": "Software Engineer I- User Systems",
+   "company": "SimpliSafe",
+   "location": "Boston, MA"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/simplisafe/jobs/8092421",
+   "action": "archive",
+   "why": "SWE II = 2+ yrs",
+   "title": "Software Engineer II- User Systems",
+   "company": "SimpliSafe",
+   "location": "Boston, MA"
+  },
+  {
+   "key": "https://www.amazon.jobs/en/jobs/2950609/software-dev-engineer-computer-science",
+   "action": "keep",
+   "why": "Amazon SDE, NYC option",
+   "title": "Software Dev Engineer",
+   "company": "Amazon",
+   "location": "Austin, TX / New York, NY / Seattle, WA / Culver City, CA / Santa Clara, CA / Bellevue, WA / Denver, CO / Palo Alto, CA"
+  },
+  {
+   "key": "https://sjobs.brassring.com/tgnewui/search/home/homewithpreload?partnerid=25037&siteid=5010&pagetype=jobdetails&jobid=792011#jobdetails=792011_5010&utm_source=vansh&ref=vansh",
+   "action": "keep",
+   "why": "AI platform eng, remote US - flag: defense, clearance unclear",
+   "title": "AI Platform Engineer",
+   "company": "Lockheed Martin",
+   "location": "United States"
+  },
+  {
+   "key": "https://aexp.eightfold.ai/careers/job/29705941?hl=en&domain=aexp.com",
+   "action": "archive",
+   "why": "product management, non-technical",
+   "title": "Associate - Digital Product Management",
+   "company": "American Express",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/notion/f7399542-9122-481a-bf64-43bf8093748b",
+   "action": "keep",
+   "why": "early career, NYC option",
+   "title": "Software Engineer, Fullstack, Early Career",
+   "company": "Notion",
+   "location": "San Francisco, CA / New York, NY"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/ramp/6b9108d1-128d-4fd3-8465-fb514ea0e4c4",
+   "action": "archive",
+   "why": "design systems role",
+   "title": "Design Engineer, Design Systems",
+   "company": "Ramp",
+   "location": "New York, NY / San Francisco, CA / Remote"
+  },
+  {
+   "key": "https://job-boards.greenhouse.io/ctccampusboard/jobs/4709991005",
+   "action": "keep",
+   "why": "2027 new grad, NYC option",
+   "title": "New Grad 2027: Associate Engineer",
+   "company": "Chicago Trading Company",
+   "location": "Chicago, IL / New York, NY"
+  },
+  {
+   "key": "https://jpmc.fa.oraclecloud.com/hcmui/candidateexperience/en/sites/cx_1001/job/210742949",
+   "action": "archive",
+   "why": "SWE III, Columbus OH",
+   "title": "Software Engineer III (UI/React/Javascript)",
+   "company": "JPMorgan Chase",
+   "location": "Columbus, OH, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8690499002?gh_jid=8690499002",
+   "action": "archive",
+   "why": "data strategist, non-technical",
+   "title": "Data Strategist",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/replit/2fa2d079-96a5-4d51-8718-04134ed39032",
+   "action": "archive",
+   "why": "Foster City CA, experienced",
+   "title": "Product Engineer, New Products",
+   "company": "Replit",
+   "location": "Foster City, CA (Remote)"
+  },
+  {
+   "key": "https://jpmc.fa.oraclecloud.com/hcmui/candidateexperience/en/sites/cx_1001/job/210773611",
+   "action": "keep",
+   "why": "JPMC associate AI/ML, Jersey City = NY metro",
+   "title": "Compliance - Applied AI/ML Data Scientist - Associate",
+   "company": "JPMorgan Chase",
+   "location": "Jersey City, NJ, United States"
+  },
+  {
+   "key": "https://job-boards.eu.greenhouse.io/veeamsoftware/jobs/4943162101",
+   "action": "archive",
+   "why": "solutions architect, Denmark",
+   "title": "Solutions Architect",
+   "company": "Veeam",
+   "location": "Remote, Denmark"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/handshake/71a4204a-d23e-476c-86e5-edb9e32a4e50",
+   "action": "archive",
+   "why": "business development",
+   "title": "Business Development Representative, Government",
+   "company": "Handshake",
+   "location": "Remote (USA) (Remote)"
+  },
+  {
+   "key": "https://jobs.smartrecruiters.com/servicenow/744000141782668",
+   "action": "archive",
+   "why": "senior, sales consulting",
+   "title": "Sr Advisory Solution Consultant\u2013 Security, Identity & Exposure Management (Armis) New York City Based",
+   "company": "ServiceNow",
+   "location": "New York, NEW YORK, us (Remote)"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49180607",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "https://github.com/ansharma07Email: anshul03@vt.eduSoftware Engineer with 3+ years of experience building scalable full-stack applications using React",
+   "company": "Location: Blacksburg, Virginia, USARemote: Yes (open to remote, hybrid, or on-site)Willing to reloca",
+   "location": ""
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49177149",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Software Engineers",
+   "company": "One Way Tech Hubs",
+   "location": "Fully Remote (US)"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49168047",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Staff Backend Engineer, Founding DevRel, Founder's Associate",
+   "company": "Nango",
+   "location": "REMOTE (NA/LATAM/EU) + ONSITE (San Francisco)"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49167059",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Member of Technical Staff, Fault Tolerant Quantum Compilation + Simulations",
+   "company": "Unitary Foundation",
+   "location": "REMOTE (US)"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49164146",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Remote (US) & Hybrid (SF/NYC)Retool is how companies let all their employees build with AI. We provide everything you don't want to AI slop: permissio",
+   "company": "Retool",
+   "location": ""
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49162401",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Full-stack Product Engineer",
+   "company": "Featurebase",
+   "location": "REMOTE (EU)"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49160993",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Full-Stack Developer",
+   "company": "Apex Dental Partners",
+   "location": "Dallas, TX (Remote US or Hybrid)"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49160095",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "SwingVision is the AI tennis, pickleball, and padel app that provides automated stats, highlights, and line calling usin",
+   "company": "",
+   "location": ""
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49158655",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Backend Software Engineer",
+   "company": "Enveritas (YC S18, non-profit)",
+   "location": "Remote (Global)"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49157888",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Full-time",
+   "company": "Cogram",
+   "location": "Remote (CET \u00b13)"
+  },
+  {
+   "key": "https://news.ycombinator.com/item?id=49157454",
+   "action": "archive",
+   "why": "hn-comment",
+   "title": "Hey everyone, I'm hiring an Agentic AI staff engineer to build out our Agentic AI platform for agent use cases across ou",
+   "company": "",
+   "location": ""
+  },
+  {
+   "key": "https://gdit.wd5.myworkdayjobs.com/external_career_site/job/any-location--remote/cloud-program-cost-finops-analyst--aws-_rq225165-1",
+   "action": "archive",
+   "why": "FinOps analyst, non-technical",
+   "title": "Cloud Program Cost FinOps Analyst (AWS)",
+   "company": "General Dynamics",
+   "location": "Any Location / Remote"
+  },
+  {
+   "key": "https://jobs.lever.co/palantir/5f7a90e7-f927-47bf-90ed-52d17c58ae02",
+   "action": "archive",
+   "why": "designer",
+   "title": "Product Designer, New Grad - US Government",
+   "company": "Palantir",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://jobs.lever.co/palantir/4c0fb3a1-8256-4d14-9a27-23727235752e",
+   "action": "archive",
+   "why": "designer",
+   "title": "Product Designer, New Grad",
+   "company": "Palantir",
+   "location": "New York, NY"
+  },
+  {
+   "key": "https://jobs.lever.co/veeva/16eb74d8-8611-49ec-89c0-f5e1409a6999",
+   "action": "archive",
+   "why": "product leader, Barcelona",
+   "title": "Product Leader - Data",
+   "company": "Veeva",
+   "location": "Spain - Barcelona"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/ramp/0e0af209-d25c-49ce-95f8-74706798a0ea",
+   "action": "archive",
+   "why": "legal",
+   "title": "Associate Counsel, Commercial",
+   "company": "Ramp",
+   "location": "New York, NY (HQ) (Remote)"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/8628843002?gh_jid=8628843002",
+   "action": "archive",
+   "why": "Windows sysadmin, experienced",
+   "title": "Windows Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/4276263002?gh_jid=4276263002",
+   "action": "archive",
+   "why": "Windows sysadmin, experienced",
+   "title": "Windows Engineer",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://www.janestreet.com/join-jane-street/apply/6110602002?gh_jid=6110602002",
+   "action": "archive",
+   "why": "data specialist, non-engineering",
+   "title": "Data Specialist",
+   "company": "Jane Street",
+   "location": "New York, New York, United States"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/baseten/c07eb44f-b5fa-4808-90b7-03b265d97836",
+   "action": "archive",
+   "why": "IT support/ops",
+   "title": "IT Support/Operations Engineer",
+   "company": "Baseten",
+   "location": "New York (Remote)"
+  },
+  {
+   "key": "https://jpmc.fa.oraclecloud.com/hcmui/candidateexperience/en/sites/cx_1001/job/210773128",
+   "action": "archive",
+   "why": "architect, Wilmington DE",
+   "title": "Data Domain Architect [Multiple Positions Available]",
+   "company": "JPMorgan Chase",
+   "location": "Wilmington, DE, United States"
+  },
+  {
+   "key": "https://jpmc.fa.oraclecloud.com/hcmui/candidateexperience/en/sites/cx_1001/job/210743572",
+   "action": "archive",
+   "why": "SWE III senior, experienced",
+   "title": "Software Engineer III - Backend/Java/Cloud",
+   "company": "JPMorgan Chase",
+   "location": "Jersey City, NJ, United States"
+  },
+  {
+   "key": "https://jpmc.fa.oraclecloud.com/hcmui/candidateexperience/en/sites/cx_1001/job/210774032",
+   "action": "keep",
+   "why": "JPMC analyst = entry level, AI/ML, Jersey City",
+   "title": "Applied AI ML - Analyst",
+   "company": "JPMorgan Chase",
+   "location": "Jersey City, NJ, United States"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/openai/3b70ebc9-9d9a-4930-ad7b-52c9229f6a52",
+   "action": "archive",
+   "why": "data scientist, SF",
+   "title": "Data Scientist, GTM Intelligence",
+   "company": "OpenAI",
+   "location": "San Francisco (Remote)"
+  },
+  {
+   "key": "https://cisco.wd5.myworkdayjobs.com/cisco_careers/job/maynard-massachusetts-us/test-automation-engineer---acacia--onsite-_2020950",
+   "action": "keep",
+   "why": "test automation, Maynard MA = Boston metro",
+   "title": "Test Automation Engineer - Acacia (Onsite)",
+   "company": "Cisco (Splunk)",
+   "location": "Maynard, Massachusetts, US"
+  },
+  {
+   "key": "https://cisco.wd5.myworkdayjobs.com/cisco_careers/job/rtp-north-carolina-us/data-engineer-ii--full-time--united-states_2001849",
+   "action": "archive",
+   "why": "RTP NC",
+   "title": "Data Engineer II (Full Time) United States",
+   "company": "Cisco (Splunk)",
+   "location": "RTP, North Carolina, US"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/snowflake/494fcbd0-1cf3-4248-b5cf-b35d982ced00",
+   "action": "archive",
+   "why": "2+ yrs, Menlo Park CA",
+   "title": "Software Engineer- Postgres",
+   "company": "Snowflake",
+   "location": "US-CA-Menlo Park"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/harvey/b288350c-f942-4b1f-b5b2-be36a70ac683",
+   "action": "archive",
+   "why": "5+ yrs, non-engineering",
+   "title": "Technology Enablement Analyst",
+   "company": "Harvey",
+   "location": "Chicago (Remote)"
+  },
+  {
+   "key": "https://jpmc.fa.oraclecloud.com/hcmui/candidateexperience/en/sites/cx_1001/job/210762731",
+   "action": "archive",
+   "why": "SWE III, Columbus OH",
+   "title": "Software Engineer III (Java/React/AWS/AI)",
+   "company": "JPMorgan Chase",
+   "location": "Columbus, OH, United States"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/harvey/dca79fa6-502e-4ded-96b9-a39fd1707e03",
+   "action": "archive",
+   "why": "5+ yrs, non-engineering",
+   "title": "Technology Enablement Analyst",
+   "company": "Harvey",
+   "location": "Dallas (Remote)"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/harvey/ba51dd1e-8b7f-4e14-8696-5b4d4f77dd19",
+   "action": "archive",
+   "why": "5+ yrs, non-engineering",
+   "title": "Technology Enablement Analyst",
+   "company": "Harvey",
+   "location": "San Francisco (Remote)"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/harvey/caafbe5d-bd29-4d23-b3c2-e1cdb64c387e",
+   "action": "archive",
+   "why": "5+ yrs, non-engineering",
+   "title": "Technology Enablement Analyst",
+   "company": "Harvey",
+   "location": "Remote (Remote)"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/benchling/70e672e0-b80b-4232-84cb-27406abfa689",
+   "action": "archive",
+   "why": "2+ yrs, SF",
+   "title": "Software Engineer, Backend (Release Engineering)",
+   "company": "Benchling",
+   "location": "San Francisco, CA (Remote)"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/anyscale/8691daef-bfe5-4d01-871f-cf2226ba0c82",
+   "action": "archive",
+   "why": "3+ yrs, SF",
+   "title": "Software Engineer, Infrastructure",
+   "company": "Anyscale",
+   "location": "San Francisco (Remote)"
+  },
+  {
+   "key": "https://jobs.ashbyhq.com/garage/57ff110d-1c9c-412f-b176-fd1fb0bb8449",
+   "action": "archive",
+   "why": "recruiter",
+   "title": "GTM Recruiter",
+   "company": "Garage",
+   "location": "New York City"
+  },
+  {
+   "key": "https://jpmc.fa.oraclecloud.com/hcmui/candidateexperience/en/sites/cx_1001/job/210770204",
+   "action": "archive",
+   "why": "Wilmington DE",
+   "title": "Data Domain Architect Associate",
+   "company": "JPMorgan Chase",
+   "location": "Wilmington, DE, United States"
+  },
+  {
+   "key": "https://jobs.lever.co/anchorage/82139746-fb0e-44b9-bbb6-ae078e5d251a",
+   "action": "archive",
+   "why": "MTS = experienced",
+   "title": "Member of Technical Staff, Asset Data",
+   "company": "Anchorage Digital",
+   "location": "United States"
+  },
+  {
+   "key": "https://stripe.com/jobs/search?gh_jid=8036155",
+   "action": "archive",
+   "why": "technical writer, 4+ yrs",
+   "title": "Technical Writer, Docs Content",
+   "company": "Stripe",
+   "location": "US Remote"
+  },
+  {
+   "key": "https://jpmc.fa.oraclecloud.com/hcmui/candidateexperience/en/sites/cx_1001/job/210743390",
+   "action": "archive",
+   "why": "Wilmington DE, SWE II",
+   "title": "Software Engineer II-Python/PySpark",
+   "company": "JPMorgan Chase",
+   "location": "Wilmington, DE, United States"
+  },
+  {
+   "key": "https://jobs.lever.co/zushealth/5663a4bd-c398-4df3-9f95-65dc37454750",
+   "action": "touched",
+   "why": "applied 2026-07-06",
+   "title": "Future Zusers",
+   "company": "Zus Health",
+   "location": "Boston, MA"
+  }
+ ]
+}

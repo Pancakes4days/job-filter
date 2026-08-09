@@ -35,24 +35,37 @@ cannot re-add them — that is what replaced the sync watermark.</p>
   <a class="clear" href="{{ url_for('jobs', archived=1 if archived else none) }}">clear</a>
 </form>
 
+<div class="table-scroll">
 <table class="jobs">
+  <colgroup>
+    <col class="c-score"><col class="c-title"><col class="c-company">
+    <col class="c-loc"><col class="c-found"><col class="c-status"><col class="c-link">
+  </colgroup>
+  <thead>
   <tr>
     <th>Score</th><th>Title</th><th>Company</th><th>Location</th>
     <th>Found</th><th>Status</th><th>Link</th>
   </tr>
+  </thead>
+  <tbody>
+  {# title= carries the untruncated value: the cells clamp to two lines, so
+     hovering is how you read a long title or a twelve-site location in full. #}
   {% for j in rows %}
   <tr>
     <td class="score s{{ j.score }}">{{ j.score if j.score is not none else '—' }}</td>
-    <td><a href="{{ url_for('job_detail', key=j.key) }}">{{ j.title or '(no title)' }}</a></td>
-    <td>{{ j.company }}</td>
-    <td>{{ j.location }}</td>
-    <td class="muted">{{ j.date_processed | shortdate }}</td>
-    <td>{{ j.status or '' }}</td>
-    <td>{% if j.url %}<a href="{{ j.url }}" target="_blank" rel="noopener">apply</a>{% endif %}</td>
+    <td class="title"><a class="clamp" href="{{ url_for('job_detail', key=j.key) }}"
+        title="{{ j.title }}">{{ j.title or '(no title)' }}</a></td>
+    <td class="company"><span class="clamp" title="{{ j.company }}">{{ j.company }}</span></td>
+    <td class="loc"><span class="clamp" title="{{ j.location }}">{{ j.location }}</span></td>
+    <td class="found muted">{{ j.date_processed | shortdate }}</td>
+    <td class="status">{{ j.status or '' }}</td>
+    <td class="link">{% if j.url %}<a href="{{ j.url }}" target="_blank" rel="noopener">apply</a>{% endif %}</td>
   </tr>
   {% else %}
   <tr><td colspan="7" class="muted">Nothing matches those filters.</td></tr>
   {% endfor %}
+  </tbody>
 </table>
+</div>
 
 {% endblock %}
