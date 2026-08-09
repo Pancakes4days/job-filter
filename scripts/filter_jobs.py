@@ -8,9 +8,21 @@ which parks the orchestrator on a 15-minute retry of the filter phase, so
 `store` never runs and no new jobs reach the tracker. Symptom is silence, not
 an alarm: check `data/filter.log` for OLLAMA errors if the DB stops growing.
 
-Reads job listings from a JSON file (produced by your scraper), asks the
-local LLM to score each one against your profile in config.json, and
-appends results to a CSV you can open in Excel.
+Reads job listings from a JSON file (produced by your scraper), decides which
+ones are worth keeping, and appends the survivors to a CSV you can open in Excel.
+
+Two stages, deliberately split by what each is good at:
+
+    1. gate_job()                 regex over title/location/source, no model
+    2. the model + score_from_classification()
+
+The model is asked only to CLASSIFY what a posting says (role family, seniority,
+years required, start date, clearance, degree); the rubric that turns those
+labels into a 0-10 score lives in Python. The previous design asked a 4B model
+for the score directly against a 20-clause prompt, and it could not do it —
+229 of 404 kept jobs landed on exactly 8, and the model wrote "score must be 1"
+into its own concerns field on jobs it then scored 8. Both stages are configured
+in config.json under profile.gate and profile.scoring.
 
 Zero external dependencies — Python 3.9+ stdlib only.
 
@@ -19,12 +31,15 @@ Usage:
     python3 filter_jobs.py jobs.json --csv results.csv
     python3 filter_jobs.py jobs.json --dry-run      # test without calling the model
     python3 filter_jobs.py jobs.json --rescore      # ignore the seen-list, redo everything
+    python3 filter_jobs.py jobs.json --no-gate      # send everything to the model
+    python3 filter_jobs.py jobs.json --all          # also write rejects (gate reasons included)
 """
 
 import argparse
 import csv
 import hashlib
 import json
+import re
 import sys
 import time
 import urllib.error
@@ -50,16 +65,45 @@ SEEN_PATH = DATA_DIR / "seen_jobs.txt"
 MAX_CONSECUTIVE_ERRORS = 3
 
 # JSON schema the model is forced to follow (Ollama structured outputs).
+#
+# The model CLASSIFIES; it does not score. Asking a 4B model for a 0-10 integer
+# against a 20-clause rubric produced a pile at 7-8 and nothing else: it cannot
+# hold that many constraints at once, so it fell back on the middle of the
+# range. Every field below is a single closed question, which is the one thing
+# models this size do reliably. score_from_classification() turns the answers
+# into a number, so the rubric lives in Python where it is exact and testable.
+#
+# "evidence" is load-bearing, not decoration: requiring a quoted line from the
+# posting costs one short string and measurably curbs invention, because the
+# model has to point at text that exists.
+ROLE_FAMILIES = ["software_engineering", "security", "ml_ai", "data",
+                 "infra_devops", "other_technical", "non_technical"]
+SENIORITIES   = ["intern", "new_grad", "junior", "mid", "senior_plus", "unclear"]
+START_TIMINGS = ["2027_or_later", "2026_or_earlier", "unclear"]
+
 RESULT_SCHEMA = {
     "type": "object",
     "properties": {
-        "suitable": {"type": "boolean"},
-        "score": {"type": "integer", "minimum": 0, "maximum": 10},
+        "role_family":    {"type": "string", "enum": ROLE_FAMILIES},
+        "seniority":      {"type": "string", "enum": SENIORITIES},
+        "min_years_experience": {"type": "integer", "minimum": 0, "maximum": 15},
+        "start_timing":   {"type": "string", "enum": START_TIMINGS},
+        "clearance_required":       {"type": "boolean"},
+        "advanced_degree_required": {"type": "boolean"},
         "matched_skills": {"type": "array", "items": {"type": "string"}},
-        "concerns": {"type": "array", "items": {"type": "string"}},
-        "reason": {"type": "string"},
+        "evidence":       {"type": "string"},
     },
-    "required": ["suitable", "score", "matched_skills", "concerns", "reason"],
+    "required": ["role_family", "seniority", "min_years_experience",
+                 "start_timing", "clearance_required",
+                 "advanced_degree_required", "matched_skills", "evidence"],
+}
+
+# Fallback labels when a job is scored without a model call (--dry-run).
+DRY_RUN_RESULT = {
+    "role_family": "software_engineering", "seniority": "new_grad",
+    "min_years_experience": 0, "start_timing": "unclear",
+    "clearance_required": False, "advanced_degree_required": False,
+    "matched_skills": ["dry-run"], "evidence": "Dry run — no model called.",
 }
 
 def load_config():
@@ -104,36 +148,136 @@ def load_seen():
     return set()
 
 
+# ── deterministic gate ────────────────────────────────────────────────────────
+# Runs BEFORE the model. Title, location and source are string properties, and a
+# regex decides them correctly every time where the LLM did not — it was scoring
+# Production Test Technicians and Quantitative Traders 8/10 while writing "score
+# must be 1" into its own concerns field. Gating them costs no inference at all,
+# and (the real prize) stops those clauses from competing for the model's
+# attention with the judgment we actually want from it.
+#
+# The rule everywhere here: reject only on POSITIVE evidence. A title that
+# matches nothing, or a location string we don't recognise, falls through to the
+# model. A gate that guesses is worse than no gate, because its mistakes are
+# invisible — the job never appears anywhere to be noticed as missing.
+
+def compile_gate(gate_cfg):
+    """Config's regex strings -> compiled patterns, once per run.
+
+    Keys starting with '_' are prose notes for whoever edits config.json and are
+    skipped. An empty list compiles to None rather than an empty alternation,
+    which would match every string and silently reject everything."""
+    def compile_all(patterns):
+        return re.compile("|".join(patterns), re.I) if patterns else None
+
+    return {
+        "enabled": gate_cfg.get("enabled", True),
+        "sources": {s.lower() for s in gate_cfg.get("blocked_sources", [])},
+        "titles": {rule: compile_all(pats)
+                   for rule, pats in gate_cfg.get("title_reject", {}).items()
+                   if not rule.startswith("_")},
+        "loc_allow": compile_all(gate_cfg.get("location_allow", [])),
+        "loc_deny":  compile_all(gate_cfg.get("location_deny", [])),
+    }
+
+
+def gate_job(job, gate):
+    """None if the job should go to the model, else (rule, detail) explaining
+    the rejection. Detail names the matched text so filter.log shows why."""
+    if not gate["enabled"]:
+        return None
+
+    source = (job.get("source") or "").lower()
+    for blocked in gate["sources"]:
+        if blocked in source:
+            return ("source", blocked)
+
+    title = job.get("title") or ""
+    for rule, pattern in gate["titles"].items():
+        if pattern is None:
+            continue
+        hit = pattern.search(title)
+        if hit:
+            return (rule, hit.group(0))
+
+    # Location is the one field where a match is not enough on its own: listings
+    # routinely name several sites, and one acceptable site makes the job
+    # acceptable. So deny only when nothing allowed appears anywhere in it.
+    location = job.get("location") or ""
+    if location and gate["loc_deny"] is not None:
+        denied = gate["loc_deny"].search(location)
+        allowed = gate["loc_allow"].search(location) if gate["loc_allow"] else None
+        if denied and not allowed:
+            return ("location", denied.group(0))
+
+    return None
+
+
 def mark_seen(fp):
     with open(SEEN_PATH, "a", encoding="utf-8") as f:
         f.write(fp + "\n")
 
 
 def build_system_prompt(profile):
-    skills = ", ".join(profile.get("skills", []))
-    prefs = "\n".join(f"- {p}" for p in profile.get("preferences", []))
-    dealbreakers = "\n".join(f"- {d}" for d in profile.get("dealbreakers", []))
-    return f"""You are a strict job-matching assistant. Evaluate whether a job listing
-suits this specific candidate. Be honest and conservative: when in doubt, score lower.
+    """Ask for observations, never for a verdict.
 
-CANDIDATE SKILLS:
+    The dealbreaker list is deliberately absent. Pasting it in made the model
+    retrieve the nearest-matching clause and echo it into `concerns` verbatim —
+    "Role is non-technical — title contains 'Software Engineer'" on a software
+    engineering job — while its score ignored the clause entirely. Those rules
+    now live in the gate and in score_from_classification(), where they are
+    applied rather than recited. What is left is short enough for a 4B model to
+    hold at once, which is the whole point."""
+    skills = ", ".join(profile.get("skills", []))
+    prefs  = "\n".join(f"- {p}" for p in profile.get("preferences", []))
+    return f"""You read one job posting and report what it says. You do not decide
+whether the candidate should apply — something else does that. Report only what the
+posting states. If it does not say, use "unclear" or 0 rather than guessing.
+
+CANDIDATE SKILLS (for matched_skills only):
 {skills}
 
-CANDIDATE PREFERENCES (each match raises the score):
+WHAT THE CANDIDATE IS LOOKING FOR (context; do not score it):
 {prefs}
 
-DEALBREAKERS (any one of these means suitable=false and score <= 3):
-{dealbreakers}
+Fill in each field:
 
-Scoring rubric:
-- 9-10: strong skill match, no concerns, hits multiple preferences
-- 7-8: good skill match, minor concerns
-- 5-6: partial match, worth a human look
-- 0-4: poor match or hits a dealbreaker
+role_family — what the person in this job mainly does:
+  software_engineering  writes application, product, or backend code
+  security              security engineering, appsec, detection, threat work
+  ml_ai                 machine learning, AI, or research engineering
+  data                  data engineering, analytics engineering, pipelines
+  infra_devops          SRE, DevOps, platform, cloud, or infrastructure
+  other_technical       technical but none of the above (hardware, IT, QA, support)
+  non_technical         sales, legal, HR, marketing, design, operations, finance
 
-Set "suitable" to true only for score >= {profile.get('threshold', 6)}.
-List matched_skills only for skills the candidate actually has.
-Keep "reason" to one or two sentences."""
+seniority — the level this posting is aimed at:
+  intern        internship, co-op, or any temporary/seasonal position
+  new_grad      explicitly for graduating students or new graduates
+  junior        entry-level, "I", associate, 0-1 years
+  mid           2-5 years of experience expected
+  senior_plus   senior, staff, principal, lead, or manager
+  unclear       the posting does not indicate a level
+
+min_years_experience — smallest number of years of professional experience the
+  posting requires. 0 if it asks for none or does not say. Ignore internships
+  and coursework; only count required full-time professional experience.
+
+start_timing — when the job starts:
+  2027_or_later     starts in 2027 or later, or is for the 2027 graduating class
+  2026_or_earlier   starts in 2026 or earlier, or requires graduating by 2026
+  unclear           the posting does not say
+
+clearance_required — true only if an ACTIVE US security clearance is required.
+  "Must be eligible to obtain" is false.
+
+advanced_degree_required — true only if a Master's or PhD is REQUIRED.
+  "Preferred" or "or equivalent experience" is false.
+
+matched_skills — only skills from the list above that the posting actually asks for.
+
+evidence — one short sentence quoted or closely paraphrased from the posting that
+  best supports your seniority and experience answers."""
 
 
 def build_user_prompt(job):
@@ -172,20 +316,88 @@ def call_ollama(config, system_prompt, user_prompt):
     return json.loads(content)
 
 
-def validate_result(result, threshold=6):
-    """Belt-and-braces validation even though the schema is enforced.
-    NOTE: small models set `suitable` inconsistently with their own `score`
-    (e.g. score 3 but suitable=true). The score is the more considered value,
-    so we DERIVE suitable from it rather than trusting the model's boolean."""
-    score = max(0, min(10, int(result.get("score", 0))))
-    out = {
+def score_from_classification(result, profile, job=None, gate=None):
+    """The model's labels -> the CSV row, with the score computed here.
+
+    This is where the rubric actually lives. Keeping it in Python rather than in
+    the prompt buys three things the old design could not have: the same labels
+    always produce the same score, `concerns` finally describes what moved the
+    number instead of being decorative prose, and the weights can be tuned
+    against a labelled set without touching the model.
+
+    Hard rejects collapse to scoring.reject_score. They are dealbreakers — no
+    amount of skill overlap should lift one back over the threshold, which is
+    exactly what an additive-only score would let happen."""
+    cfg       = profile.get("scoring", {})
+    threshold = profile.get("threshold", 6)
+    bases     = cfg.get("role_family_base", {})
+    sen_delta = cfg.get("seniority_delta", {})
+    start_delta = cfg.get("start_timing_delta", {})
+
+    family    = result.get("role_family", "other_technical")
+    seniority = result.get("seniority", "unclear")
+    start     = result.get("start_timing", "unclear")
+    try:
+        years = max(0, int(result.get("min_years_experience", 0)))
+    except (TypeError, ValueError):
+        years = 0
+    skills = [str(s) for s in result.get("matched_skills", []) if str(s).strip()]
+
+    concerns, rejects = [], []
+
+    max_years = cfg.get("max_years_experience", 1)
+    if family == "non_technical":
+        rejects.append("non-technical role")
+    if seniority == "senior_plus":
+        rejects.append("senior/staff-level role")
+    if seniority == "intern":
+        rejects.append("internship or temporary position")
+    if years > max_years:
+        rejects.append(f"requires {years}+ years experience")
+    if start == "2026_or_earlier":
+        rejects.append("starts 2026 or earlier")
+    if result.get("clearance_required"):
+        rejects.append("active security clearance required")
+    if result.get("advanced_degree_required"):
+        rejects.append("MS/PhD required")
+
+    if rejects:
+        score = cfg.get("reject_score", 1)
+        concerns = rejects
+    else:
+        score = bases.get(family, 3)
+        score += sen_delta.get(seniority, 0)
+        score += start_delta.get(start, 0)
+
+        # Location and focus bonuses are only reachable here — a job that got
+        # this far already passed the gate, so a top-tier location is a genuine
+        # tiebreak between survivors rather than a way to rescue a bad match.
+        location = (job or {}).get("location") or ""
+        if gate is not None and gate["loc_allow"] is not None \
+                and gate["loc_allow"].search(location):
+            score += cfg.get("top_location_bonus", 0)
+        if family in ("security", "ml_ai"):
+            score += cfg.get("preferred_focus_bonus", 0)
+        if len(skills) >= cfg.get("skill_overlap_min", 3):
+            score += cfg.get("skill_overlap_bonus", 0)
+
+        if seniority == "unclear":
+            concerns.append("level not stated in posting")
+        if start == "unclear":
+            concerns.append("start date not stated")
+        if family == "other_technical":
+            concerns.append("technical but outside target role families")
+
+    score = max(0, min(10, score))
+    evidence = str(result.get("evidence", "")).strip()
+    return {
         "suitable": score >= threshold,
         "score": score,
-        "matched_skills": "; ".join(str(s) for s in result.get("matched_skills", [])),
-        "concerns": "; ".join(str(c) for c in result.get("concerns", [])),
-        "reason": str(result.get("reason", "")).strip(),
+        "matched_skills": "; ".join(skills),
+        "concerns": "; ".join(concerns),
+        "reason": f"{family}/{seniority}, {years}y exp, starts {start}."
+                  + (f" {evidence}" if evidence else ""),
     }
-    return out
 
 
 def append_csv(csv_path, row):
@@ -214,6 +426,9 @@ def main():
     parser.add_argument("--dry-run", action="store_true",
                         help="Skip the LLM call; emit fake scores to a separate CSV "
                              "without touching matched_jobs.csv or seen_jobs.txt")
+    parser.add_argument("--no-gate", action="store_true",
+                        help="Send every job to the model, bypassing the "
+                             "deterministic gate (for comparing the two)")
     args = parser.parse_args()
 
     # A dry run must never contaminate the real tracker: unless a CSV path was
@@ -225,10 +440,14 @@ def main():
     config = load_config()
     profile = config.get("profile", {})
     system_prompt = build_system_prompt(profile)
+    gate = compile_gate(profile.get("gate", {}))
+    if args.no_gate:
+        gate["enabled"] = False
     jobs = load_jobs(args.jobs_file)
     seen = set() if args.rescore else load_seen()
 
-    total, kept, skipped, errors = 0, 0, 0, 0
+    total, kept, skipped, errors, gated = 0, 0, 0, 0, 0
+    gate_rules = {}
     consecutive_errors = 0
     started = time.time()
 
@@ -241,15 +460,39 @@ def main():
         title = job.get("title", "(no title)")
         print(f"[{total}] {title} @ {job.get('company','?')} ... ", end="", flush=True)
 
+        # Gate first: no model call, no timeout risk, no context spent.
+        verdict = gate_job(job, gate)
+        if verdict:
+            rule, detail = verdict
+            gated += 1
+            gate_rules[rule] = gate_rules.get(rule, 0) + 1
+            print(f"gated [{rule}: {detail}]")
+            if args.all:
+                append_csv(args.csv, {
+                    "date_processed": datetime.now(timezone.utc).strftime(TS_FORMAT),
+                    "title": job.get("title", ""), "company": job.get("company", ""),
+                    "location": job.get("location", ""), "salary": job.get("salary", ""),
+                    "url": job.get("url", ""), "source": job.get("source", ""),
+                    "suitable": False, "score": 0, "matched_skills": "",
+                    "concerns": f"gated: {rule} ({detail})",
+                    "reason": "Rejected by the deterministic gate; no model call.",
+                })
+                kept += 1      # rows written, not rows matched — --all means both
+            # Gated jobs are marked seen like scored ones: the decision is
+            # reproducible from config, so re-deciding it every cycle would burn
+            # the scrape's whole gate pass for an identical answer. Widening the
+            # gate later needs --rescore, same as a prompt change does.
+            if not args.rescore and not args.dry_run:
+                mark_seen(fp)
+            continue
+
         err = None
         try:
             if args.dry_run:
-                result = {"suitable": True, "score": 7,
-                          "matched_skills": ["dry-run"], "concerns": [],
-                          "reason": "Dry run — no model called."}
+                result = dict(DRY_RUN_RESULT)
             else:
                 result = call_ollama(config, system_prompt, build_user_prompt(job))
-            r = validate_result(result, profile.get("threshold", 6))
+            r = score_from_classification(result, profile, job, gate)
         except urllib.error.URLError as e:
             reason = str(getattr(e, "reason", e))
             err = (f"OLLAMA OFFLINE — start Ollama and retry ({reason})"
@@ -294,16 +537,24 @@ def main():
             mark_seen(fp)
 
     elapsed = time.time() - started
-    print(f"\nDone. Evaluated {total}, wrote {kept} to {args.csv}, "
-          f"skipped {skipped} already-seen, {errors} errors, {elapsed:.0f}s elapsed.")
+    scored = total - gated
+    print(f"\nDone. Saw {total}, gated {gated} without a model call, scored "
+          f"{scored}, wrote {kept} to {args.csv}, skipped {skipped} "
+          f"already-seen, {errors} errors, {elapsed:.0f}s elapsed.")
+    if gate_rules:
+        breakdown = ", ".join(f"{rule} {n}" for rule, n
+                              in sorted(gate_rules.items(), key=lambda kv: -kv[1]))
+        print(f"Gate: {breakdown}")
 
     # Exit nonzero when the run was cut short by consecutive failures, or when
     # every attempted evaluation failed — either way Ollama is unusable, and
     # the orchestrator should treat the filter phase as failed and retry it
     # later instead of advancing to sync. Jobs already scored stay in
     # seen_jobs.txt, so the retry only evaluates what's left.
-    if consecutive_errors >= MAX_CONSECUTIVE_ERRORS or (total and errors == total):
-        sys.exit(f"Ollama unusable ({errors}/{total} attempted jobs failed) — "
+    # Compared against `scored`, not `total`: gated jobs never touch Ollama, so
+    # counting them here would mask a dead model behind a big gate pass.
+    if consecutive_errors >= MAX_CONSECUTIVE_ERRORS or (scored and errors == scored):
+        sys.exit(f"Ollama unusable ({errors}/{scored} attempted jobs failed) — "
                  f"exiting nonzero so the pipeline retries this phase.")
 
 

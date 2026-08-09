@@ -15,7 +15,8 @@ from pathlib import Path
 
 # Shared with the rest of the pipeline: one fingerprint, one seen-list reader,
 # one CSV reader — so the stats can't drift from what the pipeline actually does.
-from filter_jobs import count_scrape_matches, job_fingerprint as fingerprint, load_seen
+from filter_jobs import (compile_gate, count_scrape_matches, gate_job,
+                         job_fingerprint as fingerprint, load_seen)
 from matches import month_day, read_matches
 
 BASE    = Path(__file__).resolve().parent.parent
@@ -43,6 +44,19 @@ def load_threshold():
     if not CFG.exists():
         return 6
     return json.loads(CFG.read_text()).get("profile", {}).get("threshold", 6)
+
+
+def load_gate():
+    """The same compiled gate filter_jobs.py will use, for the ETA.
+
+    Falls back to a disabled gate if config is missing or malformed: the
+    dashboard has to render regardless, and an over-long ETA is a far better
+    failure than a traceback on the status strip."""
+    try:
+        cfg = json.loads(CFG.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return compile_gate({"enabled": False})
+    return compile_gate(cfg.get("profile", {}).get("gate", {}))
 
 def load_active_alerts():
     if not ALERTS.exists():
@@ -87,6 +101,12 @@ def progress(jobs=None, seen=None, matches=None):
     remaining      = len(unscored_jobs)
     scrape_matches = count_scrape_matches(matches, jobs)
 
+    # Only jobs that will actually reach Ollama cost SECONDS_PER_JOB; gated ones
+    # are a regex match and cost nothing. Without this the strip would quote
+    # hours for a queue that is largely going to be discarded instantly.
+    gate           = load_gate()
+    gated_ahead    = sum(1 for j in unscored_jobs if gate_job(j, gate))
+
     return {
         "jobs":            jobs,
         "seen":            seen,
@@ -103,7 +123,8 @@ def progress(jobs=None, seen=None, matches=None):
         # "last scrape" once everything is scored — the numbers describe a
         # finished pass, not one in flight.
         "scrape_label":    "last scrape" if remaining == 0 else "this scrape",
-        "eta_seconds":     remaining * SECONDS_PER_JOB,
+        "gated_ahead":     gated_ahead,
+        "eta_seconds":     (remaining - gated_ahead) * SECONDS_PER_JOB,
     }
 
 

@@ -35,19 +35,15 @@
       "pytest",
       "Qdrant"
     ],
+
+    "_prompt_note": "'preferences' is the ONLY profile text the model sees. Keep it short and soft — every line here competes for a 4B model's attention. Hard rules belong in 'gate' (deterministic) or 'scoring' (arithmetic); the model is only asked to classify what it reads, never to apply policy.",
     "preferences": [
-      "TOP PRIORITY: roles located in New York City or Long Island (onsite or hybrid)",
-      "REQUIRED: role must be a technical/engineering position where writing or reviewing code is the primary function — software engineering, cybersecurity, AI/ML, data engineering, or similar. Non-technical roles do not qualify regardless of company or location.",
-      "REQUIRED: candidate is a May 2027 college graduate seeking permanent full-time new grad roles starting Summer/Fall 2027. Roles requiring prior full-time experience or a 2026 or earlier start date are not suitable.",
-      "REQUIRED: Permanent full-time new grad or entry-level role. Internships, co-ops, and other temporary positions do not qualify.",
-      "Also acceptable: fully remote roles anywhere in the US",
-      "Also acceptable: SRE, DevOps, platform engineering, and infrastructure engineering roles",
-      "Also acceptable: fintech or financial technology roles",
-      "Also acceptable: onsite/hybrid roles in Florida, Virginia, Boston, Colorado, Switzerland (Zurich/Basel/Laussane/Lucerne), or Spain",
-      "Medium to large company",
-      "Cybersecurity or AI/ML focus is a strong positive signal",
-      "Junior, entry-level, or new grad roles only"
+      "Roles in New York City or Long Island are the best fit",
+      "Cybersecurity, AI/ML, and fintech work is a strong positive",
+      "SRE, DevOps, platform, and infrastructure engineering all count as good matches"
     ],
+
+    "_dealbreakers_note": "Kept as documentation of intent. NOT sent to the model — it used to echo these lines back verbatim as 'concerns' while ignoring them in its score. Each one is now enforced in code: see 'gate' below (title/location/source) and score_from_classification() in scripts/filter_jobs.py (seniority, experience, start date, clearance, degree).",
     "dealbreakers": [
       "Onsite or hybrid role located outside ALL of these areas: New York metro, Florida, Virginia, Boston, Colorado, Switzerland, Spain",
       "Requires Active Security Clearance",
@@ -55,11 +51,147 @@
       "Requires 2+ years of full-time professional experience",
       "TS/SCI required",
       "Unpaid or commission-only",
-      "Role is non-technical — title contains any of: Account Executive, Account Manager, Sales, Business Development, Counsel, Attorney, Legal, Recruiter, HR, Designer, Architect (non-software), Marketing, Finance Analyst, Operations, Customer Success, Customer Experience — score must be 1 regardless of company or location",
-      "Internship, co-op, summer analyst, apprenticeship, or any temporary/seasonal position — score must be 1 regardless of start date, company, or how strong the technical match is",
+      "Non-technical role (sales, legal, recruiting, marketing, design, operations)",
+      "Internship, co-op, summer analyst, apprenticeship, or any temporary/seasonal position",
       "Requires graduation before May 2027",
-      "Quantitative trading, quantitative research, or quantitative finance roles — not suitable regardless of company or location",
+      "Quantitative trading, quantitative research, or quantitative finance roles",
       "MS/PhD required"
-    ]
+    ],
+
+    "scoring": {
+      "_comment": "Applied by score_from_classification() to the model's labels. The model never sees these numbers — it reports what the posting says, this decides what that is worth. Tune here after checking disagreements against a labelled set.",
+      "_calibration": "Tuned so a perfect match lands on 10 and a marginal one on the threshold, with the middle actually used. Ceiling check: base 5 + new_grad 2 + 2027 1 + location 1 + focus 1 + skills 1 = 11, capped to 10 — so several near-perfect shapes reach the top without every decent job doing so.",
+      "role_family_base": {
+        "software_engineering": 5,
+        "security": 5,
+        "ml_ai": 5,
+        "data": 4,
+        "infra_devops": 5,
+        "other_technical": 2,
+        "non_technical": 0
+      },
+      "seniority_delta": {
+        "new_grad": 2,
+        "junior": 1,
+        "unclear": 1,
+        "mid": -3,
+        "intern": 0,
+        "senior_plus": 0
+      },
+      "start_timing_delta": {
+        "2027_or_later": 1,
+        "unclear": 0,
+        "2026_or_earlier": 0
+      },
+      "max_years_experience": 1,
+      "top_location_bonus": 1,
+      "preferred_focus_bonus": 1,
+      "skill_overlap_bonus": 1,
+      "skill_overlap_min": 3,
+      "reject_score": 1
+    },
+
+    "gate": {
+      "_comment": "Deterministic pre-filter run BEFORE any model call (filter_jobs.py). Rejects only on confident evidence — anything ambiguous or unrecognised falls through to the model. Every value is a case-insensitive regex. Set 'enabled': false to send everything to the model again.",
+      "enabled": true,
+
+      "blocked_sources": ["hn_hiring"],
+
+      "title_reject": {
+        "non_technical": [
+          "\\baccount (executive|manager|director)\\b",
+          "\\b(sales|presales|pre-sales)\\b",
+          "\\bbusiness development\\b",
+          "\\brecruit(er|ing|ment)\\b",
+          "\\b(counsel|attorney|paralegal|legal)\\b",
+          "\\bmarketing\\b",
+          "\\bcustomer (success|experience|support)\\b",
+          "\\bprocurement\\b",
+          "\\bsupply (chain|planner)\\b",
+          "\\bsourcing\\b",
+          "\\bdesigner\\b",
+          "\\b(product|program|project) manager\\b",
+          "\\bsolutions? (consultant|architect)\\b",
+          "\\bsolutions? engineer\\b",
+          "\\btechnical writer\\b",
+          "\\bnurse|physician|clinical\\b",
+          "\\bcontroller\\b",
+          "\\bchief \\w+ officer\\b"
+        ],
+        "senior": [
+          "\\b(senior|sr\\.?|staff|principal|distinguished|lead|head of|director|vp|vice president)\\b",
+          "\\b(engineer|developer|scientist|programmer)\\s+(iii|iv|v|vi)\\b",
+          "\\bl[4-9]\\b"
+        ],
+        "quant": [
+          "\\bquant(itative)?\\b",
+          "\\btrader\\b",
+          "\\btrading (desk|operations)\\b"
+        ],
+        "temporary": [
+          "\\bintern(ship)?s?\\b",
+          "\\bco[\\s-]?op\\b",
+          "\\bapprentice(ship)?\\b",
+          "\\bsummer (analyst|associate|scholar)\\b",
+          "\\bplacement year\\b",
+          "\\b(part[\\s-]time|contract|temporary|seasonal)\\b"
+        ],
+        "wrong_cohort": [
+          "\\bnew\\s*grad(uate)?s?\\b[^a-z0-9]{0,4}\\b20(1\\d|2[0-6])\\b",
+          "\\bclass of 20(1\\d|2[0-6])\\b",
+          "\\b20(1\\d|2[0-6])\\s+(new\\s*grad|graduates?)\\b"
+        ],
+        "not_software": [
+          "\\btechnician\\b",
+          "\\bmanufacturing\\b",
+          "\\bcalibration\\b",
+          "\\b(electrical|mechanical|aerospace|aerostructures|industrial|chemical) engineer\\b",
+          "\\brf engineer\\b",
+          "\\bsupplier quality\\b"
+        ]
+      },
+
+      "_location_note": "A job is rejected only when a deny pattern matches AND no allow pattern does. Multi-site listings ('Mountain View, CA / New York, NY') therefore pass on the acceptable site, and vague strings ('United States', 'Hybrid', '') reach the model untouched.",
+      "location_allow": [
+        "\\bremote\\b",
+        "\\bnew york\\b", "\\bnyc\\b", "\\bn\\.?y\\.?c\\b", "\\bmanhattan\\b",
+        "\\bbrooklyn\\b", "\\bqueens\\b", "\\blong island\\b", "\\bny\\b",
+        "\\buniondale\\b", "\\bplainview\\b", "\\bbethpage\\b", "\\bmelville\\b",
+        "\\bjersey city\\b", "\\bnewark\\b", "\\bhoboken\\b", "\\bnj\\b",
+        "\\bflorida\\b", "\\bfl\\b", "\\bmiami\\b", "\\btampa\\b", "\\borlando\\b",
+        "\\bvirginia\\b", "\\bva\\b", "\\breston\\b", "\\barlington\\b", "\\bmclean\\b",
+        "\\bherndon\\b", "\\bboston\\b", "\\bmassachusetts\\b", "\\bma\\b",
+        "\\bcambridge\\b", "\\bwaltham\\b", "\\bquincy\\b", "\\bmaynard\\b",
+        "\\bcolorado\\b", "\\bco\\b", "\\bdenver\\b", "\\bboulder\\b",
+        "\\bbroomfield\\b", "\\bcolorado springs\\b", "\\bfort collins\\b",
+        "\\bswitzerland\\b", "\\bzurich\\b", "\\bz\\u00fcrich\\b", "\\bbasel\\b",
+        "\\blausanne\\b", "\\blucerne\\b", "\\bzug\\b", "\\bgeneva\\b",
+        "\\bspain\\b", "\\bmadrid\\b", "\\bbarcelona\\b", "\\bvalencia\\b"
+      ],
+      "location_deny": [
+        "\\bcalifornia\\b", "\\bca\\b", "\\bsan francisco\\b", "\\bsf\\b",
+        "\\bsan mateo\\b", "\\bmenlo park\\b", "\\bpalo alto\\b", "\\bmountain view\\b",
+        "\\bsunnyvale\\b", "\\bsan jose\\b", "\\bfoster city\\b", "\\bmilpitas\\b",
+        "\\boakland\\b", "\\birvine\\b", "\\bcosta mesa\\b", "\\bglendale\\b",
+        "\\blos angeles\\b", "\\bsan diego\\b", "\\bseattle\\b", "\\bbellevue\\b",
+        "\\bkirkland\\b", "\\bwashington state\\b", "\\bwa\\b", "\\boregon\\b",
+        "\\bportland\\b", "\\baustin\\b", "\\bdallas\\b", "\\bhouston\\b",
+        "\\btexas\\b", "\\btx\\b", "\\bplano\\b", "\\bchicago\\b", "\\billinois\\b",
+        "\\bil\\b", "\\bnorth carolina\\b", "\\bnc\\b", "\\bcary\\b", "\\braleigh\\b",
+        "\\bdurham\\b", "\\brtp\\b", "\\bohio\\b", "\\boh\\b", "\\bcolumbus\\b",
+        "\\bdelaware\\b", "\\bde\\b", "\\bwilmington\\b", "\\bgeorgia\\b",
+        "\\batlanta\\b", "\\barizona\\b", "\\bphoenix\\b", "\\butah\\b",
+        "\\bminnesota\\b", "\\bwisconsin\\b", "\\bmadison\\b", "\\bpittsburgh\\b",
+        "\\bpennsylvania\\b", "\\balabama\\b", "\\bhuntsville\\b", "\\brhode island\\b",
+        "\\bquonset\\b", "\\btoronto\\b", "\\bcanada\\b", "\\bbelgium\\b",
+        "\\bdenmark\\b", "\\bbrazil\\b", "\\bs\\u00e3o paulo\\b", "\\bsao paulo\\b",
+        "\\blatam\\b", "\\bindia\\b", "\\bbangalore\\b", "\\bunited kingdom\\b",
+        "\\blondon\\b", "\\bgermany\\b", "\\bberlin\\b", "\\bmunich\\b",
+        "\\bfrance\\b", "\\bparis\\b", "\\bnetherlands\\b", "\\bamsterdam\\b",
+        "\\bireland\\b", "\\bdublin\\b", "\\bpoland\\b", "\\bportugal\\b",
+        "\\blisbon\\b", "\\bmexico\\b", "\\bargentina\\b", "\\bsingapore\\b",
+        "\\bjapan\\b", "\\btokyo\\b", "\\baustralia\\b", "\\bsydney\\b"
+      ]
+    }
   }
 }
