@@ -63,7 +63,9 @@ USER_FIELD_OPTIONS = {
 
 # Set on soft-delete. 'user'/'prune' come from the UI; the 'import-*' values
 # are written once by the phase-2 bootstrap to carry existing deletions over.
-DELETE_REASONS = ("user", "prune", "import-csv", "import-prune")
+# 'review' is apply_archive.py's, kept distinct from 'prune' so that script's
+# --undo restores its own pass without also resurrecting prune_internships'.
+DELETE_REASONS = ("user", "prune", "review", "import-csv", "import-prune")
 
 
 # ── migrations ────────────────────────────────────────────────────────────────
