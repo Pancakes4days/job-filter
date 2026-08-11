@@ -119,6 +119,30 @@ def require_db():
 
 
 @app.before_request
+def require_current_schema():
+    """Refuse to serve against a database older than this checkout.
+
+    This app is the only component that writes user columns and the only one
+    that never runs migrations — store_matches and `python3 scripts/db.py` do
+    that. So a deploy carrying a new migration lands here first, and every save
+    then builds an UPDATE naming a column the file doesn't have: a 500 on Save,
+    with the detail page still rendering fine because sqlite3.Row lookups for
+    the missing column come back Undefined in Jinja. That combination is
+    genuinely baffling from the outside, so name it instead of raising.
+
+    Blocks reads too, not just writes. A page that silently omits a column the
+    template expects is a worse failure than an honest 503, and the fix is one
+    command either way.
+    """
+    if request.endpoint in (None, "static") or not db.DB_PATH.exists():
+        return None
+    version = db.schema_version(get_db())
+    if version < db.SCHEMA_VERSION:
+        return render_template("stale_schema.html", db_path=db.DB_PATH,
+                               found=version, expected=db.SCHEMA_VERSION), 503
+
+
+@app.before_request
 def _reject_cross_origin():
     """Block cross-site writes. There is no login and no cookie — auth is the
     tailnet — so classic CSRF (riding an ambient session) doesn't apply, but a

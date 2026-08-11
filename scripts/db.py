@@ -31,8 +31,6 @@ from datetime import datetime, timezone
 from matches import row_key  # noqa: F401 — re-exported; callers key rows via db.row_key
 from paths import DB_PATH
 
-SCHEMA_VERSION = 2
-
 # Pipeline-owned columns, mirroring matches.CSV_FIELDS (minus date_processed,
 # which is listed last here to match the CSV's own ordering intent).
 PIPELINE_FIELDS = [
@@ -128,6 +126,11 @@ MIGRATIONS = [
     ["ALTER TABLE jobs ADD COLUMN pay TEXT"],
 ]
 
+# Derived, never hand-maintained: a literal here drifts from the ladder the
+# moment someone appends a migration and forgets to bump it, and the number is
+# what tells a running web app its database is too old to write to.
+SCHEMA_VERSION = len(MIGRATIONS)
+
 
 # ── connection ────────────────────────────────────────────────────────────────
 
@@ -183,6 +186,20 @@ def transaction(conn):
 def _user_version(conn):
     row = conn.execute("SELECT v FROM meta WHERE k = 'schema_version'").fetchone()
     return int(row["v"]) if row else 0
+
+
+def schema_version(conn):
+    """The version this database is actually at, 0 if never initialised.
+
+    Public because the web app has to check it on every request: it is the one
+    component that writes user columns but never runs migrations, so a deploy
+    that ships a new migration leaves it writing columns the file doesn't have
+    yet. Cheap — a single indexed lookup in a two-row table.
+    """
+    try:
+        return _user_version(conn)
+    except sqlite3.OperationalError:
+        return 0        # no meta table at all
 
 
 def init_db(conn):

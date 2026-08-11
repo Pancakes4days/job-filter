@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Database out of date · job_filter</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=asset_version) }}">
+</head>
+<body>
+<main>
+  <h1>Database is older than the code</h1>
+  <p><code>{{ db_path }}</code> is at schema v{{ found }}; this checkout expects
+  v{{ expected }}. Saving would write columns the file does not have yet, so the
+  app is holding off rather than throwing a 500 on every Save.</p>
+  <p>Apply the pending migrations — it is safe to run any time, and does nothing
+  when the database is already current:</p>
+  <pre class="log">python3 scripts/db.py</pre>
+  <p>Then reload. No restart of the web service is needed.</p>
+</main>
+</body>
+</html>
