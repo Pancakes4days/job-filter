@@ -56,19 +56,25 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_prefix=1)
 
 
 @app.context_processor
-def _asset_version():
-    """Cache-bust the stylesheet link. In production (gunicorn, debug off) no
-    no-store header is sent and Flask sets no max-age, so a browser's heuristic
-    caching can keep serving a stale style.css after a deploy — CSS edits then
-    silently don't show up. A ?v=<mtime> query on the <link> changes the URL
-    whenever the file changes, so the browser is forced to refetch. Falls back
-    to 0 if the file is missing."""
-    css = Path(app.static_folder) / "style.css"
-    try:
-        version = int(css.stat().st_mtime)
-    except OSError:
-        version = 0
-    return {"asset_version": version}
+def _asset_helpers():
+    """Cache-bust static links. In production (gunicorn, debug off) no no-store
+    header is sent and Flask sets no max-age, so a browser's heuristic caching
+    can keep serving a stale file after a deploy — edits then silently don't
+    show up. A ?v=<mtime> query changes the URL whenever the file changes, so
+    the browser is forced to refetch. Falls back to 0 if the file is missing.
+
+    Stamped per file, not off one representative file: favicons in particular
+    are cached hard by Chrome, and keying them to style.css's mtime would mean
+    a new icon only appears if the CSS happened to change in the same deploy.
+    """
+    def static_url(filename):
+        try:
+            version = int((Path(app.static_folder) / filename).stat().st_mtime)
+        except OSError:
+            version = 0
+        return url_for("static", filename=filename, v=version)
+
+    return {"static_url": static_url}
 
 
 @app.after_request

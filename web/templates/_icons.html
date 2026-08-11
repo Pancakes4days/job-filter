@@ -1,0 +1,14 @@
+{# Tab icon, shared by base.html and the two standalone pages that don't extend
+   it (no_db, stale_schema) — one copy so they can't drift.
+
+   static_url, never a hardcoded /favicon.ico: Caddy serves this under
+   /jobfilter, so a root-relative path resolves against the domain root and
+   404s. It also stamps each file with its own mtime, which is what makes a
+   replaced icon actually show up — Chrome caches favicons hard.
+
+   The art is pixel art on a 32px grid, so the .ico carries only power-of-two
+   frames (16/32/64/128/256) scaled 1:1 off the 256px original. No SVG here:
+   vectorising it would just blur the pixel edges that are the whole look. #}
+<link rel="icon" type="image/png" sizes="32x32" href="{{ static_url('favicon-32.png') }}">
+<link rel="icon" sizes="any" href="{{ static_url('favicon.ico') }}">
+<link rel="apple-touch-icon" href="{{ static_url('favicon.png') }}">

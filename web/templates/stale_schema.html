@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8">
   <title>Database out of date · job_filter</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=asset_version) }}">
+  {% include "_icons.html" %}
+  <link rel="stylesheet" href="{{ static_url('style.css') }}">
 </head>
 <body>
 <main>
