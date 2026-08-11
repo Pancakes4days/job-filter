@@ -225,6 +225,46 @@ def dashboard():
     )
 
 
+# ── returning to the list after a save ────────────────────────────────────────
+# Saving redirects to the Jobs page rather than back to the job, because the
+# job is finished with at that point and the next one is on the list. The
+# filters that produced the list travel with it — detail link, then hidden
+# inputs, then the redirect — so a save doesn't dump you back at an unfiltered
+# page and make you re-pick company/status/sort for every application.
+#
+# The prefix is load-bearing, not decoration: the list filters on `status` and
+# the job's own Status <select> is also named `status`, so an unprefixed hidden
+# input would come first in request.form and job_update would silently write
+# the filter's value into the job.
+
+JOBS_ARGS   = ("q", "company", "status", "min_score", "sort", "archived")
+BACK_PREFIX = "back_"
+
+
+def carried_filters(source, *, prefixed):
+    """The Jobs-page filters present in `source`, keyed with the prefix.
+
+    `prefixed=False` reads them under their bare names (the Jobs page's own
+    query string); True reads them already prefixed (a detail page or a form
+    post that is passing them along).
+    """
+    out = {}
+    for name in JOBS_ARGS:
+        value = source.get(name if not prefixed else BACK_PREFIX + name)
+        if value:
+            out[BACK_PREFIX + name] = value
+    return out
+
+
+def jobs_url_from(form):
+    """The Jobs URL a save should return to. Rebuilt through url_for from a
+    whitelist rather than echoing back a caller-supplied URL, so this round
+    trip can't be bent into an off-site redirect."""
+    params = {name: form.get(BACK_PREFIX + name) for name in JOBS_ARGS
+              if form.get(BACK_PREFIX + name)}
+    return url_for("jobs", **params)
+
+
 @app.route("/jobs")
 def jobs():
     conn = get_db()
@@ -255,6 +295,8 @@ def jobs():
         sel_status = request.args.get("status", ""),
         counts     = db.counts(conn),
         status_bar = pipeline_status(),
+        # Spread into each row's detail link so Save can find its way back here.
+        back       = carried_filters(request.args, prefixed=False),
     )
 
 
@@ -270,7 +312,8 @@ def job_detail():
                                status_bar=pipeline_status()), 404
     return render_template("job.html", job=row, status_bar=pipeline_status(),
                            user_fields=db.USER_FIELDS,
-                           options=db.USER_FIELD_OPTIONS)
+                           options=db.USER_FIELD_OPTIONS,
+                           back=carried_filters(request.args, prefixed=True))
 
 
 # ── writes (phase 5) ──────────────────────────────────────────────────────────
@@ -296,7 +339,7 @@ def job_update():
               for f in db.USER_FIELDS if f in request.form}
     with db.transaction(conn):
         db.update_user_fields(conn, key, fields)
-    return redirect(url_for("job_detail", key=key))
+    return redirect(jobs_url_from(request.form))
 
 
 @app.route("/job/delete", methods=["POST"])

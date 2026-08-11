@@ -38,6 +38,11 @@
        one POST, then a redirect back here showing the stored values. #}
     <form method="post" action="{{ url_for('job_update') }}" class="edit">
       <input type="hidden" name="key" value="{{ job.key }}">
+      {# Where Save returns to. Prefixed names — one of these is back_status,
+         and an unprefixed copy would shadow the Status <select> below. #}
+      {% for name, value in back.items() %}
+      <input type="hidden" name="{{ name }}" value="{{ value }}">
+      {% endfor %}
 
       <label class="field">
         <span class="k">Status</span>

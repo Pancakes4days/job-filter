@@ -53,7 +53,9 @@ cannot re-add them — that is what replaced the sync watermark.</p>
   {% for j in rows %}
   <tr>
     <td class="score s{{ j.score }}">{{ j.score if j.score is not none else '—' }}</td>
-    <td class="title"><a class="clamp" href="{{ url_for('job_detail', key=j.key) }}"
+    {# **back carries this page's filters into the detail page, so its Save can
+       redirect to the list as you had it rather than to a bare /jobs. #}
+    <td class="title"><a class="clamp" href="{{ url_for('job_detail', key=j.key, **back) }}"
         title="{{ j.title }}">{{ j.title or '(no title)' }}</a></td>
     <td class="company"><span class="clamp" title="{{ j.company }}">{{ j.company }}</span></td>
     <td class="loc"><span class="clamp" title="{{ j.location }}">{{ j.location }}</span></td>
