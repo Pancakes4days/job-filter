@@ -209,7 +209,7 @@ def jobs():
         min_score = min_score,
         archived  = archived,
         # sort is a SORT_ORDERS key, validated in db.search_jobs — never SQL.
-        sort      = request.args.get("sort", db.DEFAULT_SORT),
+        sort      = request.args.get("sort", db.JOBS_DEFAULT_SORT),
     )
     return render_template(
         "jobs.html",
@@ -217,7 +217,7 @@ def jobs():
         archived   = archived,
         companies  = db.distinct_values(conn, "company"),
         statuses   = db.distinct_values(conn, "status"),
-        sort       = request.args.get("sort", db.DEFAULT_SORT),
+        sort       = request.args.get("sort", db.JOBS_DEFAULT_SORT),
         sort_keys  = list(db.SORT_ORDERS),
         q          = request.args.get("q", ""),
         min_score  = min_score,

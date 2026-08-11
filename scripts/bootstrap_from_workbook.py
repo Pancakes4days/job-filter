@@ -72,6 +72,7 @@ USER_HEADER_TO_COL = {
     "As of":          "as_of",
     "Notes":          "notes",
     "Application ID": "application_id",
+    "My Pay":         "pay",
 }
 
 # Workbook header -> pipeline field, derived from export_workbook.COLUMNS so it

@@ -77,6 +77,7 @@ CREATE TABLE jobs (
   as_of           TEXT,
   notes           TEXT,
   application_id  TEXT,
+  pay             TEXT,               -- v2; the user's figure, not scraped salary
 
   -- lifecycle
   deleted_at      TEXT,               -- NULL = live, else tombstone
@@ -98,7 +99,7 @@ CREATE TABLE meta (k TEXT PRIMARY KEY, v TEXT);
 | Owner | Columns |
 |---|---|
 | pipeline | url, title, company, location, salary, source, score, suitable, matched_skills, concerns, reason, date_processed |
-| web UI | date_applied, cover_letter, due_date, round_num, status, as_of, notes, application_id, deleted_at |
+| web UI | date_applied, cover_letter, due_date, round_num, status, as_of, notes, application_id, pay, deleted_at |
 
 `key` reuses `export_workbook.row_key` verbatim — import it, don't reimplement
 it. Same drift discipline as `paths.py` / `matches.py` / `remote.py`.

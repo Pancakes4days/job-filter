@@ -31,7 +31,7 @@ from datetime import datetime, timezone
 from matches import row_key  # noqa: F401 — re-exported; callers key rows via db.row_key
 from paths import DB_PATH
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 # Pipeline-owned columns, mirroring matches.CSV_FIELDS (minus date_processed,
 # which is listed last here to match the CSV's own ordering intent).
@@ -44,9 +44,13 @@ PIPELINE_FIELDS = [
 # User-owned columns — the export_workbook COLUMNS entries whose csv_field is
 # None, plus application_id (the pipeline only ever writes "." there as an
 # overflow spacer, so the user effectively owns it).
+#
+# `pay` is deliberately separate from the pipeline's `salary`: salary is
+# whatever the posting advertised (often blank or a range), pay is what the
+# user learned — from the recruiter, the offer, or their own research.
 USER_FIELDS = [
     "date_applied", "cover_letter", "due_date", "round_num",
-    "status", "as_of", "notes", "application_id",
+    "status", "as_of", "notes", "application_id", "pay",
 ]
 
 # Canonical option lists for the two enumerated user-owned columns. The web UI
@@ -119,6 +123,9 @@ MIGRATIONS = [
      "CREATE INDEX idx_jobs_company ON jobs(company)",
      "CREATE INDEX idx_jobs_score   ON jobs(score)",
      ],
+
+    # v2 — user-owned pay column, distinct from the pipeline's scraped `salary`
+    ["ALTER TABLE jobs ADD COLUMN pay TEXT"],
 ]
 
 
@@ -354,15 +361,23 @@ def get_job(conn, key):
 # Sort keys the UI may ask for. Callers pass a KEY, never SQL — the ORDER BY
 # clause is interpolated, so accepting a caller-supplied string here would put
 # a query parameter straight into the statement.
+# Listed newest-first because that is the Jobs page default (JOBS_DEFAULT_SORT)
+# and this dict's order is the dropdown's order.
 SORT_ORDERS = {
-    "score":   "score DESC, date_processed DESC",
     "date":    "date_processed DESC, score DESC",
+    "score":   "score DESC, date_processed DESC",
     "company": "company COLLATE NOCASE, score DESC",
     "title":   "title COLLATE NOCASE",
     # NULL statuses last, so untouched rows don't bury the ones in flight.
     "status":  "status IS NULL, status COLLATE NOCASE, score DESC",
 }
 DEFAULT_SORT = "score"
+
+# What the Jobs page opens on. Split from DEFAULT_SORT on purpose: the workbook
+# export and other batch readers want the best matches first, but the page is
+# checked daily, where "what showed up since I last looked" beats "what scored
+# highest six weeks ago".
+JOBS_DEFAULT_SORT = "date"
 
 
 def search_jobs(conn, *, q=None, company=None, status=None, min_score=None,

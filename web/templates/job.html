@@ -61,7 +61,18 @@
 
       <label class="field">
         <span class="k">Date applied</span>
-        <input type="text" name="date_applied" value="{{ job.date_applied or '' }}" placeholder="YYYY-MM-DD">
+        {# data-today: clicking an empty box fills in today's date — see the
+           script at the bottom of this page. #}
+        <input type="text" name="date_applied" data-today
+               value="{{ job.date_applied or '' }}" placeholder="M/D/YY">
+      </label>
+
+      <label class="field">
+        <span class="k">Pay</span>
+        {# The user's own figure. job.salary next to the title is what the
+           posting advertised — often blank — and the pipeline owns it. #}
+        <input type="text" name="pay" value="{{ job.pay or '' }}"
+               placeholder="{{ job.salary or 'e.g. $120k, $60/hr' }}">
       </label>
 
       <label class="field">
@@ -107,5 +118,28 @@
 {% endif %}
 
 <p class="muted small">key: <code>{{ job.key }}</code></p>
+
+<script>
+// Clicking an empty [data-today] box suggests today's date (8/11/26), pre-selected
+// so typing over it replaces it. Filling the date is nearly always "the day I
+// clicked apply", and the form is otherwise plain HTML — this only saves typing,
+// so with JS off the field still works as a normal text input.
+(function () {
+  function today() {
+    var d = new Date();
+    return (d.getMonth() + 1) + "/" + d.getDate() + "/" +
+           String(d.getFullYear()).slice(-2);
+  }
+  document.querySelectorAll("input[data-today]").forEach(function (input) {
+    input.addEventListener("focus", function () {
+      if (input.value.trim()) return;
+      input.value = today();
+      // Deferred: on a click, focus lands before the browser places the caret,
+      // and that would collapse a selection made here.
+      setTimeout(function () { input.select(); }, 0);
+    });
+  });
+})();
+</script>
 
 {% endblock %}

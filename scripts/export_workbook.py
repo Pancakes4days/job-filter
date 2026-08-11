@@ -52,7 +52,12 @@ COLUMNS = [
     ("Job Title",      "title",          50),
     ("Company",        "company",        20),
     ("Location",       "location",       18),
+    # "Pay" is the scraped listing figure; "My Pay" is the user's own note of
+    # what the role actually pays. Header names are load-bearing — the phase-2
+    # bootstrap reads existing workbooks by header — so the old one keeps its
+    # name and the new column is added beside it rather than renaming.
     ("Pay",            "salary",         12),
+    ("My Pay",         "pay",            12),
     ("Website",        "url",            16),
     ("Date Found",     "date_processed", 16),
     ("Date Applied",   "date_applied",   16),
