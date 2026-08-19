@@ -741,6 +741,13 @@ WORKDAY_MAX_PAGES = 25         # bound per-company requests (~500 most-recent jo
 # The list endpoint omits descriptions. Enabling this fetches each posting's
 # detail for a full description — richer for the LLM, but one request per job.
 WORKDAY_FETCH_DESCRIPTIONS = False
+# A posting open in several cities reports locationsText as "3 Locations" — a
+# count, not a place. Only the detail endpoint names the cities, so such jobs
+# start with no location and get resolved after prefiltering; see
+# resolve_workday_locations().
+# re.M so the same pattern can rewrite the placeholder where it leads a
+# multi-line description ("3 Locations\nPosted Today").
+WORKDAY_MULTI_LOC_RE = re.compile(r"^\d+\s+locations?$", re.I | re.M)
 
 
 def _parse_workday_slug(slug):
@@ -784,6 +791,42 @@ def _workday_description(host, tenant, site, external_path):
         return ""
 
 
+def _workday_locations(detail_url):
+    """Every city on one posting, "A; B; C", from its detail endpoint. "" on failure."""
+    try:
+        req = urllib.request.Request(
+            detail_url, headers={"Accept": "application/json", "User-Agent": WORKDAY_UA})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            info = json.loads(resp.read().decode("utf-8", errors="replace"))
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
+        return ""
+    posting = info.get("jobPostingInfo") or {}
+    places = [posting.get("location", "")] + list(posting.get("additionalLocations") or [])
+    # Workday pads some entries ("San Francisco,  CA"), so squeeze the whitespace.
+    return "; ".join(re.sub(r"\s+", " ", p).strip() for p in places if p and p.strip())
+
+
+def resolve_workday_locations(jobs):
+    """Name the cities for Workday's "N Locations" postings. Returns how many.
+
+    One request per posting, so this runs after the keyword prefilter — only the
+    handful of plausible jobs cost anything. A posting whose detail fetch fails
+    keeps its empty location and gets judged by the LLM like any other job with
+    no location info.
+    """
+    pending = [j for j in jobs if j.get("_workday_detail")]
+    for i, job in enumerate(pending):
+        loc = _workday_locations(job.pop("_workday_detail"))
+        if loc:
+            job["location"] = loc
+            # The description leads with the same "N Locations" placeholder.
+            job["description"] = WORKDAY_MULTI_LOC_RE.sub(
+                loc, job.get("description", ""), count=1)
+        if i + 1 < len(pending):
+            time.sleep(0.3)  # polite between detail calls
+    return len(pending)
+
+
 def _fetch_workday(slug):
     host, tenant, site = _parse_workday_slug(slug)
     list_url = f"https://{host}/wday/cxs/{tenant}/{site}/jobs"
@@ -801,15 +844,19 @@ def _fetch_workday(slug):
                 if full:
                     desc = full
                 time.sleep(0.3)  # polite between detail calls
-            jobs.append({
+            multi_loc = bool(WORKDAY_MULTI_LOC_RE.match(loc.strip()))
+            job = {
                 "title": item.get("title", ""),
                 "company": slug,
-                "location": loc,
+                "location": "" if multi_loc else loc,
                 "salary": "",
                 "url": f"https://{host}/{site}{ext}" if ext else f"https://{host}/{site}",
                 "description": desc[:MAX_DESC_CHARS],
                 "source": f"workday:{host}/{site}",
-            })
+            }
+            if multi_loc and ext:
+                job["_workday_detail"] = f"https://{host}/wday/cxs/{tenant}/{site}{ext}"
+            jobs.append(job)
         offset += len(postings)
         if not postings or offset >= data.get("total", 0):
             break
@@ -1069,6 +1116,12 @@ def main():
         all_jobs = keyword_prefilter(all_jobs, cfg)
     prefiltered = len(all_jobs)
 
+    # Workday's multi-city postings got this far with no location. Now that the
+    # list is small, name their cities and apply the location filter for real.
+    resolved = resolve_workday_locations(all_jobs)
+    if resolved:
+        all_jobs = location_prefilter(all_jobs, cfg)
+
     already_seen = 0
     if not args.include_seen:
         seen = load_seen()
@@ -1086,7 +1139,8 @@ def main():
 
     print(f"\n{fetched} fetched -> {deduped} after dedupe -> "
           f"{located} after location filter -> {prefiltered} after prefilter "
-          f"-> {len(all_jobs)} new ({already_seen} already evaluated)")
+          f"-> {len(all_jobs)} new ({already_seen} already evaluated"
+          f"{f'; {resolved} Workday locations resolved' if resolved else ''})")
     print(f"Wrote {args.out}")
     print(f"Next: python3 filter_jobs.py {Path(args.out).name}")
 

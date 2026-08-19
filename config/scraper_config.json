@@ -224,6 +224,11 @@
           "label": "Capital Group"
         },
         {
+          "platform": "workday",
+          "slug": "capitalone.wd12.myworkdayjobs.com/Capital_One",
+          "label": "Capital One"
+        },
+        {
           "platform": "smartrecruiters",
           "slug": "caresource",
           "label": "CareSource"
