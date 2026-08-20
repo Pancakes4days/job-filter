@@ -8,5 +8,15 @@
   "scrape_hours_local":  [6, 13],
   "copy_retry_interval": 60,
   "detect_delay":        0.5,
-  "phase_retry_interval": 900
+  "phase_retry_interval": 900,
+
+  "_notify_comment": "Email alerts from newgrad_watch.py. app_password is a Google App Password (myaccount.google.com/apppasswords, needs 2-step verification) — NOT your account password. Everything stays a printed dry run until enabled is true.",
+  "notify": {
+    "enabled":      false,
+    "smtp_host":    "smtp.gmail.com",
+    "smtp_port":    587,
+    "username":     "you@gmail.com",
+    "app_password": "",
+    "to":           "you@gmail.com"
+  }
 }

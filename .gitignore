@@ -14,6 +14,7 @@ scraped_jobs.json
 orchestrator_state.json
 orchestrator.lock
 recruitment_alerts.json
+newgrad_seen.json
 
 # Legacy laptop-sync artifacts (removed in phase 6; ignored so stale copies on
 # an upgraded Pi don't show as untracked). Safe to delete from data/.

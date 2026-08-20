@@ -81,3 +81,61 @@ Doordash Merchant -> DoorDash (smartrecruiters:doordash already in watchlist)
 # Nucleus Security, Olami, Orange Tail, Princeton Biopartners, QuickSlot Health,
 # Research Innovations, SalesPilot 365, Security Innovation, Shee Atika Government Services,
 # Replicate, U.S. Hunger, Vallera, Versana, Visionary Integration Professionals, Workhelio, Wurl
+
+# ---- Removed 2026-08-20 (watchlist liveness audit of all 398 entries) ----
+
+# SmartRecruiters accounts with NO public postings. Their careers page is real
+# (careers.smartrecruiters.com/<slug> resolves the right employer name), but the
+# public postings API returns 0 for every one of them, so the scraper can never
+# see a job. These are private/unpublished boards, not typos.
+#
+# Root cause of them being here: detect_platforms.check_smartrecruiters accepted
+# any slug whose careers page merely had an og:title, and the postings endpoint
+# answers HTTP 200 totalFound=0 for EVERY slug — including nonsense ones — so a
+# typo and a real employer are indistinguishable through that API. The check now
+# requires at least one live posting.
+
+# 8am, Adobe, AppDynamics, BGC Group
+# Bank of China, BlackRock, Bloomberg, Boeing
+# Booz Allen Hamilton, Brainware, CAA, Capital Group
+# CareSource, Cisco, Comcast, CrowdStrike
+# CyberArk, Deutsche Bank, Dexcom, DigitalOcean
+# DoorDash, Dow Jones, Dynatrace, EY
+# Electronic Arts, Etsy, GitHub, Google
+# Grubhub, HashiCorp, Honeywell, Intuit
+# L3Harris, Lazard, Leidos, LiveRamp
+# Lockheed Martin, MITRE, MTA, Macquarie Group
+# Mercury Insurance, Meta, Moody's, Morgan Stanley
+# Motorola, NIS, NetSuite, Noom
+# Oracle, PTC, Palo Alto Networks, Paramount
+# Pegasystems, Persistent Systems, Protiviti, Rakuten
+# Rapid7, Raytheon, Rippling, SAIC
+# Santander, Shopify, Societe Generale, Susquehanna International Group
+# Tapestry, Tata Consultancy Services, Telnyx, Warby Parker
+# Whatnot, Zendesk
+
+# Boards that 404 — the slug does not exist. Probed name variants on
+# greenhouse/lever/ashby/smartrecruiters; nothing live found.
+Atlassian                -> was lever:atlassian, now 404
+Cityblock Health         -> was ashby:cityblock, now 404
+Glassdoor                -> was greenhouse:glassdoor, now 404
+Olive                    -> was ashby:olive, now 404
+OneStream                -> was greenhouse:onestreamsoftware, now 404
+dbt Labs                 -> was greenhouse:dbtlabsinc, now 404
+
+# ---- Fixed in the same pass (verified live, identity confirmed by job titles) ----
+# Citi             smartrecruiters:citi (0)          -> workday:citi.wd5.myworkdayjobs.com/2 (2000)
+# American Express smartrecruiters:americanexpress(0)-> oracle:egug.fa.us2.oraclecloud.com/CX_1 (432)
+# Optiver          greenhouse:optiver (0)            -> greenhouse:optiverus (177)
+# Fireworks AI     greenhouse:fireworksai (404)      -> ashby:fireworks (63)
+
+# Rejected replacements — right-looking slug, WRONG company (verified by titles):
+#   Capital Group     -> lever:capital is a Cyprus/Bulgaria crypto firm, not the asset manager
+#   Mercury Insurance -> greenhouse:mercury is the fintech Mercury, already in the watchlist
+
+# Deliberately KEPT despite 0 open jobs — these are real boards that 404 for a bad
+# slug, so an empty result means 'no openings right now', not a broken entry:
+#   greenhouse/ashby/lever (21), workable (13, each self-identifies with the right
+#   company name), workday NYT + Qualcomm (the only valid site on each tenant).
+#   Qualcomm's live hiring has moved to careers.qualcomm.com; its Workday tenant is
+#   real but empty, so it stays under the same rule.

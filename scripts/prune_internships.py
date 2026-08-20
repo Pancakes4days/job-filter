@@ -35,24 +35,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import db
 from paths import DB_PATH
 
-# Matched against the TITLE only. prune_workbook.py learned this the hard way
-# (see its NEWGRAD_TITLE comment): the LLM's reason/concerns text mentions
-# internships in negative contexts -- "not an internship", "outside the intern
-# cycle" -- so matching the blob inverts the meaning and prunes the good rows.
-#
-# Word boundaries everywhere, for the same reason scraper._compile_keywords uses
-# them: bare "intern" must not hit "Internal Tools Engineer" or "International".
-# The trailing \b after the optional suffixes is what blocks those -- "internal"
-# fails because 'a' is a word character where the boundary is required.
-INTERNSHIP_TITLE = re.compile(
-    r"\bintern(ship)?s?\b"
-    r"|\bco[\s\-]?op\b"
-    r"|\bapprentice(ship)?\b"
-    r"|\bsummer\s+(analyst|associate|scholar)\b"
-    r"|\bplacement\s+year\b"
-    r"|\bindustrial\s+placement\b",
-    re.I,
-)
+# One definition of "this is an internship", shared with the alert path so the
+# two can't drift into disagreeing. It lives in recruitment_watch.py because that
+# module is stdlib-only -- importing in this direction would drag db into the
+# 15-minute newgrad_watch poller. See it there for why the word boundaries and
+# the title-only matching are load-bearing.
+from recruitment_watch import INTERNSHIP_TITLE  # noqa: E402
 
 # User-owned columns whose presence means "I have touched this job".
 ENGAGED_FIELDS = ("status", "date_applied")

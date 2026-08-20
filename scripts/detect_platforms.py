@@ -98,12 +98,24 @@ def check_ashby(slug):
 
 
 def check_smartrecruiters(slug):
+    """A live posting is the ONLY acceptable proof here.
+
+    Unlike Greenhouse/Lever/Ashby, this endpoint never 404s: it answers
+    HTTP 200 with totalFound=0 for every slug, nonsense ones included, so an
+    empty result cannot distinguish a typo from a real employer. The careers
+    page can't stand in either — careers.smartrecruiters.com/<slug> renders an
+    og:title for any real company, including the many whose postings are private
+    and therefore invisible to the scraper forever.
+
+    Accepting og:title as proof put 72 boards in the watchlist that could never
+    yield a job (see the 2026-08-20 section of watchlist_unsupported.txt). The
+    cost of requiring a posting is missing a real employer who happens to have
+    zero openings the day detection runs; that is the cheaper mistake, since
+    they land in watchlist_misses.txt and can be retried with a slug hint.
+    """
     d = _get_json(
         f"https://api.smartrecruiters.com/v1/companies/{slug}/postings?limit=1")
-    if isinstance(d, dict) and d.get("totalFound", 0) > 0:
-        return True
-    html = _get_text(f"https://careers.smartrecruiters.com/{slug}")
-    return bool(html) and 'property="og:title"' in html
+    return isinstance(d, dict) and d.get("totalFound", 0) > 0
 
 
 def check_workable(slug):

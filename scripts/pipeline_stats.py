@@ -165,7 +165,7 @@ def main():
     alerts = load_active_alerts()
     if alerts:
         today = date.today()
-        section("RECRUITMENT ALERTS  — watchlist companies posting new-grad / intern roles")
+        section("RECRUITMENT ALERTS  — watchlist companies posting new-grad roles")
         for a in alerts:
             days_left = (date.fromisoformat(a["expires"]) - today).days
             first     = month_day(date.fromisoformat(a["first_seen"]))

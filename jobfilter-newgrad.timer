@@ -1,0 +1,20 @@
+[Unit]
+Description=Poll tier-1 companies for new-grad postings every 15 minutes
+
+[Timer]
+# Every 15 minutes, 06:00–22:45 local. Overnight is skipped on purpose: US
+# recruiters post during business hours, and an alert you sleep through costs
+# you the head start this whole path exists to buy.
+OnCalendar=*-*-* 06..22:00/15
+
+# No Persistent=true. A missed poll is worthless by the time the Pi comes back —
+# the next tick covers the same board anyway. (Contrast jobfilter-backup.timer,
+# where a skipped nightly snapshot is worth catching up on.)
+Persistent=false
+
+# Keeps the poll off the exact quarter-hour, where every other cron-shaped thing
+# on the internet also fires.
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

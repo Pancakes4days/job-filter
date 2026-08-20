@@ -1,0 +1,382 @@
+[
+ {
+  "label": "8am",
+  "platform": "smartrecruiters",
+  "slug": "8am"
+ },
+ {
+  "label": "Adobe",
+  "platform": "smartrecruiters",
+  "slug": "adobe"
+ },
+ {
+  "label": "Atlassian",
+  "platform": "lever",
+  "slug": "atlassian"
+ },
+ {
+  "label": "Bank of China",
+  "platform": "smartrecruiters",
+  "slug": "bankofchina"
+ },
+ {
+  "label": "BGC Group",
+  "platform": "smartrecruiters",
+  "slug": "bgcgroup"
+ },
+ {
+  "label": "BlackRock",
+  "platform": "smartrecruiters",
+  "slug": "blackrock"
+ },
+ {
+  "label": "Bloomberg",
+  "platform": "smartrecruiters",
+  "slug": "bloomberg"
+ },
+ {
+  "label": "Boeing",
+  "platform": "smartrecruiters",
+  "slug": "boeing"
+ },
+ {
+  "label": "CAA",
+  "platform": "smartrecruiters",
+  "slug": "caa"
+ },
+ {
+  "label": "Capital Group",
+  "platform": "smartrecruiters",
+  "slug": "capitalgroup"
+ },
+ {
+  "label": "CareSource",
+  "platform": "smartrecruiters",
+  "slug": "caresource"
+ },
+ {
+  "label": "Cisco",
+  "platform": "smartrecruiters",
+  "slug": "cisco"
+ },
+ {
+  "label": "Comcast",
+  "platform": "smartrecruiters",
+  "slug": "comcast"
+ },
+ {
+  "label": "CrowdStrike",
+  "platform": "smartrecruiters",
+  "slug": "crowdstrike"
+ },
+ {
+  "label": "Deutsche Bank",
+  "platform": "smartrecruiters",
+  "slug": "deutschebank"
+ },
+ {
+  "label": "Dexcom",
+  "platform": "smartrecruiters",
+  "slug": "dexcom"
+ },
+ {
+  "label": "DigitalOcean",
+  "platform": "smartrecruiters",
+  "slug": "digitalocean"
+ },
+ {
+  "label": "DoorDash",
+  "platform": "smartrecruiters",
+  "slug": "doordash"
+ },
+ {
+  "label": "Dow Jones",
+  "platform": "smartrecruiters",
+  "slug": "dowjones"
+ },
+ {
+  "label": "EY",
+  "platform": "smartrecruiters",
+  "slug": "ey"
+ },
+ {
+  "label": "GitHub",
+  "platform": "smartrecruiters",
+  "slug": "github"
+ },
+ {
+  "label": "Google",
+  "platform": "smartrecruiters",
+  "slug": "google"
+ },
+ {
+  "label": "Honeywell",
+  "platform": "smartrecruiters",
+  "slug": "honeywell"
+ },
+ {
+  "label": "Intuit",
+  "platform": "smartrecruiters",
+  "slug": "intuit"
+ },
+ {
+  "label": "Rippling",
+  "platform": "smartrecruiters",
+  "slug": "rippling"
+ },
+ {
+  "label": "Brainware",
+  "platform": "smartrecruiters",
+  "slug": "brainware"
+ },
+ {
+  "label": "L3Harris",
+  "platform": "smartrecruiters",
+  "slug": "l3harris"
+ },
+ {
+  "label": "Zendesk",
+  "platform": "smartrecruiters",
+  "slug": "zendesk"
+ },
+ {
+  "label": "Shopify",
+  "platform": "smartrecruiters",
+  "slug": "shopify"
+ },
+ {
+  "label": "Lazard",
+  "platform": "smartrecruiters",
+  "slug": "lazard"
+ },
+ {
+  "label": "Leidos",
+  "platform": "smartrecruiters",
+  "slug": "leidos"
+ },
+ {
+  "label": "Grubhub",
+  "platform": "smartrecruiters",
+  "slug": "grubhub"
+ },
+ {
+  "label": "Lockheed Martin",
+  "platform": "smartrecruiters",
+  "slug": "lockheedmartin"
+ },
+ {
+  "label": "Etsy",
+  "platform": "smartrecruiters",
+  "slug": "etsy"
+ },
+ {
+  "label": "Macquarie Group",
+  "platform": "smartrecruiters",
+  "slug": "macquariegroup"
+ },
+ {
+  "label": "Warby Parker",
+  "platform": "smartrecruiters",
+  "slug": "warbyparker"
+ },
+ {
+  "label": "Noom",
+  "platform": "smartrecruiters",
+  "slug": "noom"
+ },
+ {
+  "label": "Mercury Insurance",
+  "platform": "smartrecruiters",
+  "slug": "mercuryinsurance"
+ },
+ {
+  "label": "Meta",
+  "platform": "smartrecruiters",
+  "slug": "meta"
+ },
+ {
+  "label": "Electronic Arts",
+  "platform": "smartrecruiters",
+  "slug": "electronicarts"
+ },
+ {
+  "label": "Moody's",
+  "platform": "smartrecruiters",
+  "slug": "moodys"
+ },
+ {
+  "label": "Morgan Stanley",
+  "platform": "smartrecruiters",
+  "slug": "morganstanley"
+ },
+ {
+  "label": "Motorola",
+  "platform": "smartrecruiters",
+  "slug": "motorola"
+ },
+ {
+  "label": "MTA",
+  "platform": "smartrecruiters",
+  "slug": "mta"
+ },
+ {
+  "label": "HashiCorp",
+  "platform": "smartrecruiters",
+  "slug": "hashicorp"
+ },
+ {
+  "label": "NetSuite",
+  "platform": "smartrecruiters",
+  "slug": "netsuite"
+ },
+ {
+  "label": "NIS",
+  "platform": "smartrecruiters",
+  "slug": "nis"
+ },
+ {
+  "label": "Olive",
+  "platform": "ashby",
+  "slug": "olive"
+ },
+ {
+  "label": "Booz Allen Hamilton",
+  "platform": "smartrecruiters",
+  "slug": "boozallenhamilton"
+ },
+ {
+  "label": "Oracle",
+  "platform": "smartrecruiters",
+  "slug": "oracle"
+ },
+ {
+  "label": "SAIC",
+  "platform": "smartrecruiters",
+  "slug": "saic"
+ },
+ {
+  "label": "Raytheon",
+  "platform": "smartrecruiters",
+  "slug": "raytheon"
+ },
+ {
+  "label": "Paramount",
+  "platform": "smartrecruiters",
+  "slug": "paramount"
+ },
+ {
+  "label": "MITRE",
+  "platform": "smartrecruiters",
+  "slug": "mitre"
+ },
+ {
+  "label": "Pegasystems",
+  "platform": "smartrecruiters",
+  "slug": "pegasystems"
+ },
+ {
+  "label": "LiveRamp",
+  "platform": "smartrecruiters",
+  "slug": "liveramp"
+ },
+ {
+  "label": "Persistent Systems",
+  "platform": "smartrecruiters",
+  "slug": "persistentsystems"
+ },
+ {
+  "label": "Protiviti",
+  "platform": "smartrecruiters",
+  "slug": "protiviti"
+ },
+ {
+  "label": "PTC",
+  "platform": "smartrecruiters",
+  "slug": "ptc"
+ },
+ {
+  "label": "Rakuten",
+  "platform": "smartrecruiters",
+  "slug": "rakuten"
+ },
+ {
+  "label": "Susquehanna International Group",
+  "platform": "smartrecruiters",
+  "slug": "susquehannainternationalgroup"
+ },
+ {
+  "label": "Santander",
+  "platform": "smartrecruiters",
+  "slug": "santander"
+ },
+ {
+  "label": "Glassdoor",
+  "platform": "greenhouse",
+  "slug": "glassdoor"
+ },
+ {
+  "label": "Telnyx",
+  "platform": "smartrecruiters",
+  "slug": "telnyx"
+ },
+ {
+  "label": "Dynatrace",
+  "platform": "smartrecruiters",
+  "slug": "dynatrace"
+ },
+ {
+  "label": "Whatnot",
+  "platform": "smartrecruiters",
+  "slug": "whatnot"
+ },
+ {
+  "label": "Tapestry",
+  "platform": "smartrecruiters",
+  "slug": "tapestry"
+ },
+ {
+  "label": "Tata Consultancy Services",
+  "platform": "smartrecruiters",
+  "slug": "tataconsultancyservices"
+ },
+ {
+  "label": "Societe Generale",
+  "platform": "smartrecruiters",
+  "slug": "societegenerale"
+ },
+ {
+  "label": "Palo Alto Networks",
+  "platform": "smartrecruiters",
+  "slug": "paloaltonetworks"
+ },
+ {
+  "label": "Rapid7",
+  "platform": "smartrecruiters",
+  "slug": "rapid7"
+ },
+ {
+  "label": "CyberArk",
+  "platform": "smartrecruiters",
+  "slug": "cyberark"
+ },
+ {
+  "label": "Cityblock Health",
+  "platform": "ashby",
+  "slug": "cityblock"
+ },
+ {
+  "label": "dbt Labs",
+  "platform": "greenhouse",
+  "slug": "dbtlabsinc"
+ },
+ {
+  "label": "OneStream",
+  "platform": "greenhouse",
+  "slug": "onestreamsoftware"
+ },
+ {
+  "label": "AppDynamics",
+  "platform": "smartrecruiters",
+  "slug": "appdynamics"
+ }
+]

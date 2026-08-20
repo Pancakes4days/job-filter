@@ -1,0 +1,20 @@
+[Unit]
+Description=Job Filter new-grad fast lane (tier-1 companies)
+# Oneshot, driven by jobfilter-newgrad.timer. Deliberately NOT ordered against
+# jobfilter.service: this only reads scraper_config.json and writes its own
+# seen-file, so it never contends with the pipeline or the tracker DB.
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=bluke
+WorkingDirectory=/home/bluke/job_filter/scripts
+
+# Polls only companies flagged "tier1": true in config/scraper_config.json.
+# Sends nothing until config/local.json has a notify block with enabled=true —
+# until then it prints the alert to the log below and does NOT mark the postings
+# seen, so switching email on later cannot skip anything.
+ExecStart=/usr/bin/python3 /home/bluke/job_filter/scripts/newgrad_watch.py
+
+StandardOutput=append:/home/bluke/job_filter/data/newgrad.log
+StandardError=append:/home/bluke/job_filter/data/newgrad.log

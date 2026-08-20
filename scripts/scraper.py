@@ -1038,9 +1038,35 @@ def keyword_prefilter(jobs, cfg):
     return kept
 
 
+def _place_ok(place, inc, exc):
+    """One location: True if it is somewhere worth applying to.
+
+    exclude beats include WITHIN a place, which is what keeps "Remote (Canada)"
+    and "United Kingdom, Remote" out — both match the include term "remote" and
+    an exclude term, and the exclude has to win.
+    """
+    if exc and any(p.search(place) for p in exc):
+        return False
+    if inc and not any(p.search(place) for p in inc):
+        return False
+    return True
+
+
 def location_prefilter(jobs, cfg):
     """Filter on the location field. Jobs with NO location info pass through
-    (the LLM judges those). exclude beats include."""
+    (the LLM judges those). exclude beats include, per place.
+
+    A posting open in several cities arrives as a semicolon-joined list
+    ("London, United Kingdom; New York, NY"), so each place is judged on its own
+    and the posting is kept when any one of them passes. Matching against the
+    whole string instead let a single unwanted city veto every wanted city listed
+    beside it — that silently dropped Hudson River Trading's entire 2027 grad
+    pipeline, which is posted London-and-New-York.
+
+    Only ";" splits. A comma is ambiguous — "United Kingdom, Remote" is one place
+    while "New York, London" is two, and nothing in the string tells them apart —
+    so comma-joined lists are still judged whole.
+    """
     inc = _compile_keywords(cfg.get("location_include", []))
     exc = _compile_keywords(cfg.get("location_exclude", []))
     if not inc and not exc:
@@ -1051,11 +1077,9 @@ def location_prefilter(jobs, cfg):
         if not loc:
             kept.append(job)
             continue
-        if exc and any(p.search(loc) for p in exc):
-            continue
-        if inc and not any(p.search(loc) for p in inc):
-            continue
-        kept.append(job)
+        places = [p.strip() for p in loc.split(";") if p.strip()] or [loc]
+        if any(_place_ok(p, inc, exc) for p in places):
+            kept.append(job)
     return kept
 
 

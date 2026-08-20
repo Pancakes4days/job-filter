@@ -481,12 +481,12 @@ def run_pipeline(state):
                               "--config", tmp, "--out", str(SCRAPED_JOBS)])
                 finally:
                     Path(tmp).unlink(missing_ok=True)
-                # Detect watchlist companies newly posting new-grad / internship roles
+                # Detect watchlist companies newly posting new-grad roles
                 new_alerts = check_recruitment_pulse(SCRAPED_JOBS)
                 for a in new_alerts:
                     roles = "; ".join(a["sample_roles"][:2])
                     log(f"  [RECRUITMENT ALERT] {a['company']} is posting "
-                        f"new-grad/intern roles ({a['count']} found, "
+                        f"new-grad roles ({a['count']} found, "
                         f"alert active until {a['expires']}): {roles}")
 
             # ── filter ────────────────────────────────────────────────────────

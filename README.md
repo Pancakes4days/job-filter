@@ -101,6 +101,8 @@ job_filter/
 - `store_matches.py` — upserts the CSV's matches into `data/tracker.db`
 - `db.py` — the SQLite tracker layer (schema, migrations, queries); stdlib only
 - `backup_db.py` — nightly online snapshot of the DB to `data/backups/`
+- `newgrad_watch.py` — 15-minute fast lane: polls `tier1` companies for new-grad postings and emails them, skipping the LLM entirely
+- `notify.py` — the email sender behind it (stdlib SMTP; a printed dry run until configured)
 - `export_workbook.py` — renders a styled `.xlsx` from the DB (needs `openpyxl`)
 - `prune_workbook.py` — MANUAL: soft-deletes all but the best 1–2 roles per company
 - `prune_internships.py` — MANUAL: tombstones internship rows the old profile let in (`--undo` reverses it)
@@ -201,6 +203,18 @@ nano config/local.json
 start with an empty schedule). `phase_retry_interval` (seconds) paces retries
 of a failed pipeline phase.
 
+### How the location filter reads multi-city postings
+
+`location_include` / `location_exclude` are matched **per place**, not against
+the whole location string. A posting open in several cities arrives semicolon-
+joined (`London, United Kingdom; New York, NY`), and it is kept if *any* single
+place passes — exclude still beats include within one place, so `Remote (Canada)`
+stays out.
+
+Only `;` splits a list. A comma is ambiguous (`United Kingdom, Remote` is one
+place; `New York, London` is two), so comma-joined lists are judged whole and a
+few will still be dropped for a city you didn't want.
+
 The `remote_*` keys are **optional** and only used by `backup_db.py --push` to
 copy nightly DB snapshots off the Pi — the pipeline no longer syncs anything to
 a laptop. `remote_host` can be a Tailscale IP (`tailscale ip -4`) or MagicDNS
@@ -209,8 +223,9 @@ don't push backups.
 
 ## Install as a service
 
-Three systemd units, all with `User=` / `WorkingDirectory=` you adjust to match
-your setup: the **pipeline**, the **web app**, and the **nightly DB backup**.
+Four systemd units, all with `User=` / `WorkingDirectory=` you adjust to match
+your setup: the **pipeline**, the **web app**, the **nightly DB backup**, and the
+**new-grad fast lane**.
 
 ```bash
 # 1. Pipeline (scrape → score → store)
@@ -227,6 +242,11 @@ sudo systemctl enable --now jobfilter-web
 sudo cp jobfilter-backup.service jobfilter-backup.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now jobfilter-backup.timer
+
+# 4. New-grad fast lane (every 15 min, 06:00–22:45)
+sudo cp jobfilter-newgrad.service jobfilter-newgrad.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now jobfilter-newgrad.timer
 
 # Log rotation (filter.log grows forever otherwise; adjust the path inside first)
 sudo cp jobfilter.logrotate /etc/logrotate.d/jobfilter
@@ -342,6 +362,53 @@ python3 scripts/detect_oracle.py --batch companies_with_urls.txt
 It writes verified entries to `data/watchlist_oracle.json`; paste them into the
 watchlist `companies` array. Descriptions are list-only by default — set
 `ORACLE_FETCH_DESCRIPTIONS = True` in `scraper.py` for full text (one request per job).
+
+## The new-grad fast lane
+
+The main pipeline runs twice a day and spends most of that time in the LLM
+filter. For a competitive new-grad req — where applying first is most of the
+advantage — a posting that goes live at 14:00 wouldn't reach you until 06:00 the
+next morning. `newgrad_watch.py` is the low-latency path around that.
+
+Flag the companies worth interrupting you for with `"tier1": true` in the
+watchlist:
+
+```json
+{
+  "platform": "workday",
+  "slug": "capitalone.wd12.myworkdayjobs.com/Capital_One",
+  "label": "Capital One",
+  "tier1": true
+}
+```
+
+Every 15 minutes it polls just those boards, matches **raw** titles against
+`recruitment_watch.NEWGRAD_RE`, applies `location_include`/`location_exclude`,
+and emails whatever it hasn't already told you about. No LLM, no DB write, no
+full scrape — about 4 seconds per company. Workday boards are sorted
+newest-first, so it reads 2 pages instead of 25.
+
+Matching raw titles matters: `recruitment_watch.py` reads the scraper's *output*,
+so a posting whose title misses `include_keywords` (say "Associate Software
+Engineer, Technology Development Program") is filtered away before it can raise
+an alert. The fast lane sees it.
+
+Email is configured in `config/local.json` (gitignored) — see `notify.py`'s
+docstring. Until `notify.enabled` is true, every alert is a **printed dry run**
+and postings are deliberately *not* marked as seen, so switching email on later
+can't skip anything that queued up in the meantime.
+
+```bash
+python3 scripts/newgrad_watch.py --list      # which companies are tier-1
+python3 scripts/newgrad_watch.py --dry-run   # print the email, touch no state
+python3 scripts/newgrad_watch.py --all       # every match, ignoring seen-state
+python3 scripts/notify.py --test             # prove the mailbox works
+```
+
+Alerted postings are remembered by URL in `data/newgrad_seen.json` for 120 days.
+It's SMS-shaped on purpose but delivered as email: the only free SMS path is the
+carrier email-to-text gateways, which carriers filter and retire without notice —
+you'd find out it broke by *not* getting the alert you cared about.
 
 ## Community job lists (GitHub repos)
 
