@@ -382,33 +382,91 @@ watchlist:
 }
 ```
 
-Every 15 minutes it polls just those boards, matches **raw** titles against
-`recruitment_watch.NEWGRAD_RE`, applies `location_include`/`location_exclude`,
+Every 15 minutes it polls just those boards, matches **raw** titles with
+`recruitment_watch.is_new_grad()`, applies `location_include`/`location_exclude`,
 and emails whatever it hasn't already told you about. No LLM, no DB write, no
 full scrape — about 4 seconds per company. Workday boards are sorted
 newest-first, so it reads 2 pages instead of 25.
+
+Internships and co-ops are excluded. `is_new_grad()` requires a new-grad signal
+**and** no internship signal, because dropping the intern patterns alone isn't
+enough — "Summer Intern 2027" still matches on the year.
 
 Matching raw titles matters: `recruitment_watch.py` reads the scraper's *output*,
 so a posting whose title misses `include_keywords` (say "Associate Software
 Engineer, Technology Development Program") is filtered away before it can raise
 an alert. The fast lane sees it.
 
-Email is configured in `config/local.json` (gitignored) — see `notify.py`'s
-docstring. Until `notify.enabled` is true, every alert is a **printed dry run**
-and postings are deliberately *not* marked as seen, so switching email on later
-can't skip anything that queued up in the meantime.
+Alerted postings are remembered by URL in `data/newgrad_seen.json` for 120 days.
+It's SMS-shaped on purpose but delivered as email: the only free SMS path is the
+carrier email-to-text gateways, which carriers filter and retire without notice —
+you'd find out it broke by *not* getting the alert you cared about.
+
+### Setting up email
+
+Gmail rejects account passwords over SMTP, so `notify.py` authenticates with a
+**Google App Password** — a separate 16-character credential that works only for
+mail, needs no 2FA prompt (a script can't type a code), and can be revoked on its
+own. Generate one at [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords);
+2-step verification must be on first, since the app password stands in for it.
+
+It is used in exactly one place: `config/local.json` → `notify.app_password`,
+handed to `smtplib.login()` over TLS. Never logged, and that file is gitignored.
+
+`local.json` is a single JSON object, so the block goes **inside** the outer
+braces, after a comma — pasting it below the closing `}` is invalid JSON and the
+most common way this fails:
+
+```json
+{
+  "scrape_hours_local":  [6, 13],
+  "detect_delay":        0.5,
+
+  "notify": {
+    "enabled":      true,
+    "smtp_host":    "smtp.gmail.com",
+    "smtp_port":    587,
+    "username":     "you@gmail.com",
+    "app_password": "abcdefghijklmnop",
+    "to":           "you@gmail.com"
+  }
+}
+```
+
+Confirm it parses, then prove the mailbox works:
+
+```bash
+python3 -c "import json;print(list(json.load(open('config/local.json'))))"  # 'notify' should be listed
+python3 scripts/notify.py           # reports live, or names what's missing
+python3 scripts/notify.py --test    # actually sends
+```
+
+Until `notify.enabled` is true, every alert is a **printed dry run** and postings
+are deliberately *not* marked as seen, so switching email on later can't skip
+anything that queued up in the meantime. The first live run therefore emails the
+whole current backlog — run `--dry-run` first if you want to see its size.
+
+### Day-to-day
 
 ```bash
 python3 scripts/newgrad_watch.py --list      # which companies are tier-1
 python3 scripts/newgrad_watch.py --dry-run   # print the email, touch no state
 python3 scripts/newgrad_watch.py --all       # every match, ignoring seen-state
-python3 scripts/notify.py --test             # prove the mailbox works
+tail -f data/newgrad.log                     # what the timer is doing
+systemctl list-timers jobfilter-newgrad      # when it next fires
 ```
 
-Alerted postings are remembered by URL in `data/newgrad_seen.json` for 120 days.
-It's SMS-shaped on purpose but delivered as email: the only free SMS path is the
-carrier email-to-text gateways, which carriers filter and retire without notice —
-you'd find out it broke by *not* getting the alert you cared about.
+**If alerts go quiet and you're not sure whether that's real**, run `--all`. It
+re-reports every current match ignoring the seen-file, which separates "nothing
+new was posted" from "something broke". `--dry-run` is always safe to repeat: it
+sends nothing and writes nothing.
+
+To replay alerts from scratch, `rm data/newgrad_seen.json`.
+
+`notify.py` degrades rather than failing silently. A malformed `local.json`,
+`enabled: false`, or a blank `app_password` each name themselves; a wrong
+password gives `SMTPAuthenticationError` and dumps the unsent alert to stdout,
+and a send failure leaves the seen-file untouched so the next tick retries.
 
 ## Community job lists (GitHub repos)
 
