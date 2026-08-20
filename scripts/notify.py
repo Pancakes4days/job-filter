@@ -45,19 +45,31 @@ def load_notify_config():
 
     Deliberately never raises. A missing or malformed local.json has to degrade
     to a dry run — it must not take down the poller that called us.
+
+    A parse failure is reported under _problem rather than swallowed: a block
+    pasted outside the closing brace is invalid JSON, and saying "no notify
+    block" there sends you looking for a missing key that is right in front of
+    you.
     """
     if not LOCAL_JSON.exists():
-        return {}
+        return {"_problem": f"{LOCAL_JSON} does not exist"}
     try:
-        return json.loads(LOCAL_JSON.read_text(encoding="utf-8")).get("notify") or {}
-    except (json.JSONDecodeError, OSError):
-        return {}
+        parsed = json.loads(LOCAL_JSON.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        return {"_problem": f"{LOCAL_JSON.name} is not valid JSON — {e}. "
+                            f"The notify block goes INSIDE the outer {{ }}, "
+                            f"after a comma."}
+    except OSError as e:
+        return {"_problem": f"cannot read {LOCAL_JSON.name} ({e})"}
+    return parsed.get("notify") or {}
 
 
 def dry_run_reason(cfg, forced=False):
     """Why this send would only be printed, or "" if it would really go out."""
     if forced:
         return "--dry-run"
+    if cfg.get("_problem"):
+        return cfg["_problem"]
     if not cfg:
         return "no \"notify\" block in config/local.json"
     if not cfg.get("enabled"):
