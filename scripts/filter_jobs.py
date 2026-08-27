@@ -299,7 +299,7 @@ def call_ollama(config, system_prompt, user_prompt):
         ],
         "stream": False,
         "think": False,
-	"format": RESULT_SCHEMA,
+        "format": RESULT_SCHEMA,
         "options": {
             "temperature": config.get("temperature", 0.1),
             "num_ctx": config.get("num_ctx", 4096),

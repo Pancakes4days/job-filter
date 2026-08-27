@@ -1,4 +1,4 @@
-# Job Filter Pipeline — Raspberry Pi 5 + gemma3:4b
+# Job Filter Pipeline — self-hosted, local LLM
 
 Scrapes job listings from multiple sources, scores them against your
 skills/preferences with a local LLM, and tracks the matches in a SQLite database
@@ -8,14 +8,19 @@ API keys — the only dependencies are Ollama (the LLM), Flask + Gunicorn (the w
 app), and openpyxl (the on-demand `.xlsx` export); everything else is Python's
 standard library.
 
+Any always-on Linux box with systemd works. It was built on a Raspberry Pi 5
+with `gemma3:4b` — the tightest target — and notes throughout call out where a
+choice was a Pi constraint rather than a design decision. Moving to a larger
+host: **`docs/MIGRATION_archlab.md`**.
+
 ## Tech stack
 
-Everything runs on the Pi; your other devices are just browsers pointed at it.
+Everything runs on the host; your other devices are just browsers pointed at it.
 
 | Layer | What | Notes |
 |---|---|---|
 | **Data** | SQLite (`data/tracker.db`, WAL mode) | The single system of record. File-based, no DB server. `db.py` is the only code that touches it — hand-written SQL, no ORM. |
-| **Scoring** | Ollama + `gemma3:4b` | Local LLM that scores each job. The heavy compute, and the reason it wants a Pi 5. |
+| **Scoring** | Ollama + `gemma3:4b` | Local LLM that scores each job. The heavy compute, and the floor on what hardware you need. Model tag is `config.json`'s `model` — see [Choosing a model](#choosing-a-model). |
 | **Scraping** | Python 3 + `urllib` | Hits ATS APIs (Greenhouse, Lever, Ashby, SmartRecruiters, Workable, Recruitee, Workday, Oracle) directly, plus job-board APIs/feeds and community GitHub job lists. No scraping framework. |
 | **Web app** | Flask + Jinja2, served by Gunicorn | Server-rendered HTML. Plain CSS + a few lines of vanilla JS — no React, no npm, no build step. |
 | **Access** | Tailscale (`tailscale serve`) | Puts the site on your private mesh over HTTPS. Being on the tailnet *is* the auth — no login. |
@@ -52,7 +57,7 @@ authoritative — see `docs/PLAN_web_tracker.md`.)
 
 Default schedule is **6 AM and 1 PM** local time. On first launch it runs one
 cycle immediately, then settles into the schedule. Missed slots are caught up:
-if the Pi was off (or a long cycle overran) when a slot fired, the next start
+if the host was off (or a long cycle overran) when a slot fired, the next start
 or idle-loop tick runs the pipeline immediately instead of waiting a day.
 
 ### Built for unattended operation
@@ -88,7 +93,7 @@ job_filter/
 ├── web/       Flask web tracker (app.py, templates/, static/)
 ├── config/    config.json, scraper_config.json, companies.txt  (you edit these)
 ├── data/      runtime state + outputs (auto-created, mostly git-ignored)
-├── docs/      handoff / working notes / PLAN_web_tracker.md
+├── docs/      PLAN_web_tracker.md, MIGRATION_archlab.md, working notes
 ├── jobfilter.service          jobfilter-web.service
 ├── jobfilter-backup.service   jobfilter-backup.timer
 └── jobfilter.logrotate
@@ -138,37 +143,92 @@ job_filter/
 - `watchlist_misses.txt` — companies whose ATS couldn't be auto-detected
 - `filter.log` — combined service log
 
-## One-time Pi setup
+## One-time host setup
 
 ```bash
-# 1. Install Ollama and pull the model (3.3 GB resident on an 8 GB Pi).
-#    Before swapping this for any other model, check `ollama list` SIZE against
-#    the Pi's free RAM — a tag's parameter count is not its footprint. gemma4:e4b
-#    is 9.6 GB despite the "4b", does not fit, and gets OOM-killed mid-load.
+# 1. Install Ollama and pull the model. See "Choosing a model" below before
+#    picking a tag — a tag's parameter count is not its footprint, and RAM
+#    decides whether it loads while memory bandwidth decides whether it's fast.
+#    Debian/Raspberry Pi OS:
 curl -fsSL https://ollama.com/install.sh | sh
+#    Arch (packaged; use ollama-cuda / ollama-rocm if you have a GPU):
+sudo pacman -S ollama
+sudo systemctl enable --now ollama
+
 ollama pull gemma3:4b
 ollama run gemma3:4b "Say hello in five words."   # sanity check
 
 # 2. Dependencies. openpyxl (the .xlsx export) + the web app (Flask/gunicorn).
+#    Debian:
 sudo apt install python3-openpyxl python3-flask gunicorn
+#    Arch — `base` has no Python, and system Python is externally-managed
+#    (PEP 668), so pip refuses; pacman keeps /usr/bin/{python3,gunicorn}
+#    populated, which is exactly what the units invoke:
+pacman -Ss gunicorn      # confirm: 'gunicorn' vs 'python-gunicorn'
+sudo pacman -S python python-flask python-openpyxl gunicorn sqlite rsync logrotate
 
-# 3. Set the Pi's timezone so the schedule means local time (DST-safe), and
-#    make boots WAIT for a synced clock. The Pi has no RTC battery: without
-#    this, a post-outage boot can score jobs with a stale clock, giving them
-#    wrong Date Found timestamps.
+# 3. Set the timezone so the schedule means local time (DST-safe).
 sudo timedatectl set-timezone America/New_York
+
+# 4. RASPBERRY PI ONLY — make boots WAIT for a synced clock. The Pi has no RTC
+#    battery, so a post-outage boot can score jobs with a stale clock and give
+#    them wrong Date Found timestamps. On any machine with an RTC this only
+#    delays boot for every other service; skip it.
 sudo systemctl enable systemd-time-wait-sync.service
 
-# 4. (Optional) Passwordless SSH to another machine, only if you want
-#    `backup_db.py --push` to copy nightly snapshots off the Pi.
+# 5. (Optional) Passwordless SSH to another machine, only if you want
+#    `backup_db.py --push` to copy nightly snapshots off-device.
 ssh-copy-id youruser@<other-tailscale-ip>
 ```
 
 > The systemd units run with `/usr/bin/python3` and `/usr/bin/gunicorn`, so
-> install these for the system interpreter (apt packages, or a venv the units
+> install these for the system interpreter (distro packages, or a venv the units
 > point at — just keep them consistent). See `docs/PLAN_web_tracker.md` for
 > installing `jobfilter-web.service`, `jobfilter-backup.timer`, and exposing the
 > site with `tailscale serve`.
+
+### Choosing a model
+
+`config.json`'s `model` must match an `ollama list` tag exactly. Three things
+constrain the choice beyond raw size:
+
+- **`filter_jobs.py` uses Ollama structured outputs** (`"format": RESULT_SCHEMA`).
+  Thinking-capable models (Gemma 4, `qwen3`) must be sent `"think": False` in the
+  payload, or the `<think>` blocks fight grammar-constrained decoding and
+  multiply latency. Always-reasoning models like `deepseek-r1` can't be used.
+- **The rubric is Python, not prompt.** `score_from_classification` computes the
+  score from the model's *labels*; the model only classifies. Staying in one
+  family keeps those labels calibrated against a rubric you tuned elsewhere.
+- **RAM decides whether a model loads; memory bandwidth decides whether it's
+  fast.** The engine streams the weights it needs once per generated token.
+
+Check `ollama list` SIZE against free RAM first — `gemma4:e4b` is 9.6 GB despite
+the "4b", doesn't fit an 8 GB Pi, and gets OOM-killed mid-load.
+
+For **dense** models, per-job cost then scales roughly with file size: at
+~45 GB/s a `gemma4:12b` (~8 GB) costs about 2.5× a `gemma3:4b` (3.3 GB).
+
+**Mixture-of-experts models break that rule, in your favor.** `gemma4:26b` keeps
+all 26B parameters resident (~18 GB) but activates only ~4B per token, so it
+streams like a 4B model while scoring like a 26B one — the best quality-per-
+second available to a CPU-only host with RAM to spare. A dense `gemma4:31b` or
+`gemma3:27b` of similar footprint is 3-4× slower for no gain unless you have a
+GPU. See `docs/MIGRATION_archlab.md` for the full comparison.
+
+Two settings move with the model. `num_ctx` defaults to 4096, an 8 GB-Pi
+compromise — `build_user_prompt` passes the **full** job description with no
+truncation, so long postings overflow and Ollama silently drops tokens,
+sometimes including the system prompt carrying the rubric. Raise it to 8192 if
+you have the RAM; on a constrained host that may matter more than the model. And
+raise `timeout_seconds` with it: a slow outlier that exceeds it counts as a
+failure, and three consecutive failures abort the whole filter phase.
+
+Jobs already in `data/seen_jobs.txt` are never re-evaluated, so a new model only
+sees *new* postings. To apply it to the backlog, `filter_jobs.py --rescore` then
+`store_matches.py` — safe, because `ON CONFLICT DO NOTHING` plus tombstones mean
+a rescore can only *add* jobs the old model wrongly rejected. Update
+`SECONDS_PER_JOB` in `scripts/pipeline_stats.py` once you've measured the new
+rate, or the dashboard ETA will lie.
 
 ## Configuration
 
@@ -256,10 +316,20 @@ tail -f data/filter.log
 sudo systemctl stop jobfilter        # clean shutdown, no restart
 ```
 
+Both restart on failure but not on a clean stop.
+
 `jobfilter.service` pins the pipeline to 3 CPU cores (`CPUQuota=300%`) so the
 Pi's watchdog is less likely to kill it; `jobfilter-web.service` is capped at
-`CPUQuota=50%` so the site never competes with a running filter phase. Both
-restart on failure but not on a clean stop.
+`CPUQuota=50%`. **Both are Pi-specific and neither bounds inference.**
+`orchestrator.py` and `filter_jobs.py` only make HTTP requests and parse JSON —
+near-zero CPU. All the scoring load lives in `ollama.service`, a separate unit
+outside those quotas, so raising them does nothing. On a host without a hardware
+watchdog, delete both lines; to bound inference against other services on the
+box, put the quota where the work actually happens:
+
+```bash
+sudo systemctl edit ollama      # [Service] / CPUQuota=500%
+```
 
 ### Exposing the site over Tailscale
 
@@ -267,13 +337,27 @@ The web app binds to `127.0.0.1:8000` — nothing is on the LAN or the public
 internet. `tailscale serve` publishes it to your tailnet over HTTPS:
 
 ```bash
-sudo tailscale serve --bg --https=443 localhost:8000   # or: --bg 8000 (plain HTTP)
+sudo tailscale serve --bg --https=443 localhost:8000   # at the root
 sudo tailscale serve status                            # prints the URL
 ```
 
 Then open that URL (e.g. `https://raspberrypi.<tailnet>.ts.net/`) from any
 device signed into your tailnet — laptop, phone, whatever. Off the tailnet the
 URL doesn't resolve; tailnet membership is the only "login."
+
+A node has one hostname and one port 443, so if you host other services on the
+same box, give this one a sub-path instead of the root:
+
+```bash
+sudo tailscale serve --bg --https=443 --set-path=/jobfilter localhost:8000
+```
+
+Tailscale strips `/jobfilter` before forwarding, which would leave Flask
+generating links rooted at `/` and every one of them broken. That's what
+`ProxyFix(app.wsgi_app, x_prefix=1)` at `web/app.py:55` is for — it reads
+`X-Forwarded-Prefix` and puts the prefix back on every `url_for()`, including
+static assets. Nothing else in the app knows or records the path, so moving
+between root, a sub-path, or a different host is only ever this one command.
 
 ## The watchlist (company career pages)
 
@@ -610,7 +694,7 @@ Each script still works standalone — handy for testing:
 
 ```bash
 # Test the filter without the model (instant)
-python3 scripts/filter_jobs.py sample_jobs.json --dry-run --all
+python3 scripts/filter_jobs.py data/scraped_jobs.json --dry-run --all
 
 # Scrape once with a given config
 python3 scripts/scraper.py --config config/scraper_config.json --out data/scraped_jobs.json

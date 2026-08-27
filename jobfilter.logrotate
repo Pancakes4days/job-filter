@@ -7,6 +7,8 @@
 # copytruncate is required: systemd keeps the log file descriptor open, so a
 # plain rename would leave the service writing to the rotated file forever.
 /home/bluke/job_filter/data/filter.log {
+    # logrotate refuses a group/world-writable parent dir unless told which
+    # user to rotate as. data/ is owned by the service user, not root.
     su bluke bluke
     weekly
     maxsize 10M
