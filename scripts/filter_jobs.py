@@ -292,13 +292,14 @@ def build_user_prompt(job):
 def call_ollama(config, system_prompt, user_prompt):
     """Call local Ollama /api/chat with an enforced JSON schema. Returns parsed dict."""
     payload = {
-        "model": config.get("model", "gemma3:4b"),
+        "model": config.get("model", "gemma4:26b"),
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
         "stream": False,
-        "format": RESULT_SCHEMA,
+        "think": False,
+	"format": RESULT_SCHEMA,
         "options": {
             "temperature": config.get("temperature", 0.1),
             "num_ctx": config.get("num_ctx", 4096),

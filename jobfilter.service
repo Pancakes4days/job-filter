@@ -19,9 +19,6 @@ ExecStart=/usr/bin/python3 /home/bluke/job_filter/scripts/orchestrator.py
 Restart=on-failure
 RestartSec=15
 
-# Caps CPU to 3 cores so the watchdog doesn't kill the process
-CPUQuota=300%
-
 StandardOutput=append:/home/bluke/job_filter/data/filter.log
 StandardError=append:/home/bluke/job_filter/data/filter.log
 

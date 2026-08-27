@@ -19,9 +19,6 @@ ExecStart=/usr/bin/gunicorn --workers 1 --threads 4 --bind 127.0.0.1:8000 web.ap
 Restart=always
 RestartSec=5
 
-# The filter phase holds CPUQuota=300%; the web app must not compete with it.
-CPUQuota=50%
-
 StandardOutput=append:/home/bluke/job_filter/data/web.log
 StandardError=append:/home/bluke/job_filter/data/web.log
 
