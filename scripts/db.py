@@ -385,6 +385,10 @@ SORT_ORDERS = {
     "score":   "score DESC, date_processed DESC",
     "company": "company COLLATE NOCASE, score DESC",
     "title":   "title COLLATE NOCASE",
+    # Blank locations last (many listings just omit it) — same reasoning as the
+    # NULL statuses below, and '' sorts first without the guard.
+    "location": "location IS NULL OR location = '', location COLLATE NOCASE, "
+                "score DESC",
     # NULL statuses last, so untouched rows don't bury the ones in flight.
     "status":  "status IS NULL, status COLLATE NOCASE, score DESC",
 }
