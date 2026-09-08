@@ -107,6 +107,8 @@
           "\\bmarketing\\b",
           "\\bcustomer (success|experience|support)\\b",
           "\\bprocurement\\b",
+          "\\boperations specialist\\b",
+          "^(?!.*\\b(?:engineer|engineering|developer|software|programmer|devops|sre|security|cyber|data|scientist|systems|platform|cloud|network|infrastructure|analytics|machine learning|\\bai\\b|\\bml\\b|\\bit\\b|technical|architect)\\b)(?=.*\\b(?:operat\\w*|fraud|risk|audit|complian\\w*|underwrit\\w*|claims|banking|investment|portfolio|wealth|treasury|\\btax\\b|accounting|payroll|procurement|logistics|human resources|recruit\\w*|sales|marketing|communications|brand|paralegal|legal|client services|customer)\\b).*\\bassociate\\b",
           "\\bsupply (chain|planner)\\b",
           "\\bsourcing\\b",
           "\\bdesigner\\b",
@@ -121,6 +123,8 @@
         "senior": [
           "\\b(senior|sr\\.?|staff|principal|distinguished|lead|head of|director|vp|vice president)\\b",
           "\\b(engineer|developer|scientist|programmer)\\s+(iii|iv|v|vi)\\b",
+          "(?<!i or )(?<!1 or )\\b(engineer|developer|scientist|analyst|programmer|specialist)\\s+(ii|2)\\b",
+          "(?<!1 or )\\blevel\\s+2\\b",
           "\\bl[4-9]\\b"
         ],
         "quant": [
@@ -132,6 +136,7 @@
           "\\bintern(ship)?s?\\b",
           "\\bco[\\s-]?op\\b",
           "\\bapprentice(ship)?\\b",
+          "\\bskillbridge\\b",
           "\\bsummer (analyst|associate|scholar)\\b",
           "\\bplacement year\\b",
           "\\b(part[\\s-]time|contract|temporary|seasonal)\\b"
@@ -151,10 +156,13 @@
         ]
       },
 
-      "_location_note": "A job is rejected only when a deny pattern matches AND no allow pattern does. Multi-site listings ('Mountain View, CA / New York, NY') therefore pass on the acceptable site, and vague strings ('United States', 'Hybrid', '') reach the model untouched.",
+      "_location_note": "Sites are split on ';' and judged one at a time, so a city you want is never vetoed by one you don't listed beside it ('London, UK; Ontario, CAN; Remote-Friendly, United States' passes on its third site). Order of decision, per listing: any location_allow place anywhere accepts it; failing that, a location_remote match on a site naming nothing in location_deny accepts it; failing that, a location_deny match rejects it. Vague strings ('United States', 'Hybrid', '') still reach the model untouched. location_deny is a blocklist, so a place on neither list passes - that is how Maryland and Colombia got through before they were added.",
+      "_location_remote_note": "Matched per site, like the other two, but kept separate from location_allow because 'remote' is not a place. A remote posting is accepted only where its site names nothing in location_deny: 'Remote - USA' passes, 'Remote - Texas' and 'San Francisco (Remote)' do not. Before the split, this one word outvoted every geographic deny.",
+      "location_remote": [
+        "\\bremote\\b", "\\bwork from home\\b", "\\bwfh\\b", "\\bfully distributed\\b"
+      ],
       "location_allow": [
-        "\\bremote\\b",
-        "\\bnew york\\b", "\\bnyc\\b", "\\bn\\.?y\\.?c\\b", "\\bmanhattan\\b",
+        "\\bnew york\\b", "\\bnyc\\b", "\\bn\\.?y\\.?c\\b", "\\bmanhattan\\b(?!\\s+(beach|,?\\s*ks))",
         "\\bbrooklyn\\b", "\\bqueens\\b", "\\blong island\\b", "\\bny\\b",
         "\\buniondale\\b", "\\bplainview\\b", "\\bbethpage\\b", "\\bmelville\\b",
         "\\bjersey city\\b", "\\bnewark\\b", "\\bhoboken\\b", "\\bnj\\b",
@@ -183,7 +191,25 @@
         "\\batlanta\\b", "\\barizona\\b", "\\bphoenix\\b", "\\butah\\b",
         "\\bminnesota\\b", "\\bwisconsin\\b", "\\bmadison\\b", "\\bpittsburgh\\b",
         "\\bpennsylvania\\b", "\\balabama\\b", "\\bhuntsville\\b", "\\brhode island\\b",
-        "\\bquonset\\b", "\\btoronto\\b", "\\bcanada\\b", "\\bbelgium\\b",
+        "\\bquonset\\b", "\\btoronto\\b", "\\bcanada\\b", "\\bcolombia\\b", "\\bperu\\b", "\\bchile\\b",
+        "\\bcosta rica\\b", "\\bromania\\b", "\\bukraine\\b", "\\bisrael\\b",
+        "\\bsouth africa\\b", "\\bkenya\\b", "\\bnigeria\\b", "\\begypt\\b",
+        "\\bturkey\\b", "\\bvietnam\\b", "\\bindonesia\\b", "\\bmalaysia\\b",
+        "\\bthailand\\b", "\\bchina\\b", "\\bkorea\\b", "\\btaiwan\\b",
+        "\\bnew zealand\\b", "\\bsweden\\b", "\\bnorway\\b", "\\bfinland\\b",
+        "\\baustria\\b", "\\bitaly\\b", "\\bgreece\\b", "\\bczech\\b",
+        "\\bhungary\\b", "\\bbulgaria\\b", "\\balaska\\b", "\\barkansas\\b",
+        "\\bconnecticut\\b", "\\bhawaii\\b", "\\bidaho\\b", "\\bindiana\\b",
+        "\\biowa\\b", "\\bkansas\\b", "\\bkentucky\\b", "\\blouisiana\\b",
+        "\\bmaine\\b", "\\bmaryland\\b", "\\bmichigan\\b", "\\bmississippi\\b",
+        "\\bmissouri\\b", "\\bmontana\\b", "\\bnebraska\\b", "\\bnevada\\b",
+        "\\bnew hampshire\\b", "\\bnew mexico\\b", "\\bnorth dakota\\b", "\\boklahoma\\b",
+        "\\bsouth carolina\\b", "\\bsouth dakota\\b", "\\btennessee\\b", "\\bvermont\\b",
+        "\\bwest virginia\\b", "\\bwyoming\\b", "\\bnashville\\b", "\\bmemphis\\b",
+        "\\bdetroit\\b", "\\bkansas city\\b", "\\blas vegas\\b", "\\bsalt lake\\b",
+        "\\bomaha\\b", "\\bbaltimore\\b", "\\bhanover\\b", "\\bchattanooga\\b",
+        "\\bbar harbor\\b", "\\bsan antonio\\b",
+        "\\bbelgium\\b",
         "\\bdenmark\\b", "\\bbrazil\\b", "\\bs\\u00e3o paulo\\b", "\\bsao paulo\\b",
         "\\blatam\\b", "\\bindia\\b", "\\bbangalore\\b", "\\bunited kingdom\\b",
         "\\blondon\\b", "\\bgermany\\b", "\\bberlin\\b", "\\bmunich\\b",

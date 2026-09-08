@@ -6,7 +6,10 @@
 #
 # copytruncate is required: systemd keeps the log file descriptor open, so a
 # plain rename would leave the service writing to the rotated file forever.
-/home/bluke/job_filter/data/filter.log {
+# ngjobs.log is listed beside it because the hourly lane writes 24 runs a day —
+# it grows faster than the twice-daily pipeline's own log does.
+/home/bluke/job_filter/data/filter.log
+/home/bluke/job_filter/data/ngjobs.log {
     # logrotate refuses a group/world-writable parent dir unless told which
     # user to rotate as. data/ is owned by the service user, not root.
     su bluke bluke

@@ -178,6 +178,10 @@ def compile_gate(gate_cfg):
                    if not rule.startswith("_")},
         "loc_allow": compile_all(gate_cfg.get("location_allow", [])),
         "loc_deny":  compile_all(gate_cfg.get("location_deny", [])),
+        # Kept apart from loc_allow because "remote" is not a place. See
+        # gate_job for what the distinction buys.
+        "loc_remote": compile_all(gate_cfg.get("location_remote",
+                                               [r"\bremote\b"])),
     }
 
 
@@ -202,12 +206,34 @@ def gate_job(job, gate):
 
     # Location is the one field where a match is not enough on its own: listings
     # routinely name several sites, and one acceptable site makes the job
-    # acceptable. So deny only when nothing allowed appears anywhere in it.
+    # acceptable. Sites are split on ";" — the separator every connector here
+    # emits for a multi-site posting — and judged one at a time, so a city we
+    # want is not vetoed by one we don't listed beside it.
+    #
+    # "remote" is deliberately NOT in location_allow, because it is not a place.
+    # Matching it there made it a wildcard that outvoted every geographic deny:
+    # "Remote - Oakland, CA", "San Francisco (Remote)" and "Denmark (Remote)"
+    # all reached the tracker on the strength of the word alone. A remote
+    # posting only counts when its remoteness is not anchored to a place we have
+    # excluded — "Remote - USA" yes, "Remote - Texas" no.
     location = job.get("location") or ""
     if location and gate["loc_deny"] is not None:
-        denied = gate["loc_deny"].search(location)
-        allowed = gate["loc_allow"].search(location) if gate["loc_allow"] else None
-        if denied and not allowed:
+        places = [p.strip() for p in location.split(";") if p.strip()] or [location]
+
+        # A named place we would take settles it, wherever it appears.
+        if gate["loc_allow"] is not None:
+            if any(gate["loc_allow"].search(p) for p in places):
+                return None
+
+        # No such place. Unanchored remote still counts.
+        if gate["loc_remote"] is not None:
+            if any(gate["loc_remote"].search(p) and not gate["loc_deny"].search(p)
+                   for p in places):
+                return None
+
+        denied = next((h for h in (gate["loc_deny"].search(p) for p in places)
+                       if h), None)
+        if denied is not None:
             return ("location", denied.group(0))
 
     return None

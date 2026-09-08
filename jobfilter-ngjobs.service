@@ -9,7 +9,13 @@ Description=Job Filter newgrad-jobs.com scrape lane (hourly)
 # fetch, and us/swe refills all 50 slots in about 2.2 hours during US business
 # hours. The twice-daily pipeline therefore sees a small fraction of that
 # category. Hourly closes the gap; see README "newgrad-jobs.com".
-After=network-online.target
+#
+# Ollama is required, not optional: unlike the 15-minute fast lane this runs
+# filter_jobs.py, and a timer that fires before ollama.service is up would burn
+# its three consecutive failures and abort. No time-sync.target here — that is
+# in jobfilter.service for the Pi's missing RTC, and this host has one.
+After=network-online.target ollama.service
+Wants=network-online.target ollama.service
 
 [Service]
 Type=oneshot

@@ -1215,12 +1215,31 @@ def location_prefilter(jobs, cfg):
 
 
 def dedupe(jobs):
-    seen, out = set(), []
+    """Collapse repeats within one scrape, on two keys rather than one.
+
+    The URL catches the same posting reached from two sources. It cannot catch
+    a company that opens one role under several requisition ids — Power Digital
+    listed a single "Junior Software Engineer" five times in a day, each with
+    its own Greenhouse id — or one that runs two ATS sites at once, as Boeing
+    does with external_careers and external_subsidiary. Those are distinct URLs
+    for one job you would apply to once, so title+company+location is checked
+    too.
+
+    The cost is that two genuinely separate openings sharing all three fields
+    collapse to one. That trade is worth it here: the tracker exists to be
+    applied from, and a duplicate row costs more attention than a second
+    identical posting is worth.
+    """
+    seen_urls, seen_rows, out = set(), set(), []
     for job in jobs:
-        key = (job.get("url") or f"{job['title']}|{job['company']}").lower()
-        if key in seen:
+        url = (job.get("url") or "").strip().lower()
+        row = "|".join((job.get("title") or "", job.get("company") or "",
+                        job.get("location") or "")).strip().lower()
+        if (url and url in seen_urls) or (row.strip("|") and row in seen_rows):
             continue
-        seen.add(key)
+        if url:
+            seen_urls.add(url)
+        seen_rows.add(row)
         out.append(job)
     return out
 
