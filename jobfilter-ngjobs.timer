@@ -1,0 +1,20 @@
+[Unit]
+Description=Scrape newgrad-jobs.com every hour
+
+[Timer]
+# Hourly, around the clock. The source's own feed runs ~8h behind real time, so
+# there is no local "business hours" window worth aligning to — and an overnight
+# run is nearly free because it finds few new jobs to score.
+# Cost is one page per category (~110KB), so five requests an hour.
+OnCalendar=hourly
+
+# Unlike the fast lane, a missed run here IS worth catching up on: the 50-row
+# window rolls forward whether the Pi is up or not, so after downtime the useful
+# move is to grab the current window immediately rather than wait for the hour.
+Persistent=true
+
+# Keep it off the exact hour, where every other cron-shaped thing fires.
+RandomizedDelaySec=180
+
+[Install]
+WantedBy=timers.target

@@ -283,9 +283,9 @@ don't push backups.
 
 ## Install as a service
 
-Four systemd units, all with `User=` / `WorkingDirectory=` you adjust to match
-your setup: the **pipeline**, the **web app**, the **nightly DB backup**, and the
-**new-grad fast lane**.
+Five systemd units, all with `User=` / `WorkingDirectory=` you adjust to match
+your setup: the **pipeline**, the **web app**, the **nightly DB backup**, the
+**new-grad fast lane**, and the **newgrad-jobs.com hourly lane**.
 
 ```bash
 # 1. Pipeline (scrape → score → store)
@@ -307,6 +307,11 @@ sudo systemctl enable --now jobfilter-backup.timer
 sudo cp jobfilter-newgrad.service jobfilter-newgrad.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now jobfilter-newgrad.timer
+
+# 5. newgrad-jobs.com lane (hourly; see "newgrad-jobs.com" below for why)
+sudo cp jobfilter-ngjobs.service jobfilter-ngjobs.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now jobfilter-ngjobs.timer
 
 # Log rotation (filter.log grows forever otherwise; adjust the path inside first)
 sudo cp jobfilter.logrotate /etc/logrotate.d/jobfilter
@@ -687,6 +692,152 @@ missing label to `_GH_COLUMNS` in `scraper.py` if it's a new one.
 
 Tracking parameters (`utm_*`, `ref`) are stripped from apply links, so the URL —
 which is the pipeline's dedup fingerprint — stays stable if a repo retags.
+
+## newgrad-jobs.com
+
+The `newgrad_jobs` source type pulls [newgrad-jobs.com][ngj]'s listings — an
+hourly-updated aggregate of entry-level US/Canada postings, filtered to 0–2
+years of experience.
+
+[ngj]: https://www.newgrad-jobs.com/
+
+```json
+{
+  "name": "newgrad-jobs.com",
+  "type": "newgrad_jobs",
+  "enabled": true,
+  "categories": ["us/swe", "us/data_engineer", "us/ml_ai", "us/cyber_security"]
+}
+```
+
+| Key | Default | What it does |
+|---|---|---|
+| `categories` | `["us/swe"]` | Which of the site's tabs to fetch, as `<country>/<name>` |
+| `request_delay` | `1` | Seconds to wait between categories |
+
+### Where the listings actually come from
+
+newgrad-jobs.com has no listings of its own. It's a Webflow page whose job tabs
+are iframes onto **jobright.ai** "minisite" pages, one per category, and those
+are Next.js pages that ship their rows as JSON in `__NEXT_DATA__`. The connector
+reads that JSON — no HTML scraping, and nothing that breaks when the Webflow
+shell around it is restyled.
+
+The XHR those pages use for infinite scroll (`POST /swan/mini-sites/list`) would
+hand back a whole category in one call — ~2,000 rows for `us/swe` — but
+jobright's `robots.txt` disallows `/swan/` and `/api/`, so the connector stays on
+the server-rendered page, which is allowed and carries **the newest 50**.
+
+That's a ceiling per *fetch*, not per day — but how much time it buys you varies
+enormously by category and by hour of day:
+
+| Category | 50 rows spans | Postings/hr |
+|---|---|---|
+| `us/swe` | **2–12h** | 23 in US business hours, 4 overnight |
+| `us/data_analysis` | 22h | 2.3 |
+| `us/ml_ai` | 52h | 1.0 |
+| `us/cyber_security` | 65h | 0.8 |
+| `us/data_engineer` | 168h | 0.3 |
+
+**`us/swe` is bursty and needs a short scrape interval.** Measured mid-morning it
+filled all 50 slots in 2.2 hours, with 34 postings in a single hour; scraping it
+twice a day misses most of that category. The other four are comfortable at 12h+.
+
+Scraping more often is the fix, and it is close to free: one page per category
+(~110KB), no rate limiting observed, so three runs a day is 15 requests and
+1.6 MB total. If a category goes quiet in the tracker, the answer is always a
+shorter interval, never a longer one.
+
+### It barely overlaps the GitHub lists
+
+Worth knowing before deciding how much to invest in this source: on a measured
+run, **1 of 60** rows duplicated a `github_list` row by company+title, and only
+**3 of 60** were even at a company those lists mention anywhere.
+
+The lists are curated FAANG+/startup SWE; this source aggregates LinkedIn,
+Indeed and Handshake, so it surfaces a different population — defense primes,
+health systems, consultancies, state agencies, regional employers (Booz Allen,
+CrowdStrike, Oscar Health, Nuro, NC DIT). The two are complements, not
+substitutes, which is why the coverage gap below was worth a dedicated lane
+rather than shrugging at.
+
+### The hourly lane
+
+Because `us/swe` refills its 50 slots in ~2 hours, the twice-daily pipeline sees
+only a fraction of it. `jobfilter-ngjobs.timer` closes that gap by running a
+normal scrape/score/store pass against this source alone, every hour:
+
+```bash
+python3 scripts/scraper.py --only newgrad_jobs --out data/ngjobs_scraped.json
+python3 scripts/filter_jobs.py data/ngjobs_scraped.json --csv data/ngjobs_matches.csv
+python3 scripts/store_matches.py --csv data/ngjobs_matches.csv
+```
+
+`--only MATCH` keeps only the sources whose `type` or `name` contains `MATCH`.
+It exists so the lane can share `scraper_config.json` with the main run instead
+of needing a second config — duplicating the `include_keywords` and
+`location_*` lists is the kind of thing that silently drifts, and then the two
+runs disagree about what counts as a match. A `--only` that matches nothing is
+an error rather than an empty run, so a typo can't look like "no new jobs".
+
+The lane writes its own `--out` and `--csv` so it never trips over the main
+pipeline's files, but **shares `seen_jobs.txt` and the tracker DB on purpose**:
+nothing gets scored by the LLM twice, and `store_matches.py` is idempotent
+(`ON CONFLICT DO NOTHING`), so rows and tombstones survive.
+
+It does call Ollama, unlike the 15-minute fast lane. If it overlaps a main
+pipeline run they queue rather than collide — Ollama serialises requests — so
+the cost is a slower run, not a wrong one. Batches here are small (an hour of
+new postings, after filtering, is typically single digits).
+
+**This is not the new-grad fast lane.** `jobfilter-newgrad.service` polls tier-1
+ATS boards every 15 minutes, emails you and writes no database; it exists to get
+you in early. This lane is about *coverage*, and given the source's ~8h feed lag
+it can never be the thing that gets you in first.
+
+Note also that **the feed runs ~8 hours behind real time** — the newest row is
+consistently that old. This is a bulk source for coverage, not a low-latency one;
+`newgrad_watch.py` remains the lane that gets you in early.
+
+### Categories
+
+`<country>/<name>`, exactly as the site's own tab bar spells them:
+
+`swe` · `data_analysis` · `data_engineer` · `ml_ai` · `cyber_security` ·
+`business_analyst` · `product_management` · `project_manager` ·
+`engineering_development` · `accounting_finance` · `consulting` · `marketing_gen` ·
+`creatives_design` · `human_resources` · `sales` · `customer_service` ·
+`legal_compliance` · `healthcare` · `supply_chain` · `arts_entertainment` ·
+`education_training` · `management_executive` · `public_sector`
+
+All 23 exist under `us/`; `ca/` carries a 13-category subset. The shipped config
+fetches `us/*` only — every Canadian city is in `location_exclude`, so `ca/*`
+rows would be scraped just to be thrown away.
+
+**A category name that doesn't exist is not an error** — the page renders empty
+rather than 404ing — so a typo shows up as a source that quietly returns nothing.
+The connector prints a warning naming the category when one comes back empty;
+that message is the thing to watch for after editing this list.
+
+### What it gives the LLM
+
+Rows carry title, company, location, salary, work model, company size, industry,
+H1B-sponsorship status and jobright's extracted **qualifications** — but no full
+job body. The connector synthesises a description from those, the same list-only
+shape the Workday and Oracle connectors produce with descriptions off. The
+qualifications text is real prose, so unlike `github_list` these rows carry
+enough keyword surface to clear `keyword_prefilter` on their own and don't need
+a `tags` crutch.
+
+`h1bSponsored` is only passed through when it's a definite `Yes`/`No` — the
+site's default is `Not Sure`, which says nothing about the employer.
+
+Apply links point at jobright's own posting page (`jobright.ai/jobs/info/<id>`),
+not the employer's ATS; you get the employer link one click on from there.
+Tracking parameters are stripped, which matters more here than elsewhere:
+jobright stamps the *category* into `utm_campaign`, and a posting that appears
+under several tabs (they carry a `tabCategory` list) would otherwise arrive as
+several distinct URLs and survive dedupe as duplicates.
 
 ## Running pieces by hand
 

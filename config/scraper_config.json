@@ -133,6 +133,14 @@
       "_note": "Same format, HTML-table dialect. Currently a 2026-grad list - enable once it rolls to 2027, or now if you want the overlap."
     },
     {
+      "name": "newgrad-jobs.com",
+      "type": "newgrad_jobs",
+      "enabled": true,
+      "categories": ["us/swe", "us/data_engineer", "us/data_analysis", "us/ml_ai", "us/cyber_security"],
+      "request_delay": 1,
+      "_note": "newgrad-jobs.com's listings, read from the jobright.ai minisite pages its tabs embed. Categories are the site's own tab names as '<country>/<name>'; the full list is in scraper.py's connector comment. ca/* tabs exist but every Canadian city is in location_exclude, so only us/* is worth fetching. Each category returns its newest 50 postings per run. That is 2-12h of volume in us/swe (bursty: ~23/hr in US business hours) and 22-168h in the others, so us/swe is the one that wants a short scrape interval — twice a day misses most of it."
+    },
+    {
       "name": "Company watchlist",
       "type": "watchlist",
       "enabled": true,

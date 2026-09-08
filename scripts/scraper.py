@@ -6,6 +6,7 @@ Pulls listings from machine-readable sources (no fragile HTML scraping):
   - RemoteOK public JSON API
   - We Work Remotely RSS feeds
   - Community job-list GitHub repos (raw README tables)
+  - newgrad-jobs.com (the jobright.ai minisite JSON behind its tabs)
 
 Applies cheap keyword pre-filtering (so the slow LLM step only sees
 plausible candidates), then writes scraped_jobs.json in the exact format
@@ -99,6 +100,28 @@ def fetch(url, timeout=30):
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return resp.read().decode("utf-8", errors="replace")
+
+
+_TRACKING_RE = re.compile(r"^(utm_.*|ref)$", re.I)  # not "source" — some ATSes use it
+
+
+def clean_tracking_url(url):
+    """Drop utm_*/ref tracking params. Leaving them in would be harmless for
+    applying but noisy in the tracker — and because the URL *is* the dedupe
+    fingerprint, a source that varies its tags per fetch (a repo retagging, or
+    newgrad-jobs stamping the category into utm_campaign) would otherwise file
+    one posting as several."""
+    try:
+        parts = urllib.parse.urlsplit(url)
+        pairs = urllib.parse.parse_qsl(parts.query, keep_blank_values=True)
+    except ValueError:
+        return url
+    kept = [(k, v) for k, v in pairs if not _TRACKING_RE.match(k)]
+    if len(kept) == len(pairs):
+        return url  # nothing to strip — never rewrite a URL we didn't change
+    query = urllib.parse.urlencode(kept, quote_via=urllib.parse.quote, safe=":/,;=")
+    return urllib.parse.urlunsplit(
+        (parts.scheme, parts.netloc, parts.path, query, parts.fragment))
 
 
 # ---------------------------------------------------------------- sources
@@ -274,7 +297,6 @@ _GH_BR_RE = re.compile(r"</?br\s*/?>", re.I)
 # The summary is just a count label; the real list is the details body.
 _GH_SUMMARY_RE = re.compile(r"<summary\b[^>]*>.*?</summary>", re.I | re.S)
 _GH_SEP_CELL_RE = re.compile(r"^:?-{2,}:?$")
-_GH_TRACKING_RE = re.compile(r"^(utm_.*|ref)$", re.I)  # not "source" — some ATSes use it
 
 # The URL you actually have in hand is the one in the browser bar:
 #   https://github.com/speedyapply/2027-SWE-College-Jobs/blob/main/NEW_GRAD_USA.md
@@ -384,32 +406,15 @@ def _gh_cell_urls(cell):
     return [html.unescape(u) for u in urls]
 
 
-def _gh_clean_url(url):
-    """Drop utm_*/ref tracking params. These are per-repo constants, so leaving
-    them in would be harmless for applying but noisy in the tracker — and they
-    make the URL (which is the dedupe fingerprint) churn if a repo retags."""
-    try:
-        parts = urllib.parse.urlsplit(url)
-        pairs = urllib.parse.parse_qsl(parts.query, keep_blank_values=True)
-    except ValueError:
-        return url
-    kept = [(k, v) for k, v in pairs if not _GH_TRACKING_RE.match(k)]
-    if len(kept) == len(pairs):
-        return url  # nothing to strip — never rewrite a URL we didn't change
-    query = urllib.parse.urlencode(kept, quote_via=urllib.parse.quote, safe=":/,;=")
-    return urllib.parse.urlunsplit(
-        (parts.scheme, parts.netloc, parts.path, query, parts.fragment))
-
-
 def _gh_pick_url(cell):
     """The employer's apply link from an application cell. The button anchor
     labels itself (alt="Apply"); anything else in the cell is a tracker."""
     for href, inner in _GH_ANCHOR_RE.findall(cell):
         if "apply" in inner.lower():
-            return _gh_clean_url(html.unescape(href))
+            return clean_tracking_url(html.unescape(href))
     for url in _gh_cell_urls(cell):
         if not any(noise in url.lower() for noise in _GH_LINK_NOISE):
-            return _gh_clean_url(url)
+            return clean_tracking_url(url)
     return ""
 
 
@@ -956,6 +961,131 @@ def _fetch_oracle(slug):
     return jobs
 
 
+# ------------------------------------------- newgrad-jobs.com (jobright.ai)
+
+# newgrad-jobs.com has no listings of its own: it is a Webflow shell whose job
+# tabs are iframes onto jobright.ai "minisite" pages, one per category. Those
+# are Next.js pages that ship their listings as JSON in __NEXT_DATA__, so the
+# connector reads that rather than the surrounding markup.
+#
+# The XHR those pages use for infinite scroll (POST /swan/mini-sites/list) would
+# hand back the whole category — ~2000 rows for us/swe — but jobright's
+# robots.txt disallows /swan/ and /api/, so this stays on the SSR page, which is
+# allowed and carries the newest 50. That ceiling is per fetch, not per day, and
+# how much time it buys you depends entirely on the category and the hour:
+#
+#   us/swe            2-12h   (~23 postings/hr in US business hours, ~4 overnight)
+#   us/data_analysis    22h
+#   us/ml_ai            52h
+#   us/cyber_security   65h
+#   us/data_engineer   168h
+#
+# So us/swe is the one that needs a short scrape interval — measured mid-morning
+# it filled all 50 slots in 2.2 hours, with 34 postings in a single hour. Scraping
+# it twice a day misses most of it. Everything else is comfortable at 12h+.
+# Requests are cheap (one page per category, ~110KB, no rate limiting observed),
+# so the fix for a category going quiet in the tracker is always to scrape more
+# often, never to scrape less.
+#
+# Note also that the feed itself runs ~8h behind real time — the newest row is
+# consistently that old. This is a bulk source; newgrad_watch.py is the fast lane.
+#
+# Categories are "<country>/<name>" exactly as they appear in the site's tab
+# bar: us/swe, us/ml_ai, us/data_engineer, us/cyber_security, ca/swe, ...
+# A name that does not exist is NOT an error — the page renders empty — so a
+# typo shows up as a category that quietly returns nothing, and is warned about.
+NEWGRAD_JOBS_URL = "https://jobright.ai/minisites-jobs/newgrad/{category}"
+_NEXT_DATA_RE = re.compile(
+    r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>', re.S)
+
+
+def _newgrad_jobs_page(category):
+    """The newest listings for one category, as jobright's own job dicts."""
+    raw = fetch(NEWGRAD_JOBS_URL.format(category=category.strip("/")))
+    match = _NEXT_DATA_RE.search(raw)
+    if match is None:
+        raise ValueError(f"no __NEXT_DATA__ in the {category} page — "
+                         "jobright's page shape changed")
+    props = json.loads(match.group(1)).get("props", {}).get("pageProps", {})
+    return props.get("initialJobs") or []
+
+
+def _newgrad_jobs_description(item):
+    """Listing prose for the LLM. Jobright gives no job body, so this is the
+    structured fields it does give plus its extracted qualifications — enough
+    for the keyword prefilter to triage on and for the filter to score."""
+    facts = [
+        ("Work model", item.get("workModel")),
+        ("Experience", item.get("expLevel")),
+        ("Role type", item.get("roleType")),
+        ("Company size", item.get("companySize")),
+        ("Industry", ", ".join(item.get("industry") or [])),
+    ]
+    lines = [f"{k}: {v}" for k, v in facts if v]
+
+    # "Not Sure" is jobright's default for unknown, not a statement about the
+    # employer, so only the definite answers are worth passing on.
+    h1b = item.get("h1bSponsored")
+    if h1b in ("Yes", "No"):
+        lines.append(f"H1B sponsorship: {h1b}")
+    if item.get("isNewGrad"):
+        lines.append("Flagged new-grad by jobright")
+
+    posted = item.get("postedDate")
+    if posted:
+        try:
+            lines.append("Posted: " + datetime.fromtimestamp(
+                posted / 1000, timezone.utc).strftime("%Y-%m-%d"))
+        except (TypeError, ValueError, OSError, OverflowError):
+            pass
+
+    quals = (item.get("qualifications") or "").strip()
+    if quals:
+        lines.append("")
+        lines.append("QUALIFICATIONS:")
+        lines.append(quals)
+    return "\n".join(lines)[:MAX_DESC_CHARS]
+
+
+def scrape_newgrad_jobs(source_cfg):
+    """newgrad-jobs.com listings, read from the jobright minisites behind it.
+    Config: {"type": "newgrad_jobs", "categories": ["us/swe", "us/ml_ai"]}"""
+    categories = source_cfg.get("categories") or ["us/swe"]
+    delay = source_cfg.get("request_delay", 1)
+    jobs = []
+    for i, category in enumerate(categories):
+        if i:
+            time.sleep(delay)   # be polite across categories
+        try:
+            found = _newgrad_jobs_page(category)
+        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError,
+                ValueError) as e:
+            print(f"\n  ! newgrad-jobs {category} failed ({e}) — continuing",
+                  end="")
+            continue
+        if not found:
+            print(f"\n  ! newgrad-jobs {category} returned nothing — check the "
+                  "category name against the site's tabs", end="")
+        for item in found:
+            title = (item.get("title") or "").strip()
+            if not title:
+                continue
+            jobs.append({
+                "title": title,
+                "company": (item.get("company") or "").strip(),
+                "location": (item.get("location") or "").strip(),
+                "salary": (item.get("salary") or "").strip(),
+                # Strip the tracking tags: jobright stamps the category into
+                # utm_campaign, and a posting listed under several categories
+                # (they carry a tabCategory list) would otherwise arrive as
+                # several distinct URLs and survive dedupe as duplicates.
+                "url": clean_tracking_url(item.get("applyUrl") or ""),
+                "description": _newgrad_jobs_description(item),
+                "source": "newgrad_jobs",
+            })
+    return jobs
+
+
 PLATFORM_FETCHERS = {
     "greenhouse": _fetch_greenhouse,
     "lever": _fetch_lever,
@@ -1001,6 +1131,7 @@ SCRAPERS = {
     "arbeitnow": scrape_arbeitnow,
     "hn_hiring": scrape_hn_hiring,
     "github_list": scrape_github_list,
+    "newgrad_jobs": scrape_newgrad_jobs,
     "watchlist": scrape_watchlist,
 }
 
@@ -1103,6 +1234,11 @@ def main():
                         help="Skip keyword filtering; pass everything to the LLM")
     parser.add_argument("--include-seen", action="store_true",
                         help="Also emit jobs the filter has already evaluated")
+    parser.add_argument("--only", metavar="MATCH",
+                        help="Run only sources whose type or name contains MATCH "
+                             "(case-insensitive). Lets one config drive both the "
+                             "full run and a single-source lane, so the keyword "
+                             "and location filters can't drift between them.")
     args = parser.parse_args()
 
     cfg_path = Path(args.config)
@@ -1111,8 +1247,17 @@ def main():
     with open(cfg_path, encoding="utf-8") as f:
         cfg = json.load(f)
 
+    sources = cfg.get("sources", [])
+    if args.only:
+        match = args.only.lower()
+        sources = [s for s in sources
+                   if match in (s.get("type") or "").lower()
+                   or match in (s.get("name") or "").lower()]
+        if not sources:
+            sys.exit(f"--only {args.only!r} matched no source in {cfg_path.name}")
+
     all_jobs = []
-    for source in cfg.get("sources", []):
+    for source in sources:
         if not source.get("enabled", True):
             continue
         kind = source.get("type")

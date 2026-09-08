@@ -62,6 +62,32 @@ def row_key(website, title, company):
     return key.lower()
 
 
+def simplify_loc(loc):
+    """Collapse free-text locations into the buckets worth counting.
+
+    Lives here, next to row_key and for the same reason: postings spell one
+    city a dozen ways ("New York, NY", "NYC", "New York, NY, United States"),
+    so the dashboard's location counts and the Jobs page's location filter have
+    to agree on what "New York" means. db.py registers this as a SQLite
+    function (see db.connect) to filter on it in SQL; pipeline_stats re-exports
+    it. One definition, or the chip says 23 and the filtered list shows 19.
+
+    Order matters: the first match wins, so a "Remote — New York, NY" posting
+    counts as Remote. Unmatched locations fall through truncated, which keeps
+    the dropdown from growing a separate entry per "…, United States" variant.
+    """
+    loc = (loc or "").strip()
+    if not loc:             return "Unknown"
+    if "Remote" in loc:     return "Remote (US)"
+    if "New York" in loc or "NYC" in loc: return "New York, NY"
+    if "San Francisco" in loc or "SF" in loc: return "San Francisco, CA"
+    if "Boston" in loc:     return "Boston, MA"
+    if "Austin" in loc:     return "Austin, TX"
+    if "Seattle" in loc:    return "Seattle, WA"
+    if "Switzerland" in loc or "Zurich" in loc: return "Switzerland"
+    return loc[:35]
+
+
 def month_day(d):
     """'Jul 3' from a date/datetime — cross-platform (strftime %-d is Linux-only)."""
     return f"{d:%b} {d.day}"

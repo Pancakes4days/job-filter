@@ -1,0 +1,34 @@
+[Unit]
+Description=Job Filter newgrad-jobs.com scrape lane (hourly)
+# Oneshot, driven by jobfilter-ngjobs.timer. This is NOT the new-grad fast lane
+# (jobfilter-newgrad.service) — that one polls tier-1 ATS boards every 15 min,
+# sends email and touches no database. This one is a normal scrape/score/store
+# pass narrowed to a single source, and it does write the tracker DB.
+#
+# Why it exists: newgrad-jobs.com serves the newest 50 postings per category per
+# fetch, and us/swe refills all 50 slots in about 2.2 hours during US business
+# hours. The twice-daily pipeline therefore sees a small fraction of that
+# category. Hourly closes the gap; see README "newgrad-jobs.com".
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=bluke
+WorkingDirectory=/home/bluke/job_filter/scripts
+
+# --only reuses config/scraper_config.json rather than a second config file, so
+# the keyword and location filters cannot drift away from the main run's.
+# Its own --out/--csv keep it from trampling the main pipeline's files; the
+# seen-list and the DB are deliberately shared, so nothing is scored twice and
+# store_matches stays idempotent (ON CONFLICT DO NOTHING).
+ExecStart=/usr/bin/python3 /home/bluke/job_filter/scripts/scraper.py \
+    --only newgrad_jobs \
+    --out /home/bluke/job_filter/data/ngjobs_scraped.json
+ExecStart=/usr/bin/python3 /home/bluke/job_filter/scripts/filter_jobs.py \
+    /home/bluke/job_filter/data/ngjobs_scraped.json \
+    --csv /home/bluke/job_filter/data/ngjobs_matches.csv
+ExecStart=/usr/bin/python3 /home/bluke/job_filter/scripts/store_matches.py \
+    --csv /home/bluke/job_filter/data/ngjobs_matches.csv
+
+StandardOutput=append:/home/bluke/job_filter/data/ngjobs.log
+StandardError=append:/home/bluke/job_filter/data/ngjobs.log
