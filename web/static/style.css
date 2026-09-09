@@ -2,6 +2,13 @@
    Dark by default; the Pi serves this to one laptop over the tailnet. */
 
 :root {
+  /* Tell the browser this page is dark so it themes what CSS cannot reach: the
+     native date picker's calendar glyph (otherwise a dark icon on --sunken,
+     effectively invisible), the picker panel itself, select dropdowns, and
+     scrollbars. Declared once here rather than per-control because those
+     internals are only styleable through vendor pseudo-elements. */
+  color-scheme: dark;
+
   /* Palette. Every colour in this file comes from here — a literal hex below
      this block is a bug, because it is the thing that makes a re-theme expensive. */
   --bg: #12151a; --panel: #191d24; --line: #262c36;

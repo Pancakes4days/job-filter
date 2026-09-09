@@ -574,3 +574,17 @@ SimSpace
 Dazz
 Sweet Security
 Metomic
+
+# --- VT Engineering Expo 2026 (exhibitors worth tracking) ---
+# From the CS / senior / full-time filtered exhibitor list. MITRE, Lockheed
+# Martin, Booz Allen, General Dynamics, Raytheon (exhibiting as RTX) and TCS
+# were already above. Note Epic Systems is the healthcare-software company,
+# a different Epic from the Epic Games entry further up.
+Verizon
+Deloitte
+Appian
+Micron Technology
+Epic Systems
+Johns Hopkins APL
+MIT Lincoln Laboratory
+Draper
