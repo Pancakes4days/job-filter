@@ -16,7 +16,9 @@ It seeds more than the jobs table on purpose: the states that are hardest to
 style are the ones you never see by accident. The orchestrator state and a
 half-scored scrape make the status strip render its `is-running` variant with a
 live ETA; recruitment_alerts.json makes the dashboard's alert card appear; a
-filter.log makes the log page non-empty. Tombstoned rows fill the Archive view.
+filter.log makes the log page non-empty. Tombstoned rows fill the Archive view. Contacts
+cover the Network tab, including an overdue follow-up and companies with no
+contact at all, which is what the two cards at the top of that page are for.
 The fixtures also carry deliberately awkward content — a 120-character title, a
 company name with no spaces, an empty location, a null score, a job with no URL
 — because those are what actually break a layout.
@@ -107,6 +109,39 @@ CONCERNS = ["", "Requires US citizenship", "On-site 5 days/week",
             "No salary listed; posting is 6 months old"]
 SOURCES  = ["greenhouse:stripe", "lever:ramp", "workday:datadog", "rss", "ashby:vercel"]
 
+# Contacts (the Network tab). Only the first few COMPANIES get anyone, on
+# purpose: outreach_gaps() lists companies with good jobs and NO contact, so a
+# fully covered fixture set would render that card empty — the one card whose
+# empty state is not the interesting one to look at.
+CONTACT_COMPANIES = COMPANIES[:5]
+
+CONTACT_NAMES = [
+    "Priya Raghavan", "Marcus Bell", "Dana Whitfield", "Tom Okafor",
+    "Elena Vasquez", "Chris Yandle", "Aisha Bakr", "Sam Terrell",
+    "Nikhil Desai", "Grace Lindqvist", "Bo Zhang", "Maya Ferreira",
+    "Jordan Pruitt", "Wes Ahn", "Carolyn Estes", "Devin Marsh",
+]
+
+CONTACT_ROLES = [
+    "Software Engineer II", "Senior Software Engineer", "Engineering Manager",
+    "Security Engineer", "Data Engineer", "Technical Recruiter",
+    "Staff Engineer, Platform Infrastructure and Developer Experience",
+    "",
+]
+
+# Mostly the alumni hook, with a couple of others: the school filter is only
+# worth having if more than one value can appear in it.
+CONTACT_SCHOOLS = ([db.CONTACT_DEFAULT_SCHOOL] * 6) + ["UVA", "NYU"]
+
+CONTACT_NOTES = [
+    "",
+    "Sent a connection request with a note about the platform team's blog post.",
+    "Replied same day — happy to talk, asked me to send a resume first. Call is "
+    "Thursday. Wants to know which team; say platform or data, not both, and "
+    "have a specific question about their migration off the monolith ready.",
+    "No answer after two weeks. One more nudge, then leave it.",
+]
+
 
 def _fixture_rows(rng, n_live=42, n_archived=6):
     """Generate (record, user_fields, deleted) tuples with a spread wide enough
@@ -162,11 +197,62 @@ def _fixture_rows(rng, n_live=42, n_archived=6):
     return rows
 
 
+def _contact_fixtures(rng, jobs_by_company, n_live=14, n_archived=2):
+    """Generate (fields, deleted) tuples covering every branch the Network page
+    has: each status, an overdue follow-up and a future one and none at all, a
+    contact linked to a real job and contacts linked to nothing, a blank role,
+    and a role long enough to exercise the two-line clamp."""
+    statuses = db.CONTACT_FIELD_OPTIONS["status"]
+    channels = [None] + db.CONTACT_FIELD_OPTIONS["channel"]
+    today    = datetime.now().date()
+
+    out = []
+    for i in range(n_live + n_archived):
+        company = CONTACT_COMPANIES[i % len(CONTACT_COMPANIES)]
+        status  = statuses[i % len(statuses)]
+        reached = status != statuses[0]
+
+        # Overdue, upcoming, and unset — in that rotation, so the dashboard's
+        # follow-up card and the .overdue styling both have rows on a fresh seed.
+        if not reached or i % 4 == 3:
+            follow_up = None
+        else:
+            offset    = -rng.randint(1, 10) if i % 2 == 0 else rng.randint(1, 14)
+            follow_up = str(today + timedelta(days=offset))
+
+        keys = jobs_by_company.get(company, [])
+        out.append(({
+            "name":           CONTACT_NAMES[i % len(CONTACT_NAMES)],
+            "company":        company,
+            "role":           CONTACT_ROLES[i % len(CONTACT_ROLES)],
+            "school":         CONTACT_SCHOOLS[i % len(CONTACT_SCHOOLS)],
+            "grad_year":      str(rng.randint(2016, 2025)),
+            "location":       "New York, NY" if i % 3 else "Remote",
+            "profile_url":    f"https://www.linkedin.com/in/fixture-{i}",
+            "email":          f"fixture{i}@example.com" if i % 3 == 0 else "",
+            "channel":        channels[i % len(channels)],
+            "status":         status,
+            "date_contacted": str(today - timedelta(days=rng.randint(3, 40))) if reached else "",
+            "follow_up_on":   follow_up,
+            # Every third contact hangs off a real req, so the job page's
+            # Network card and the contact page's "Re: job" picker both have
+            # something to render.
+            "job_key":        rng.choice(keys) if keys and i % 3 == 0 else "",
+            "notes":          CONTACT_NOTES[i % len(CONTACT_NOTES)],
+        }, i >= n_live))
+    return out
+
+
 def seed_db(conn, rng):
     db.init_db(conn)
+    # Contacts first: they carry a foreign key to jobs.key. It is ON DELETE SET
+    # NULL, so this would not error, but clearing the child table is what makes
+    # a reseed actually produce fresh links instead of orphaned NULLs.
+    conn.execute("DELETE FROM contacts")
     conn.execute("DELETE FROM jobs")
     stamp = db.now_iso()
     live = archived = 0
+    jobs_by_company = {}
     for rec, user, is_archived in _fixture_rows(rng):
         db.insert_new(
             conn, rec, user_fields=user,
@@ -176,9 +262,19 @@ def seed_db(conn, rng):
         )
         archived += is_archived
         live += not is_archived
+        if not is_archived:
+            jobs_by_company.setdefault(rec["company"], []).append(rec["key"])
+
+    contacts = 0
+    for fields, is_archived in _contact_fixtures(rng, jobs_by_company):
+        contact_id = db.create_contact(conn, fields)
+        if is_archived:
+            db.soft_delete_contact(conn, contact_id)
+        contacts += 1
+
     db.set_meta(conn, "bootstrapped_at", stamp)
     db.set_meta(conn, "dev_seed", stamp)
-    return live, archived
+    return live, archived, contacts
 
 
 def seed_state_files(rng):
@@ -285,7 +381,7 @@ def main():
     rng  = random.Random(20260722)      # fixed: two runs, identical fixtures
     conn = db.connect()
     try:
-        live, archived = seed_db(conn, rng)
+        live, archived, contacts = seed_db(conn, rng)
     finally:
         conn.close()
 
@@ -296,6 +392,7 @@ def main():
 
     print(f"{DB_PATH}")
     print(f"  {live} live jobs, {archived} tombstoned")
+    print(f"  {contacts} contacts")
     if not args.db_only:
         print(f"  state files: {', '.join(p.name for p in STATE_FILES)}")
     # ASCII only: this script's reason for existing is the Windows dev laptop,

@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{# One template for both add and edit: `contact.id` is what tells them apart.
+   On the add path and on a validation re-render, `contact` is a plain dict
+   rather than a sqlite3.Row — every lookup below is written `contact.x or ''`
+   so a missing key resolves to Undefined and renders empty for both. #}
+{% set editing = contact.id %}
+{% block title %}{{ (contact.name or 'New contact') if editing else 'New contact' }} · job_filter{% endblock %}
+{% block body %}
+
+<h1>{{ contact.name if editing else 'New contact' }}</h1>
+{% if editing %}
+<p class="sub">
+  <strong>{{ contact.company }}</strong>
+  {% if contact.role %}· {{ contact.role }}{% endif %}
+  {% if contact.school %}· {{ contact.school }}{% if contact.grad_year %} ’{{ contact.grad_year[-2:] }}{% endif %}{% endif %}
+  {% if contact.profile_url %}· <a href="{{ contact.profile_url }}" target="_blank" rel="noopener">profile</a>{% endif %}
+</p>
+{% endif %}
+
+{% if error %}
+<div class="banner banner-bad"><span>{{ error }}</span></div>
+{% endif %}
+
+{% if editing and contact.deleted_at %}
+<div class="banner">
+  <span>Removed {{ contact.deleted_at[:10] }} ({{ contact.deleted_reason }}).</span>
+  <form method="post" action="{{ url_for('contact_restore') }}">
+    <input type="hidden" name="id" value="{{ contact.id }}">
+    <button type="submit" class="btn">Restore</button>
+  </form>
+</div>
+{% endif %}
+
+<form method="post" class="edit"
+      action="{{ url_for('contact_update') if editing else url_for('contact_create') }}">
+{% if editing %}<input type="hidden" name="id" value="{{ contact.id }}">{% endif %}
+
+<div class="grid">
+  <section class="card">
+    <h2>Person</h2>
+
+    <label class="field">
+      <span class="k">Name</span>
+      <input type="text" name="name" value="{{ contact.name or '' }}" required autofocus>
+    </label>
+
+    <label class="field">
+      <span class="k">Company</span>
+      {# datalist, not a <select>: the company may be one the pipeline has never
+         seen. Offering the pipeline's spellings still matters — outreach_gaps
+         joins contacts to jobs on this string, so "Jane Street" typed as
+         "JaneStreet" would leave the company showing as a gap forever. #}
+      <input type="text" name="company" list="company-options" required
+             value="{{ contact.company or '' }}">
+    </label>
+    <datalist id="company-options">
+      {% for c in companies %}<option value="{{ c }}">{% endfor %}
+    </datalist>
+
+    <label class="field">
+      <span class="k">Role</span>
+      <input type="text" name="role" value="{{ contact.role or '' }}"
+             placeholder="e.g. Software Engineer II, Platform">
+    </label>
+
+    <label class="field">
+      <span class="k">School</span>
+      <input type="text" name="school" list="school-options"
+             value="{{ contact.school or '' }}">
+    </label>
+    <datalist id="school-options">
+      {% for s in schools %}<option value="{{ s }}">{% endfor %}
+    </datalist>
+
+    <label class="field">
+      <span class="k">Grad year</span>
+      <input type="text" name="grad_year" value="{{ contact.grad_year or '' }}"
+             placeholder="2022" inputmode="numeric">
+    </label>
+
+    <label class="field">
+      <span class="k">Location</span>
+      <input type="text" name="location" value="{{ contact.location or '' }}"
+             placeholder="New York, NY">
+    </label>
+
+    <label class="field">
+      <span class="k">Profile</span>
+      <input type="url" name="profile_url" value="{{ contact.profile_url or '' }}"
+             placeholder="https://www.linkedin.com/in/…">
+    </label>
+
+    <label class="field">
+      <span class="k">Email</span>
+      <input type="email" name="email" value="{{ contact.email or '' }}">
+    </label>
+  </section>
+
+  <section class="card">
+    <h2>Outreach</h2>
+
+    <label class="field">
+      <span class="k">Status</span>
+      <select name="status">
+        {% for opt in options.status %}
+        <option value="{{ opt }}" {{ 'selected' if contact.status == opt }}>{{ opt }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label class="field">
+      <span class="k">Channel</span>
+      <select name="channel">
+        <option value="">—</option>
+        {% for opt in options.channel %}
+        <option value="{{ opt }}" {{ 'selected' if contact.channel == opt }}>{{ opt }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    {# type=date, unlike the free-text dates on a job: the follow-up queue sorts
+       and compares these, so they have to arrive as ISO YYYY-MM-DD. #}
+    <label class="field">
+      <span class="k">Contacted</span>
+      <input type="date" name="date_contacted" value="{{ contact.date_contacted or '' }}">
+    </label>
+
+    <label class="field">
+      <span class="k">Follow up on</span>
+      <input type="date" name="follow_up_on" value="{{ contact.follow_up_on or '' }}">
+    </label>
+
+    <label class="field">
+      <span class="k">Re: job</span>
+      {# Live reqs at this company, so a message can name the posting. Empty
+         when the company has no scored jobs — the field still submits the
+         existing value because the current link is rendered as an option. #}
+      <select name="job_key">
+        <option value="">—</option>
+        {% if linked and linked.key not in jobs|map(attribute='key')|list %}
+        <option value="{{ linked.key }}" selected>{{ linked.title }} (archived)</option>
+        {% endif %}
+        {% for j in jobs %}
+        <option value="{{ j.key }}" {{ 'selected' if contact.job_key == j.key }}>
+          {{ j.score }}/10 · {{ j.title or '(no title)' }}
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+
+    {% if linked %}
+    <p class="hint">
+      Linked: <a href="{{ url_for('job_detail', key=linked.key) }}">{{ linked.title or '(no title)' }}</a>
+      {% if linked.location %} · {{ linked.location }}{% endif %}
+      {% if linked.url %} · <a href="{{ linked.url }}" target="_blank" rel="noopener">posting</a>{% endif %}
+    </p>
+    {% endif %}
+
+    <label class="field wide-field">
+      <span class="k">Notes</span>
+      {# What you actually said and what came back. The thing that makes the
+         second message possible. #}
+      <textarea name="notes" rows="6" placeholder="What you sent, what they said, what to ask next…">{{ contact.notes or '' }}</textarea>
+    </label>
+  </section>
+</div>
+
+<div class="actions">
+  <button type="submit" class="btn primary">{{ 'Save' if editing else 'Add contact' }}</button>
+  <a class="btn" href="{{ url_for('network') }}">Back to network</a>
+</div>
+</form>
+
+{% if editing and not contact.deleted_at %}
+<form method="post" action="{{ url_for('contact_delete') }}" class="danger-form"
+      onsubmit="return confirm('Remove this contact? It is kept so you can restore it.');">
+  <input type="hidden" name="id" value="{{ contact.id }}">
+  <button type="submit" class="btn danger">Remove this contact</button>
+</form>
+{% endif %}
+
+{% endblock %}

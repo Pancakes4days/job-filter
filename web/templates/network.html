@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Network archive' if archived else 'Network' }} · job_filter{% endblock %}
+{% block body %}
+
+<h1>{{ 'Network archive' if archived else 'Network' }}
+  <span class="muted">{{ rows|length }} of {{ stats.archived if archived else stats.live }}</span>
+  {% if not archived %}
+  <a class="btn primary h1-action" href="{{ url_for('contact_new') }}">Add contact</a>
+  {% endif %}
+</h1>
+
+{% if archived %}
+<p class="hint">Removed contacts. Kept because a hand-typed row has no other
+copy — open one to restore it.</p>
+{% else %}
+
+<section class="tiles">
+  <div class="tile"><span class="n">{{ stats.live }}</span><span class="l">contacts</span></div>
+  <div class="tile"><span class="n">{{ stats.reached }}</span><span class="l">messaged</span></div>
+  <div class="tile"><span class="n">{{ stats.replied }}</span><span class="l">replied</span></div>
+  {# Replies per message SENT, not per name on file — see db.contact_stats. #}
+  <div class="tile"><span class="n">{{ stats.reply_rate }}%</span><span class="l">reply rate</span></div>
+</section>
+
+{% if due %}
+<section class="card alerts">
+  <h2>Follow-ups due <span class="muted">{{ due|length }}</span></h2>
+  <p class="hint">Threads still open whose follow-up date has arrived.
+    Closed ones (referred, no response) drop off on their own.</p>
+  {% for c in due %}
+  <div class="row">
+    <span class="k wide"><a href="{{ url_for('contact_detail', id=c.id) }}">{{ c.name }}</a></span>
+    <span class="muted">{{ c.company }}{% if c.status %} · {{ c.status }}{% endif %}</span>
+    <span class="v {{ 'overdue' if c.follow_up_on < today }}">{{ c.follow_up_on | isodate }}</span>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+{# The point of keeping contacts in the tracker DB rather than a spreadsheet:
+   only this database knows both which companies are hiring you and which ones
+   you have nobody at. #}
+<section class="card">
+  <h2>No contact yet <span class="muted">{{ gaps|length }}</span></h2>
+  <p class="hint">Companies with live jobs scoring {{ threshold }}+ where you
+    have not logged anyone. Best score first — one strong req is a better reason
+    to go looking than six mediocre ones. Search each on LinkedIn's alumni
+    filter, then add whoever turns up.</p>
+  <div class="list-scroll">
+  <table>
+    <tr><th>Company</th><th>Jobs</th><th>Best</th><th></th></tr>
+    {% for g in gaps %}
+    <tr>
+      <td><a href="{{ url_for('jobs', company=g.company) }}">{{ g.company }}</a></td>
+      <td class="num">{{ g.n }}</td>
+      <td class="score s{{ g.max_score }}">{{ g.max_score }}</td>
+      <td class="num"><a href="{{ url_for('contact_new', company=g.company) }}">add</a></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4" class="muted">Every company above the threshold has
+      someone logged.</td></tr>
+    {% endfor %}
+  </table>
+  </div>
+</section>
+{% endif %}
+
+<form class="filters" method="get">
+  {% if archived %}<input type="hidden" name="archived" value="1">{% endif %}
+  <input type="search" name="q" value="{{ q }}" placeholder="search name, company, role, notes…">
+  <select name="company">
+    <option value="">all companies</option>
+    {% for c in companies %}
+    <option value="{{ c }}" {{ 'selected' if c == sel_company }}>{{ c }}</option>
+    {% endfor %}
+  </select>
+  <select name="status">
+    <option value="">any status</option>
+    {% for s in statuses %}
+    <option value="{{ s }}" {{ 'selected' if s == sel_status }}>{{ s }}</option>
+    {% endfor %}
+  </select>
+  <select name="school">
+    <option value="">any school</option>
+    {% for s in schools %}
+    <option value="{{ s }}" {{ 'selected' if s == sel_school }}>{{ s }}</option>
+    {% endfor %}
+  </select>
+  <select name="sort">
+    {% for k in sort_keys %}
+    <option value="{{ k }}" {{ 'selected' if k == sort }}>sort: {{ k }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit">Filter</button>
+  <a class="clear" href="{{ url_for('network', archived=1 if archived else none) }}">clear</a>
+</form>
+
+<div class="table-scroll">
+<table class="jobs contacts">
+  <colgroup>
+    <col class="c-name"><col class="c-role"><col class="c-company">
+    <col class="c-school"><col class="c-status"><col class="c-follow"><col class="c-link">
+  </colgroup>
+  <thead>
+  <tr>
+    <th>Name</th><th>Role</th><th>Company</th><th>School</th>
+    <th>Status</th><th>Follow up</th><th>Profile</th>
+  </tr>
+  </thead>
+  <tbody>
+  {# Same clamp/tooltip treatment as the jobs table: the full value is in
+     title=, so a long role or company wraps to two lines and stops there. #}
+  {% for c in rows %}
+  <tr>
+    <td class="name"><a class="clamp" href="{{ url_for('contact_detail', id=c.id) }}"
+        title="{{ c.name }}">{{ c.name }}</a></td>
+    <td class="role"><span class="clamp" title="{{ c.role }}">{{ c.role or '' }}</span></td>
+    <td class="company"><span class="clamp" title="{{ c.company }}">{{ c.company }}</span></td>
+    <td class="loc"><span class="clamp" title="{{ c.school }}">{{ c.school or '' }}{% if c.grad_year %} ’{{ c.grad_year[-2:] }}{% endif %}</span></td>
+    <td class="status">{{ c.status or '' }}</td>
+    <td class="found muted {{ 'overdue' if c.follow_up_on and c.follow_up_on <= today }}">{{ c.follow_up_on | isodate }}</td>
+    <td class="link">{% if c.profile_url %}<a href="{{ c.profile_url }}" target="_blank" rel="noopener">open</a>{% endif %}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="7" class="muted">
+    {% if archived %}Nothing archived.
+    {% else %}No contacts match those filters.
+      <a href="{{ url_for('contact_new') }}">Add one</a>.{% endif %}
+  </td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% endblock %}

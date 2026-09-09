@@ -63,6 +63,46 @@ USER_FIELD_OPTIONS = {
                      "Not Required", "Submitted"],
 }
 
+# ── contacts (the Network tab) ────────────────────────────────────────────────
+# Every column here is user-owned. The jobs table needs the PIPELINE/USER split
+# because two writers touch it; contacts have exactly one writer (you, through
+# the web UI), so there is no disjointness rule to maintain — this list exists
+# only as the form whitelist, the same job USER_FIELDS does for job_update.
+CONTACT_FIELDS = [
+    "name", "company", "role", "school", "grad_year", "location",
+    "profile_url", "email", "channel", "status", "date_contacted",
+    "follow_up_on", "job_key", "notes",
+]
+
+# Without these a row is not identifiable enough to be worth keeping: the
+# company is what joins a contact to the pipeline's jobs, and the whole feature
+# is "who do I know at the companies that are hiring me".
+CONTACT_REQUIRED = ("name", "company")
+
+# Rendered as <input type="date">, so the browser submits ISO 'YYYY-MM-DD' and
+# the follow-up queue can order and compare them as plain strings. Deliberately
+# unlike the jobs form, which keeps free-text dates ("M/D/YY") because nothing
+# ever sorts on them — here follow_ups_due() does.
+CONTACT_DATE_FIELDS = ("date_contacted", "follow_up_on")
+
+CONTACT_DEFAULT_SCHOOL = "Virginia Tech"
+
+# The <select> options, mirroring USER_FIELD_OPTIONS.
+CONTACT_FIELD_OPTIONS = {
+    "status":  ["Not contacted", "Contacted", "Replied", "Call scheduled",
+                "Referred", "No response", "Closed"],
+    "channel": ["LinkedIn", "Email", "Warm intro", "Alumni event", "Other"],
+}
+
+# Statuses that end a thread. follow_ups_due() skips them, so a contact who
+# said no stops appearing in the queue without having to clear its date.
+CONTACT_CLOSED_STATUSES = ("Referred", "No response", "Closed")
+
+# What counts as an answered message, for the reply-rate stat on the Network
+# page. Cold outreach only pays off if you can see this number move.
+CONTACT_REPLIED_STATUSES = ("Replied", "Call scheduled", "Referred")
+
+
 # Set on soft-delete. 'user'/'prune' come from the UI; the 'import-*' values
 # are written once by the phase-2 bootstrap to carry existing deletions over.
 # 'review' is apply_archive.py's, kept distinct from 'prune' so that script's
@@ -124,6 +164,49 @@ MIGRATIONS = [
 
     # v2 — user-owned pay column, distinct from the pipeline's scraped `salary`
     ["ALTER TABLE jobs ADD COLUMN pay TEXT"],
+
+    # v3 — outreach contacts (the Network tab). Alumni and other people worth
+    # cold-messaging at the companies the pipeline surfaces, so "who do I know
+    # here" sits next to the req instead of in a separate spreadsheet.
+    ["""
+    CREATE TABLE contacts (
+      id              INTEGER PRIMARY KEY,
+
+      -- who
+      name            TEXT NOT NULL,
+      company         TEXT NOT NULL,
+      role            TEXT,
+      school          TEXT,          -- the alumni hook; defaults to CONTACT_DEFAULT_SCHOOL
+      grad_year       TEXT,
+      location        TEXT,
+      profile_url     TEXT,
+      email           TEXT,
+
+      -- outreach state
+      channel         TEXT,
+      status          TEXT,
+      date_contacted  TEXT,          -- ISO 'YYYY-MM-DD' (see CONTACT_DATE_FIELDS)
+      follow_up_on    TEXT,          -- ISO 'YYYY-MM-DD'
+      notes           TEXT,
+
+      -- the req that prompted the outreach, if any. ON DELETE SET NULL rather
+      -- than CASCADE: jobs are tombstoned, never actually deleted, so this only
+      -- fires if something hard-deletes rows (seed_dev_db.py's reseed does) --
+      -- and losing the link is the right outcome there, not losing the contact.
+      job_key         TEXT REFERENCES jobs(key) ON DELETE SET NULL,
+
+      -- lifecycle
+      deleted_at      TEXT,          -- NULL = live, else a tombstone
+      deleted_reason  TEXT,
+      created_at      TEXT NOT NULL,
+      updated_at      TEXT NOT NULL
+    )
+    """,
+     "CREATE INDEX idx_contacts_live     ON contacts(deleted_at)",
+     "CREATE INDEX idx_contacts_company  ON contacts(company)",
+     "CREATE INDEX idx_contacts_followup ON contacts(follow_up_on)",
+     "CREATE INDEX idx_contacts_job      ON contacts(job_key)",
+     ],
 ]
 
 # Derived, never hand-maintained: a literal here drifts from the ladder the
@@ -492,6 +575,230 @@ def is_bootstrapped(conn):
     return conn.execute("SELECT 1 FROM jobs LIMIT 1").fetchone() is not None
 
 
+# ── contacts: writes ──────────────────────────────────────────────────────────
+# No ON CONFLICT dance here, unlike jobs. Nothing but the web UI ever writes
+# this table, so there is no pipeline insert to defend hand-typed columns from
+# and no key to dedupe on — a contact is created once, by hand, and edited in
+# place. Soft delete is kept anyway, for a different reason than jobs have it:
+# not to stop a re-add (nothing re-adds), but because a row you typed yourself
+# is unrecoverable if a misclick drops it.
+
+def _clean_contact(fields):
+    """Strip form values and normalise blanks to NULL.
+
+    Empty-string is not interchangeable with NULL for two of these columns:
+    job_key '' would fail the foreign key (no job has an empty key), and
+    follow_up_on '' would sort ahead of every real date in the follow-up queue.
+    Normalising all of them keeps those two from being special cases.
+    """
+    unknown = set(fields) - set(CONTACT_FIELDS)
+    if unknown:
+        raise ValueError(f"not a contact column: {sorted(unknown)}")
+    return {k: (v.strip() or None) if isinstance(v, str) else v
+            for k, v in fields.items()}
+
+
+def create_contact(conn, fields):
+    """Insert one contact, returning its new id. Callers must be inside a
+    transaction(). Raises ValueError if a CONTACT_REQUIRED field is blank — the
+    route catches it and re-renders the form rather than returning a 500."""
+    rec = _clean_contact(fields)
+    missing = [f for f in CONTACT_REQUIRED if not rec.get(f)]
+    if missing:
+        raise ValueError(f"required: {', '.join(missing)}")
+
+    rec.setdefault("school", CONTACT_DEFAULT_SCHOOL)
+    rec.setdefault("status", CONTACT_FIELD_OPTIONS["status"][0])
+    stamp = now_iso()
+    rec["created_at"] = rec["updated_at"] = stamp
+
+    cols = list(rec)
+    cur = conn.execute(
+        f"INSERT INTO contacts ({', '.join(cols)}) "
+        f"VALUES ({', '.join(f':{c}' for c in cols)})", rec)
+    return cur.lastrowid
+
+
+def update_contact(conn, contact_id, fields):
+    """Write the edited columns of one contact. Same whitelist discipline as
+    update_user_fields: an unknown column raises instead of being dropped."""
+    rec = _clean_contact(fields)
+    missing = [f for f in CONTACT_REQUIRED if f in rec and not rec[f]]
+    if missing:
+        raise ValueError(f"required: {', '.join(missing)}")
+    if not rec:
+        return False
+    assignments = ", ".join(f"{c} = :{c}" for c in rec)
+    params = {**rec, "id": contact_id, "updated_at": now_iso()}
+    cur = conn.execute(
+        f"UPDATE contacts SET {assignments}, updated_at = :updated_at WHERE id = :id",
+        params)
+    return cur.rowcount > 0
+
+
+def soft_delete_contact(conn, contact_id, reason="user"):
+    if reason not in DELETE_REASONS:
+        raise ValueError(f"unknown deleted_reason: {reason!r}")
+    stamp = now_iso()
+    cur = conn.execute(
+        "UPDATE contacts SET deleted_at = ?, deleted_reason = ?, updated_at = ? "
+        "WHERE id = ? AND deleted_at IS NULL", (stamp, reason, stamp, contact_id))
+    return cur.rowcount > 0
+
+
+def restore_contact(conn, contact_id):
+    cur = conn.execute(
+        "UPDATE contacts SET deleted_at = NULL, deleted_reason = NULL, updated_at = ? "
+        "WHERE id = ? AND deleted_at IS NOT NULL", (now_iso(), contact_id))
+    return cur.rowcount > 0
+
+
+# ── contacts: reads ───────────────────────────────────────────────────────────
+
+# Same contract as SORT_ORDERS: callers pass a KEY, never SQL.
+# Follow-up leads because that is the page's job — who is owed a message today.
+CONTACT_SORT_ORDERS = {
+    # Undated contacts last: a blank follow-up means "nothing scheduled", which
+    # must not outrank a date that has actually come due.
+    "follow_up": "follow_up_on IS NULL, follow_up_on, name COLLATE NOCASE",
+    "name":      "name COLLATE NOCASE",
+    "company":   "company COLLATE NOCASE, name COLLATE NOCASE",
+    "status":    "status IS NULL, status COLLATE NOCASE, name COLLATE NOCASE",
+    "added":     "created_at DESC",
+}
+CONTACT_DEFAULT_SORT = "follow_up"
+
+
+def search_contacts(conn, *, q=None, company=None, status=None, school=None,
+                    archived=False, sort=CONTACT_DEFAULT_SORT):
+    """Filtered contact rows. `sort` is a CONTACT_SORT_ORDERS key; anything
+    unrecognised falls back to the default rather than raising, matching
+    search_jobs so a stale bookmark degrades instead of erroring."""
+    where  = ["deleted_at IS NOT NULL" if archived else "deleted_at IS NULL"]
+    params = {}
+
+    if q:
+        where.append("(name LIKE :q OR company LIKE :q OR role LIKE :q "
+                     "OR notes LIKE :q OR email LIKE :q)")
+        params["q"] = f"%{q}%"
+    if company:
+        where.append("company = :company COLLATE NOCASE")
+        params["company"] = company
+    if status:
+        where.append("status = :status")
+        params["status"] = status
+    if school:
+        where.append("school = :school COLLATE NOCASE")
+        params["school"] = school
+
+    order = CONTACT_SORT_ORDERS.get(sort, CONTACT_SORT_ORDERS[CONTACT_DEFAULT_SORT])
+    return conn.execute(
+        f"SELECT * FROM contacts WHERE {' AND '.join(where)} ORDER BY {order}",
+        params).fetchall()
+
+
+def get_contact(conn, contact_id):
+    return conn.execute("SELECT * FROM contacts WHERE id = ?", (contact_id,)).fetchone()
+
+
+def contacts_for_company(conn, company):
+    """Live contacts at one company, for the job detail page's Network card.
+    NOCASE because the company string comes from whichever ATS posted the job
+    while the contact's is typed by hand — "Jane Street" vs "jane street"."""
+    if not company:
+        return []
+    return conn.execute(
+        "SELECT * FROM contacts WHERE deleted_at IS NULL "
+        "AND company = ? COLLATE NOCASE ORDER BY name COLLATE NOCASE",
+        (company,)).fetchall()
+
+
+def _closed_status_clause(params):
+    """`status NOT IN (...)` over CONTACT_CLOSED_STATUSES, binding into `params`.
+
+    Built rather than written out because the values are a module constant that
+    will get extended, and a literal copy in the SQL string is how that drifts.
+    """
+    names = {f"cs{i}": s for i, s in enumerate(CONTACT_CLOSED_STATUSES)}
+    params.update(names)
+    joined = ", ".join(f":{n}" for n in names)
+    return f"(status IS NULL OR status NOT IN ({joined}))"
+
+
+def follow_ups_due(conn, today, limit=None):
+    """Live contacts whose follow-up date has arrived and whose thread is still
+    open. `today` is an ISO 'YYYY-MM-DD' string — the column is stored in that
+    same format (see CONTACT_DATE_FIELDS), so this is a plain string comparison
+    and needs no date parsing in SQL."""
+    params = {"today": today}
+    sql = ("SELECT * FROM contacts WHERE deleted_at IS NULL "
+           "AND follow_up_on IS NOT NULL AND follow_up_on <= :today "
+           f"AND {_closed_status_clause(params)} "
+           "ORDER BY follow_up_on, name COLLATE NOCASE")
+    if limit:
+        sql += " LIMIT :limit"
+        params["limit"] = limit
+    return conn.execute(sql, params).fetchall()
+
+
+def outreach_gaps(conn, min_score=6, limit=20):
+    """Companies with live jobs at or above `min_score` where no contact has
+    been logged yet — the weekly "go look these up" queue, and the whole reason
+    this table lives in the tracker DB rather than in a separate spreadsheet.
+
+    Ranked by best score rather than job count: one 9/10 req is a better reason
+    to go find someone than six 6/10s are.
+    """
+    return conn.execute(
+        "SELECT j.company AS company, COUNT(*) AS n, MAX(j.score) AS max_score "
+        "FROM jobs j "
+        "WHERE j.deleted_at IS NULL AND j.company IS NOT NULL AND j.company != '' "
+        "  AND j.score >= :min_score "
+        "  AND NOT EXISTS (SELECT 1 FROM contacts c "
+        "                  WHERE c.deleted_at IS NULL "
+        "                    AND c.company = j.company COLLATE NOCASE) "
+        "GROUP BY j.company COLLATE NOCASE "
+        "ORDER BY max_score DESC, n DESC, j.company COLLATE NOCASE "
+        "LIMIT :limit",
+        {"min_score": min_score, "limit": limit}).fetchall()
+
+
+def distinct_contact_values(conn, column):
+    """Distinct non-empty values of a contacts column, for filter dropdowns."""
+    if column not in ("company", "status", "school", "channel"):
+        raise ValueError(f"not a filterable contact column: {column!r}")
+    return [r[0] for r in conn.execute(
+        f"SELECT DISTINCT {column} FROM contacts "
+        f"WHERE deleted_at IS NULL AND {column} IS NOT NULL AND {column} != '' "
+        f"ORDER BY {column} COLLATE NOCASE")]
+
+
+def contact_stats(conn):
+    """Header numbers for the Network page.
+
+    `reached` counts contacts actually messaged, and `reply_rate` is over that
+    rather than over everyone: the number that says whether the message is
+    working is replies per message sent, not replies per name collected.
+    """
+    by_status = {r["status"]: r["n"] for r in conn.execute(
+        "SELECT COALESCE(NULLIF(status, ''), 'Not contacted') AS status, "
+        "COUNT(*) AS n FROM contacts WHERE deleted_at IS NULL GROUP BY 1")}
+    live     = sum(by_status.values())
+    reached  = live - by_status.get("Not contacted", 0)
+    replied  = sum(n for s, n in by_status.items() if s in CONTACT_REPLIED_STATUSES)
+    archived = conn.execute(
+        "SELECT COUNT(*) AS n FROM contacts WHERE deleted_at IS NOT NULL"
+    ).fetchone()["n"]
+    return {
+        "live":       live,
+        "archived":   archived,
+        "reached":    reached,
+        "replied":    replied,
+        "reply_rate": round(100 * replied / reached) if reached else 0,
+        "by_status":  by_status,
+    }
+
+
 if __name__ == "__main__":
     # `python3 scripts/db.py` — create/migrate the DB and report where it stands.
     conn = connect()
@@ -500,4 +807,7 @@ if __name__ == "__main__":
     print(f"{DB_PATH}")
     print(f"  schema version : {version}")
     print(f"  jobs           : {c['total']} ({c['live']} live, {c['deleted']} tombstoned)")
+    n = contact_stats(conn)
+    print(f"  contacts       : {n['live'] + n['archived']} ({n['live']} live, "
+          f"{n['reached']} contacted, {n['replied']} replied)")
     print(f"  bootstrapped   : {get_meta(conn, 'bootstrapped_at') or 'no'}")

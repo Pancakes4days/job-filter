@@ -114,6 +114,25 @@
   </section>
 </div>
 
+{# Who you know here. Full width under the grid rather than a third card in
+   it: the Application form needs the width, and a three-column row squeezes it. #}
+<section class="card">
+  <h2>Network <span class="muted">{{ contacts|length }}</span></h2>
+  {% if contacts %}
+  {% for c in contacts %}
+  <div class="row">
+    <span class="k wide"><a href="{{ url_for('contact_detail', id=c.id) }}">{{ c.name }}</a></span>
+    <span class="muted">{{ c.role or '' }}{% if c.school %} · {{ c.school }}{% if c.grad_year %} ’{{ c.grad_year[-2:] }}{% endif %}{% endif %}</span>
+    <span class="v">{{ c.status or '—' }}</span>
+  </div>
+  {% endfor %}
+  {% else %}
+  <p class="hint">Nobody logged at {{ job.company }} yet. Worth ten minutes in
+    LinkedIn's alumni filter before you apply cold.</p>
+  {% endif %}
+  <p class="hint"><a href="{{ url_for('contact_new', company=job.company, job_key=job.key) }}">Add a contact here</a></p>
+</section>
+
 {% if not job.deleted_at %}
 <form method="post" action="{{ url_for('job_delete') }}" class="danger-form"
       onsubmit="return confirm('Archive this job? It stays as a tombstone and the pipeline won\'t re-add it.');">

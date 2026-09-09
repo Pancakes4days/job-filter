@@ -119,6 +119,9 @@ job_filter/
 - `app.py` — read + edit the tracker over the tailnet; run under gunicorn by
   `jobfilter-web.service`, exposed with `tailscale serve`. See
   `docs/PLAN_web_tracker.md` for the design.
+- `templates/` — Jinja pages: `dashboard`, `jobs`, `job`, `network`, `contact`,
+  `watchlist`, `logs`, plus the `no_db` / `stale_schema` / `not_found` notices
+- `static/style.css` — the whole stylesheet; no build step, no CDN
 
 **You edit these** (`config/`)
 - `config.json` — your skills, preferences, dealbreakers, LLM settings
@@ -132,8 +135,9 @@ job_filter/
   `filter_jobs.py` appends to it incrementally, which is what makes the filter
   phase crash-resumable. `store` reads it into the DB
 - `tracker.db` — **the tracker** (SQLite/WAL): pipeline-scored jobs plus your
-  hand-edited columns, with tombstones for deletions. The web app reads and
-  writes this; `.db-wal` / `.db-shm` are its WAL sidecar files
+  hand-edited columns, with tombstones for deletions, and the `contacts` table
+  behind the Network tab. The web app reads and writes this; `.db-wal` /
+  `.db-shm` are its WAL sidecar files
 - `backups/` — nightly `tracker-YYYYMMDD.db` snapshots (kept 14 by default)
 - `matched_jobs.xlsx` — only when you run/download the export; a styled snapshot
   of the DB's live jobs, not a source of truth
@@ -363,6 +367,54 @@ generating links rooted at `/` and every one of them broken. That's what
 `X-Forwarded-Prefix` and puts the prefix back on every `url_for()`, including
 static assets. Nothing else in the app knows or records the path, so moving
 between root, a sub-path, or a different host is only ever this one command.
+
+## The Network tab (outreach contacts)
+
+A job row says a company is hiring. It doesn't say whether you know anyone
+there, and referrals are how most of these roles actually get filled. The
+**Network** tab is the other half: people worth messaging at the companies the
+pipeline is already surfacing, tracked in the same database.
+
+Contacts live in `tracker.db`'s `contacts` table (schema v3) and are **typed by
+hand**. That is deliberate. Scraping a public ATS API is fine; scraping people
+is against LinkedIn's terms and gets accounts restricted, which costs you the
+network you were trying to build. The useful volume here is a dozen good
+messages a week, not a thousand rows — the lookup is a few minutes, and the
+personalisation is what makes the message work at all.
+
+The pipeline never writes this table. Unlike `jobs`, which needs the
+PIPELINE/USER column split because two writers touch it, `contacts` has exactly
+one writer — you, through the web UI — so there is nothing to keep disjoint.
+
+### What the page gives you
+
+- **No contact yet** — companies with live jobs at or above your scoring
+  threshold where you've logged nobody, ranked by best score. This is the whole
+  reason contacts live in the tracker DB instead of a spreadsheet: only this
+  database knows both which companies are hiring you *and* which ones you have
+  no one at. It's the weekly "go look these up" queue.
+- **Follow-ups due** — open threads past their follow-up date, also surfaced on
+  the dashboard. Contacts marked Referred / No response / Closed drop off on
+  their own, so a dead thread stops nagging without you clearing the date.
+- **Reply rate** — replies per message *sent*, not per name collected. That's
+  the number that tells you whether the message itself is working.
+- **Re: job** — a contact can be linked to a specific live req at that company,
+  and the job's own page lists everyone you know there. Naming the posting is
+  most of the difference between a message that gets answered and one that
+  doesn't.
+
+Add a contact from the tab itself, from a gap row, or straight from a job page
+(the company and the req are prefilled). Removal is a soft delete, like a job —
+but for a different reason: nothing would re-add a contact, it's just that a
+row you typed yourself has no other copy.
+
+### A note on company names
+
+`No contact yet` joins contacts to jobs on the company string, so a contact
+filed under `JaneStreet` leaves `Jane Street` showing as a gap forever. The
+company field offers the pipeline's own spellings as you type — take them when
+they're offered. The lookups are case-insensitive, so only real spelling
+differences bite.
 
 ## The watchlist (company career pages)
 

@@ -269,3 +269,28 @@ ul.plain li { padding: .2rem 0; border-bottom: 1px solid var(--line-soft); }
 .btn.danger { color: var(--bad); border-color: var(--bad-line); }
 .btn.danger:hover { background: var(--bad-bg); border-color: var(--bad); }
 .danger-form { margin-top: 1.4rem; }
+
+/* ── network (contacts) ─────────────────────────────────────────────────── */
+
+/* The contacts table reuses table.jobs wholesale — fixed layout, the .clamp
+   treatment, nowrap headers — and only redeclares the column widths, because
+   its <colgroup> classes are its own. Role is left unsized on purpose, the way
+   Title is in the jobs table: it is the column that can afford to absorb
+   whatever the fixed ones leave. */
+.contacts .c-name   { width: 12rem; }
+.contacts .c-school { width: 10rem; }
+.contacts .c-follow { width: 6rem; }
+
+/* A follow-up date that has arrived. Deliberately --warn and not --bad: it is
+   a nudge, not a failure, and the palette already spends --bad on destructive
+   controls. */
+.overdue { color: var(--warn); }
+
+/* The error variant of .banner — a rejected save, where .banner's --warn
+   colouring would read as informational. */
+.banner-bad { border-left-color: var(--bad); background: var(--bad-bg); color: var(--bad); }
+
+/* "Add contact", sitting on the Network h1's own line. Floated rather than
+   making h1 a flex container, which would change every other heading in the
+   app for the sake of one button. */
+.h1-action { float: right; }

@@ -87,7 +87,7 @@
       "url": "https://www.arbeitnow.com/api/job-board-api",
       "pages": 2,
       "enabled": false,
-      "_note": "Implemented, but listings skew Europe/Germany â€” enable if that's of interest"
+      "_note": "Implemented, but listings skew Europe/Germany — enable if that's of interest"
     },
     {
       "name": "HN Who's Hiring",
@@ -1800,14 +1800,14 @@
     "india",
     "brazil",
     "sao paulo",
-    "sÃ£o paulo",
+    "são paulo",
     "london",
     "uk",
     "united kingdom",
     "germany",
     "berlin",
     "dusseldorf",
-    "dÃ¼sseldorf",
+    "düsseldorf",
     "japan",
     "tokyo",
     "singapore",

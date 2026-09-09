@@ -29,6 +29,7 @@ apart from "pipeline died holding the lock".
 """
 
 import json
+import sqlite3
 import sys
 from collections import Counter
 from pathlib import Path
@@ -221,6 +222,9 @@ def dashboard():
         locations   = locations.most_common(10),
         statuses    = db.status_breakdown(conn),
         alerts      = stats.load_active_alerts(),
+        # Outreach you owe a reply to. On the dashboard because a follow-up
+        # queue only works if it is in front of you without being navigated to.
+        due         = db.follow_ups_due(conn, today_iso(), limit=8),
         recent      = db.search_jobs(conn, sort="date", limit=10),
     )
 
@@ -305,14 +309,18 @@ def job_detail():
     """Key comes in as a query parameter, not a path segment: keys are raw URLs
     ("https://acme.io/1"), and embedding one in a path means wrestling with
     encoded slashes on every link."""
-    key = request.args.get("key", "")
-    row = db.get_job(get_db(), key) if key else None
+    key  = request.args.get("key", "")
+    conn = get_db()
+    row  = db.get_job(conn, key) if key else None
     if row is None:
         return render_template("not_found.html", key=key,
                                status_bar=pipeline_status()), 404
     return render_template("job.html", job=row, status_bar=pipeline_status(),
                            user_fields=db.USER_FIELDS,
                            options=db.USER_FIELD_OPTIONS,
+                           # Who you know here — the reason to open the page
+                           # before applying rather than after.
+                           contacts=db.contacts_for_company(conn, row["company"]),
                            back=carried_filters(request.args, prefixed=True))
 
 
@@ -365,6 +373,216 @@ def job_restore():
     return redirect(url_for("job_detail", key=key))
 
 
+# ── network (outreach contacts) ───────────────────────────────────────────────
+# The people side of the same database. A job row tells you a company is hiring;
+# a contact row tells you whether you know anyone there. Keeping both in
+# tracker.db is what lets outreach_gaps() ask the one question a spreadsheet
+# can't: which companies are hiring me right now that I have nobody at.
+#
+# Contacts are typed by hand, on purpose. The pipeline can read a public ATS
+# API; it has no business scraping people, and the useful volume here is a
+# dozen good messages a week, not a thousand rows.
+
+CONTACT_ARGS = ("q", "company", "status", "school", "sort", "archived")
+
+
+def today_iso():
+    """Local date as 'YYYY-MM-DD', matching how the date inputs submit.
+
+    Local, not UTC: "is this follow-up due" is a question about the user's day,
+    and on an evening in America/New_York a UTC date is already tomorrow.
+    """
+    from datetime import date
+    return date.today().isoformat()
+
+
+def _contact_form(form):
+    """The contact columns present in a submitted form. Anything not in
+    CONTACT_FIELDS is ignored here and rejected by db._clean_contact, so a
+    renamed input surfaces instead of silently writing nothing."""
+    return {f: (form.get(f) or "").strip()
+            for f in db.CONTACT_FIELDS if f in form}
+
+
+def _contact_error(exc):
+    """Form-level message for a rejected contact save.
+
+    A ValueError is db's own validation and already reads as a sentence. An
+    IntegrityError here can only be the job_key foreign key, and sqlite's
+    wording for it ("FOREIGN KEY constraint failed") tells the user nothing
+    about which field to change.
+    """
+    if isinstance(exc, sqlite3.IntegrityError):
+        return "That job link no longer exists — pick another under “Re: job”."
+    return str(exc)
+
+
+def _require_contact(conn, contact_id):
+    row = db.get_contact(conn, contact_id) if contact_id else None
+    if row is None:
+        abort(404)
+    return row
+
+
+def _contact_form_context(conn, **extra):
+    """Everything contact.html needs besides the row itself."""
+    ctx = {
+        "status_bar": pipeline_status(),
+        "options":    db.CONTACT_FIELD_OPTIONS,
+        "schools":    db.distinct_contact_values(conn, "school"),
+        "companies":  db.distinct_values(conn, "company"),
+        "date_fields": db.CONTACT_DATE_FIELDS,
+    }
+    ctx.update(extra)
+    return ctx
+
+
+@app.route("/network")
+def network():
+    conn = get_db()
+    archived = request.args.get("archived") == "1"
+
+    rows = db.search_contacts(
+        conn,
+        q        = request.args.get("q") or None,
+        company  = request.args.get("company") or None,
+        status   = request.args.get("status") or None,
+        school   = request.args.get("school") or None,
+        archived = archived,
+        # A CONTACT_SORT_ORDERS key, validated in db.search_contacts — never SQL.
+        sort     = request.args.get("sort", db.CONTACT_DEFAULT_SORT),
+    )
+    return render_template(
+        "network.html",
+        rows        = rows,
+        archived    = archived,
+        stats       = db.contact_stats(conn),
+        due         = db.follow_ups_due(conn, today_iso()),
+        # Gapped at the same threshold the pipeline scores against, so this list
+        # means "companies worth applying to" and not "every company on file".
+        gaps        = db.outreach_gaps(conn, min_score=stats.load_threshold()),
+        threshold   = stats.load_threshold(),
+        today       = today_iso(),
+        companies   = db.distinct_contact_values(conn, "company"),
+        statuses    = db.distinct_contact_values(conn, "status"),
+        schools     = db.distinct_contact_values(conn, "school"),
+        sort        = request.args.get("sort", db.CONTACT_DEFAULT_SORT),
+        sort_keys   = list(db.CONTACT_SORT_ORDERS),
+        q           = request.args.get("q", ""),
+        sel_company = request.args.get("company", ""),
+        sel_status  = request.args.get("status", ""),
+        sel_school  = request.args.get("school", ""),
+        status_bar  = pipeline_status(),
+    )
+
+
+@app.route("/network/contact")
+def contact_detail():
+    conn = get_db()
+    row  = _require_contact(conn, request.args.get("id", type=int))
+    return render_template(
+        "contact.html",
+        **_contact_form_context(
+            conn,
+            contact = row,
+            # Live reqs at this company, to link the outreach to a specific one.
+            # Exact-match company (search_jobs) where contacts_for_company is
+            # NOCASE, so a case-mismatched contact gets an empty picker rather
+            # than wrong options — the already-linked job still renders below.
+            jobs    = db.search_jobs(conn, company=row["company"], sort="score"),
+            linked  = db.get_job(conn, row["job_key"]) if row["job_key"] else None,
+        ),
+    )
+
+
+@app.route("/network/new")
+def contact_new():
+    """Blank add form. company/job_key may be prefilled by the link on a job
+    page, which is the path that makes adding a contact a two-field job."""
+    conn = get_db()
+    key  = request.args.get("job_key", "")
+    job  = db.get_job(conn, key) if key else None
+    return render_template(
+        "contact.html",
+        **_contact_form_context(
+            conn,
+            contact = {
+                "company":  request.args.get("company", "") or (job["company"] if job else ""),
+                "school":   db.CONTACT_DEFAULT_SCHOOL,
+                "status":   db.CONTACT_FIELD_OPTIONS["status"][0],
+                "job_key":  key if job else "",
+            },
+            jobs   = db.search_jobs(conn, company=(job["company"] if job else None),
+                                    sort="score") if job else [],
+            linked = job,
+        ),
+    )
+
+
+@app.route("/network/create", methods=["POST"])
+def contact_create():
+    """Create one contact. On a validation error the form is re-rendered with
+    what was typed still in it — there is no session or flash in this app (no
+    secret key, auth is the tailnet), so the error has to travel in the render
+    rather than through a redirect."""
+    conn   = get_db()
+    fields = _contact_form(request.form)
+    try:
+        with db.transaction(conn):
+            contact_id = db.create_contact(conn, fields)
+    except (ValueError, sqlite3.IntegrityError) as exc:
+        return render_template(
+            "contact.html",
+            **_contact_form_context(conn, contact=fields, error=_contact_error(exc),
+                                    jobs=[], linked=None),
+        ), 400
+    return redirect(url_for("contact_detail", id=contact_id))
+
+
+@app.route("/network/contact/update", methods=["POST"])
+def contact_update():
+    conn = get_db()
+    contact_id = request.form.get("id", type=int)
+    row = _require_contact(conn, contact_id)
+    fields = _contact_form(request.form)
+    try:
+        with db.transaction(conn):
+            db.update_contact(conn, contact_id, fields)
+    except (ValueError, sqlite3.IntegrityError) as exc:
+        merged = {**dict(row), **fields}
+        return render_template(
+            "contact.html",
+            **_contact_form_context(
+                conn, contact=merged, error=_contact_error(exc),
+                jobs=db.search_jobs(conn, company=row["company"], sort="score"),
+                linked=db.get_job(conn, row["job_key"]) if row["job_key"] else None),
+        ), 400
+    return redirect(url_for("contact_detail", id=contact_id))
+
+
+@app.route("/network/contact/delete", methods=["POST"])
+def contact_delete():
+    """Soft-delete, for recoverability rather than for the reason jobs have it:
+    nothing would re-add a contact, but a hand-typed row is gone for good if a
+    misclick hard-deletes it."""
+    conn = get_db()
+    contact_id = request.form.get("id", type=int)
+    _require_contact(conn, contact_id)
+    with db.transaction(conn):
+        db.soft_delete_contact(conn, contact_id, reason="user")
+    return redirect(url_for("contact_detail", id=contact_id))
+
+
+@app.route("/network/contact/restore", methods=["POST"])
+def contact_restore():
+    conn = get_db()
+    contact_id = request.form.get("id", type=int)
+    _require_contact(conn, contact_id)
+    with db.transaction(conn):
+        db.restore_contact(conn, contact_id)
+    return redirect(url_for("contact_detail", id=contact_id))
+
+
 @app.route("/status")
 def status():
     """Polled by the status strip. JSON so the page updates without a reload."""
@@ -415,6 +633,19 @@ def export_xlsx():
         buf, as_attachment=True, download_name="matched_jobs.xlsx",
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
+
+
+@app.template_filter("isodate")
+def isodate(value):
+    """'2026-09-14' -> 'Sep 14'. The contact date columns are ISO (they are
+    sorted and compared as strings), so they need their own filter — shortdate
+    parses matches.TS_FORMAT and would fall through to its slice for these."""
+    from datetime import datetime
+    from matches import month_day
+    try:
+        return month_day(datetime.strptime(str(value), "%Y-%m-%d"))
+    except (TypeError, ValueError):
+        return str(value or "")
 
 
 @app.template_filter("shortdate")

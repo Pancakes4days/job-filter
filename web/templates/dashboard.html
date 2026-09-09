@@ -16,6 +16,20 @@
 </section>
 {% endif %}
 
+{% if due %}
+<section class="card alerts">
+  <h2>Follow-ups due <span class="muted">{{ due|length }}</span></h2>
+  <p class="hint">Open outreach threads past their follow-up date.</p>
+  {% for c in due %}
+  <div class="row">
+    <span class="k wide"><a href="{{ url_for('contact_detail', id=c.id) }}">{{ c.name }}</a></span>
+    <span class="muted">{{ c.company }}{% if c.status %} · {{ c.status }}{% endif %}</span>
+    <span class="v overdue">{{ c.follow_up_on | isodate }}</span>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
 <section class="tiles">
   <div class="tile"><span class="n">{{ counts.live }}</span><span class="l">tracked</span></div>
   <div class="tile"><span class="n">{{ counts.deleted }}</span><span class="l">archived</span></div>
