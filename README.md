@@ -383,108 +383,125 @@ same for one posting as for fifty.
 
 `jobfilter-newgrad` looks like the aggressive one and is nearly free.
 
-#### Sizing the cap
+#### Do not cap Ollama. Prioritise it instead.
 
-Two numbers that look like measurements and are not:
+This was got wrong twice before the kill log made it obvious, so the reasoning
+is worth keeping.
 
-- **~18GB from the model blob size.** Wrong; the gap to reality is KV cache at
-  `num_ctx: 8192`. Never size a limit off the blob.
-- **`MemoryPeak` = 24.01GiB.** An artifact of a pre-existing `MemoryHigh=24G` -
-  Ollama pressed against its old ceiling and was held there. A cap measured
-  through another cap tells you about the cap. The kill log's `anon-rss` of
-  21.7-22.4GB is the honest figure.
+A `MemoryHigh` on `ollama.service` looks like the right tool and is not. Ollama
+logs, on every CPU load:
 
-`MemoryPeak` is also a high-water mark since the service started, so on a box
-with days of uptime it reports something historical and a new cap looks like it
-changed nothing. `systemctl restart ollama` resets it.
-
-To measure without waiting for a real run - a normal run can no-op entirely if
-nothing gets past `gate_job()` - load the model directly. Ollama pre-allocates
-KV cache for the full `num_ctx` regardless of prompt length, so a one-word
-prompt reproduces the real memory shape:
-
-```bash
-sudo systemctl restart ollama
-curl -s http://localhost:11434/api/chat -d '{"model":"gemma4:26b",
-  "messages":[{"role":"user","content":"hi"}],"stream":false,
-  "options":{"num_ctx":8192},"keep_alive":"60s"}' > /dev/null
-systemctl show ollama -p MemoryPeak -p MemoryCurrent
+```
+msg="disabling mmap for llama-server load by default" reason=cpu
 ```
 
-#### The budget
+With mmap off the weights are **anonymous** memory, not file-backed. Anonymous
+pages cannot be dropped and re-read; they can only go to swap. So at
+`memory.high` the kernel cannot reclaim, the cgroup stalls, and the OOM killer
+resolves it. A cap below true demand does not degrade gracefully — it *causes*
+the kill:
 
-31.26GiB usable. Spigot runs `-Xms8G -Xmx8G -XX:+AlwaysPreTouch`, so its heap is
-pre-committed and its RSS is a constant 8.85GiB - not a worst case that might
-never materialise.
-
-| | Ollama | Spigot | Total | Margin |
-|---|---|---|---|---|
-| Old (`MemoryHigh=24G`) | 24.0 | 8.85 | **32.85** | **-1.6 -> kills** |
-| Cap alone | 22.0 | 8.85 | 30.85 | 0.4 - too thin |
-| **With `-Xmx6G`** | 22.0 | 6.43 | 28.43 | **2.83** |
-
-The cap alone does not create headroom. Ollama genuinely needs ~22GB and the
-only place to find the rest is the JVM heap. The `-Xmx6G` row is what is in
-force as of 2026-09-12; Spigot's measured RSS at 6G is 6.43GiB (6747340kB). Cutting `num_ctx` is **not** the
-lever - 4096 reintroduces the prompt overflow described in the migration notes,
-where long postings silently push the rubric out of context. That trades ~3GiB
-for wrong scores.
-
-#### Applying it
-
-`ollama.service` is package-provided, so extend it with a drop-in rather than
-editing it - `pacman -Syu` overwrites the unit but never `/etc`:
-
-```bash
-sudo systemctl edit ollama
 ```
+Sep 12 06:23:39  Killed process 2110534 (llama-server)  anon-rss:17809520kB  oom_score_adj:500
+```
+
+`MemoryPeak` at that moment was 23632752640 (22.008GiB) against a `MemoryHigh`
+of 23622320128 (22.000GiB) — dead on the limit, while the machine still had
+~8.5GiB free. The box was not short of memory. The cgroup was.
+
+**What works is telling the kernel who to sacrifice, not how much to allow:**
 
 ```ini
 [Service]
 CPUWeight=50
-# Makes Ollama the preferred OOM victim. An unattended scoring run is the right
-# thing to lose: filter_jobs aborts after three consecutive failures, and the
-# seen-list means the next run picks up what it missed.
+# Ollama is the right thing to lose. filter_jobs aborts after three consecutive
+# failures; the orchestrator keeps its checkpoint and retries the filter phase
+# 15 min later, skipping phases already done. A killed scoring run costs ~17
+# minutes. A killed Minecraft server costs whatever was unsaved.
 OOMScoreAdjust=500
-MemoryHigh=22G
-MemoryMax=26G
+MemoryHigh=infinity
+MemoryMax=infinity
 ```
-
-**Keep every memory setting in one file.** `systemctl set-property` writes to
-`/etc/systemd/system.control/<unit>.d/50-<Property>.conf`, a *different* drop-in
-from `override.conf`, and drop-ins merge by filename order - so `override.conf`
-sorts last and quietly wins over `50-MemoryHigh.conf`. Two sources for one
-property is a value that changes on reboot. Verify against the kernel, never
-`systemctl show`:
 
 ```bash
-cat /sys/fs/cgroup/system.slice/ollama.service/memory.high
+sudo systemctl set-property user.slice MemoryMin=6G
+sudo systemctl set-property user-1000.slice MemoryMin=6G
 ```
 
-Then protect the neighbour, so the kernel knows who not to take. On archlab
-Spigot is a hand-started JVM in a login session, **not** a systemd unit
-(`cat /proc/<pid>/cgroup` -> `/user.slice/user-1000.slice/session-57.scope`), so
-the protection goes on the slices above it:
-
-```bash
-sudo systemctl set-property user.slice MemoryMin=8G
-sudo systemctl set-property user-1000.slice MemoryMin=8G
-```
+`MemoryMin` matched to the JVM `-Xmx` is the protection that matters: it makes
+the heap the thing that is never reclaimed. Sized to `-Xmx`, not above it — the
+JVM overhead beyond the heap is genuinely reclaimable and should stay that way.
 
 **Both slices are required, not just the leaf.** In cgroup v2 the effective
 `memory.min` is limited by every ancestor's, so setting it only on the session
-scope yields an effective protection of zero - `systemctl show` cheerfully
-reports 8G while the kernel honours nothing. The session scope itself cannot be
-persisted; its number changes with every login. Wrapping Spigot in a system unit
-under `system.slice` removes the wrinkle entirely and is the right fix whenever
-the server next restarts anyway.
+scope yields an effective protection of zero — `systemctl show` cheerfully
+reports the value while the kernel honours nothing. Verify against the kernel:
 
-`MemoryMin` rather than `MemoryLow` because the heap is pre-touched, and a GC'd
-heap touches its whole range unpredictably - a page evicted as "cold" faults back
-in at the worst possible moment.
+```bash
+cat /sys/fs/cgroup/user.slice/memory.min
+cat /sys/fs/cgroup/user.slice/user-1000.slice/memory.min
+cat /sys/fs/cgroup/system.slice/ollama.service/memory.high    # expect: max
+```
 
-If the neighbour is in Docker, set the limit on the container; systemd has no say
-over it.
+On archlab the Minecraft server is a hand-started Spigot JVM in a `screen`
+session, **not** a systemd unit (`cat /proc/<pid>/cgroup` ->
+`/user.slice/user-1000.slice/session-N.scope`), which is why the protection goes
+on the slices above it. The scope itself cannot be persisted; its number changes
+every login. A real system unit under `system.slice` would remove that wrinkle.
+
+#### What Ollama actually loads
+
+Its own sizing is not to be trusted. From the launch line and fit log:
+
+```
+--model <26b> -c 8192 -np 1 --mmproj <blob> --spec-type draft-mtp --spec-draft-model <blob>
+
+| - Host       | 9499 = 8727 + 560 + 212 |
+| - CPU_REPACK | 8167 = 8167 +   0 +   0 |
+projected to use 9499 MiB ... will leave 22514 >= 3454 MiB, no changes needed
+```
+
+Three models resident, not one: the 26B, a **draft model** for speculative
+decoding, and a **1.29GiB multimodal projector** that is pure waste here — job
+descriptions are text. And the fit decision ("no changes needed") counted the
+9499MiB Host line while ignoring the 8167MiB of `CPU_REPACK` directly above it.
+Real total ~17.25GiB for the process, ~22GiB for the cgroup.
+
+`-np 1` confirms a single slot, so concurrent lanes are **not** multiplying KV
+cache — Ollama serialises them. If demand ever has to come down, the `mmproj`
+and the draft model are the two levers that cost no scoring quality. Cutting
+`num_ctx` is **not** one: 4096 reintroduces the prompt overflow described in the
+migration notes, where long postings silently push the rubric out of context.
+
+#### The budget
+
+31.26GiB usable. Spigot is `-Xms6G -Xmx6G -XX:+AlwaysPreTouch`, so the heap is
+pre-committed and RSS is a constant ~5.8-6.4GiB regardless of player count.
+
+| | Ollama | Spigot | Left over |
+|---|---|---|---|
+| Original (`-Xmx8G`) | ~21.3 | 8.85 | **1.09GiB** -> kills |
+| **Now (`-Xmx6G`)** | ~21.3 | 5.76 | **4.2GiB** |
+
+Cutting the heap was the fix. It is the only change that created headroom; the
+caps layered on top of it were what kept killing llama-server afterwards.
+
+#### It recovers on its own
+
+Worth knowing before treating a kill as an emergency. `filter.log`:
+
+```
+06:23:39  Phase 'filter' failed: Subprocess exited with code 1
+06:23:39  Checkpoint kept — this phase will be retried without redoing earlier phases.
+06:38:39  Resuming pipeline from phase: filter
+06:40:36  === Pipeline complete ===
+```
+
+`RemoteDisconnected` in that traceback is `filter_jobs.py` watching llama-server
+vanish mid-request. Across Sep 06-12, three of ~14 cycles hit this and all three
+completed ~17 minutes late. The seen-list means nothing is scored twice and
+nothing is skipped.
+
 
 #### Levers in this repo
 
