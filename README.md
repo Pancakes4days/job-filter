@@ -421,10 +421,11 @@ never materialise.
 |---|---|---|---|---|
 | Old (`MemoryHigh=24G`) | 24.0 | 8.85 | **32.85** | **-1.6 -> kills** |
 | Cap alone | 22.0 | 8.85 | 30.85 | 0.4 - too thin |
-| **With `-Xmx6G`** | 22.0 | 6.85 | 28.85 | **2.4** |
+| **With `-Xmx6G`** | 22.0 | 6.43 | 28.43 | **2.83** |
 
 The cap alone does not create headroom. Ollama genuinely needs ~22GB and the
-only place to find the rest is the JVM heap. Cutting `num_ctx` is **not** the
+only place to find the rest is the JVM heap. The `-Xmx6G` row is what is in
+force as of 2026-09-12; Spigot's measured RSS at 6G is 6.43GiB (6747340kB). Cutting `num_ctx` is **not** the
 lever - 4096 reintroduces the prompt overflow described in the migration notes,
 where long postings silently push the rubric out of context. That trades ~3GiB
 for wrong scores.
