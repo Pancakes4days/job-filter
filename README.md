@@ -329,103 +329,175 @@ Both restart on failure but not on a clean stop.
 
 ### Memory budget
 
-Relevant only when the box shares RAM with something else — on archlab it shares
-with a Minecraft server, and that combination produced real OOM kills.
+Relevant only when the box shares RAM with something else - on archlab it shares
+with a hand-started Spigot server, and that combination produced real OOM kills.
+Everything below is measured on that host (2026-09-11), not estimated.
+
+#### Read the kill log before theorising
+
+```bash
+journalctl -k -b --grep='killed process|out of memory'
+```
+
+Note the quoting: `--grep -i 'pattern'` makes `--grep` swallow `-i` as its value
+and the pattern is then parsed as a field match, failing with a confusing
+"Failed to add match ... Invalid argument". Use `--grep='...'`.
+
+On archlab that produced three kills, and every line contradicted a guess made
+beforehand:
+
+```
+Sep 05 06:22:59  Killed process 52703  (llama-server)  anon-rss:17999112kB  UID:965
+Sep 09 13:26:53  Killed process 314338 (llama-server)  anon-rss:22351996kB  UID:965
+Sep 10 06:24:06  Killed process 376953 (llama-server)  anon-rss:21696328kB  UID:965
+```
+
+**The victim was always Ollama, never the JVM.** `UID:965` is the ollama user.
+The Minecraft server was never killed - what presented as "Minecraft is being
+disrupted" was memory pressure degrading it, plus scoring runs dying. An
+`OOMScoreAdjust=500` already on `ollama.service` had been doing its job.
+
+**The kills track the main pipeline, not the hourly lane.** 06:22, 13:26 and
+06:24 are 22-26 minutes into the 06:00 and 13:00 slots. `jobfilter.service`
+scores hundreds of jobs per cycle; `jobfilter-ngjobs` scores single digits. The
+lane that *fires* most often is not the one that costs most - reach for the kill
+timestamps before reasoning about schedules.
+
+**`anon-rss` is 18-22GB while `file-rss` is kilobytes.** Ollama's footprint is
+almost entirely anonymous memory, not file-backed mmap. That decides what a cap
+can do: anonymous pages cannot be dropped and re-read, only swapped. A
+`MemoryHigh` below the real need buys swapping, not graceful degradation. Do not
+set one expecting "it just runs slower".
+
+#### What the lanes actually cost
 
 Inference memory is **not** proportional to how many jobs a run finds. Any run
-that gets one ungated job past `gate_job()` pulls the entire model resident, the
-same for one posting as for fifty. So the cost is driven by how OFTEN a lane
-calls the model, not how much work it does.
-
-**Measured, not estimated:** `systemctl show ollama -p MemoryPeak` after a real
-scoring run reports **~24GiB** (25783328768 bytes, 2026-09-11). That is well
-above the ~18GB the migration notes predicted from the model blob alone — the
-gap is KV cache, because `num_ctx` was raised 4096 → 8192 on this host. Re-measure
-after any change to `model` or `num_ctx`; do not size limits off the blob size.
-
-That distinguishes the two new-grad lanes, which is easy to get backwards:
+that gets one ungated job past `gate_job()` pulls the whole model resident, the
+same for one posting as for fifty.
 
 | Lane | Fires | Calls Ollama? | Memory |
 |---|---|---|---|
 | `jobfilter-newgrad` | every 15 min | **no** | tens of MB, transient |
-| `jobfilter-ngjobs` | every 2h | **yes** | ~24GiB spike per run |
-| `jobfilter` | 06:00, 13:00 | yes | ~24GiB for the cycle |
+| `jobfilter-ngjobs` | every 2h | yes | ~19GiB, small batches |
+| `jobfilter` | 06:00, 13:00 | yes | **~22GiB** - the expensive one |
 
-`jobfilter-newgrad` looks like the aggressive one and is nearly free. The hourly
-`ngjobs` schedule was the expensive one, which is why it is now every 2h.
+`jobfilter-newgrad` looks like the aggressive one and is nearly free.
 
-Two of the three levers live in this repo:
+#### Sizing the cap
+
+Two numbers that look like measurements and are not:
+
+- **~18GB from the model blob size.** Wrong; the gap to reality is KV cache at
+  `num_ctx: 8192`. Never size a limit off the blob.
+- **`MemoryPeak` = 24.01GiB.** An artifact of a pre-existing `MemoryHigh=24G` -
+  Ollama pressed against its old ceiling and was held there. A cap measured
+  through another cap tells you about the cap. The kill log's `anon-rss` of
+  21.7-22.4GB is the honest figure.
+
+`MemoryPeak` is also a high-water mark since the service started, so on a box
+with days of uptime it reports something historical and a new cap looks like it
+changed nothing. `systemctl restart ollama` resets it.
+
+To measure without waiting for a real run - a normal run can no-op entirely if
+nothing gets past `gate_job()` - load the model directly. Ollama pre-allocates
+KV cache for the full `num_ctx` regardless of prompt length, so a one-word
+prompt reproduces the real memory shape:
+
+```bash
+sudo systemctl restart ollama
+curl -s http://localhost:11434/api/chat -d '{"model":"gemma4:26b",
+  "messages":[{"role":"user","content":"hi"}],"stream":false,
+  "options":{"num_ctx":8192},"keep_alive":"60s"}' > /dev/null
+systemctl show ollama -p MemoryPeak -p MemoryCurrent
+```
+
+#### The budget
+
+31.26GiB usable. Spigot runs `-Xms8G -Xmx8G -XX:+AlwaysPreTouch`, so its heap is
+pre-committed and its RSS is a constant 8.85GiB - not a worst case that might
+never materialise.
+
+| | Ollama | Spigot | Total | Margin |
+|---|---|---|---|---|
+| Old (`MemoryHigh=24G`) | 24.0 | 8.85 | **32.85** | **-1.6 -> kills** |
+| Cap alone | 22.0 | 8.85 | 30.85 | 0.4 - too thin |
+| **With `-Xmx6G`** | 22.0 | 6.85 | 28.85 | **2.4** |
+
+The cap alone does not create headroom. Ollama genuinely needs ~22GB and the
+only place to find the rest is the JVM heap. Cutting `num_ctx` is **not** the
+lever - 4096 reintroduces the prompt overflow described in the migration notes,
+where long postings silently push the rubric out of context. That trades ~3GiB
+for wrong scores.
+
+#### Applying it
+
+`ollama.service` is package-provided, so extend it with a drop-in rather than
+editing it - `pacman -Syu` overwrites the unit but never `/etc`:
+
+```bash
+sudo systemctl edit ollama
+```
+
+```ini
+[Service]
+CPUWeight=50
+# Makes Ollama the preferred OOM victim. An unattended scoring run is the right
+# thing to lose: filter_jobs aborts after three consecutive failures, and the
+# seen-list means the next run picks up what it missed.
+OOMScoreAdjust=500
+MemoryHigh=22G
+MemoryMax=26G
+```
+
+**Keep every memory setting in one file.** `systemctl set-property` writes to
+`/etc/systemd/system.control/<unit>.d/50-<Property>.conf`, a *different* drop-in
+from `override.conf`, and drop-ins merge by filename order - so `override.conf`
+sorts last and quietly wins over `50-MemoryHigh.conf`. Two sources for one
+property is a value that changes on reboot. Verify against the kernel, never
+`systemctl show`:
+
+```bash
+cat /sys/fs/cgroup/system.slice/ollama.service/memory.high
+```
+
+Then protect the neighbour, so the kernel knows who not to take. On archlab
+Spigot is a hand-started JVM in a login session, **not** a systemd unit
+(`cat /proc/<pid>/cgroup` -> `/user.slice/user-1000.slice/session-57.scope`), so
+the protection goes on the slices above it:
+
+```bash
+sudo systemctl set-property user.slice MemoryMin=8G
+sudo systemctl set-property user-1000.slice MemoryMin=8G
+```
+
+**Both slices are required, not just the leaf.** In cgroup v2 the effective
+`memory.min` is limited by every ancestor's, so setting it only on the session
+scope yields an effective protection of zero - `systemctl show` cheerfully
+reports 8G while the kernel honours nothing. The session scope itself cannot be
+persisted; its number changes with every login. Wrapping Spigot in a system unit
+under `system.slice` removes the wrinkle entirely and is the right fix whenever
+the server next restarts anyway.
+
+`MemoryMin` rather than `MemoryLow` because the heap is pre-touched, and a GC'd
+heap touches its whole range unpredictably - a page evicted as "cold" faults back
+in at the worst possible moment.
+
+If the neighbour is in Docker, set the limit on the container; systemd has no say
+over it.
+
+#### Levers in this repo
 
 - **`keep_alive`** (`config/config.json`, sent per-request by `call_ollama`).
-  Ollama's default is 5 minutes of idle residency after a run; `60s` gives the
-  ~24GiB back promptly instead. Per-request rather than an `OLLAMA_KEEP_ALIVE`
-  drop-in specifically so it is version-controlled beside the code that depends
-  on it.
-- **The 2h `ngjobs` schedule**, which sets how many spikes a day there are.
+  Ollama's default is 5 minutes of idle residency after a run; `60s` returns the
+  memory promptly. Per-request rather than an `OLLAMA_KEEP_ALIVE` drop-in so it
+  is version-controlled beside the code that depends on it.
+- **The 2h `ngjobs` schedule.** Worth keeping for tidiness, but note above that
+  this lane was never the expensive one.
 
-The third cannot: **the cap itself has to go on `ollama.service`**, because that
-is the process holding the 24GiB. This is the same trap the Pi's `CPUQuota=300%`
-fell into — a limit on `jobfilter.service` bounds `orchestrator.py`, which is
-HTTP requests and JSON parsing, and leaves inference entirely unbounded. Put a
-`MemoryMax` on the jobfilter units and you will cap a ~50MB Python process while
-the actual 24GiB carries on.
-
-`ollama.service` is package-provided, so extend it rather than editing it:
-
-```bash
-sudo systemctl edit ollama          # opens a drop-in; add the [Service] block
-```
-
-```ini
-[Service]
-# Soft cap: over this the kernel reclaims from Ollama instead of growing it.
-# Most of that is mmap'd weights, so reclaim costs a re-read from disk —
-# scoring slows, which is the trade you want against a dead server.
-MemoryHigh=19G
-# Hard ceiling: if it blows past, the kernel kills OLLAMA rather than choosing
-# a victim. An unattended scoring run is the right thing to lose — filter_jobs
-# aborts after three consecutive failures and the seen-list makes the next run
-# pick up what it missed.
-MemoryMax=21G
-```
-
-And on whatever shares the box, so the kernel knows who to protect — for the
-Minecraft server, `MemoryMin` equal to the JVM `-Xmx` (heap pages are then never
-reclaimed) plus a `MemoryLow` band for metaspace, GC structures and thread
-stacks, which run meaningfully above the heap:
-
-```bash
-systemctl list-units --type=service | grep -i -e minecraft -e paper -e spigot
-sudo systemctl edit <that-unit>
-```
-
-```ini
-[Service]
-MemoryMin=8G
-MemoryLow=10G
-```
-
-Neither applies if the server is a hand-started `java` in tmux or a
-`systemctl --user` service — it is not in a cgroup systemd controls, and the
-lines silently do nothing. Wrap it in a system unit first.
-
-On 32GB this does **not** close cleanly: ~24 Ollama + ~10 Minecraft (8G heap +
-JVM overhead) + ~2 system is ~36GiB of 32. What makes it survivable is that most
-of Ollama's footprint is mmap'd weights, which the kernel CAN reclaim and
-re-read from disk — so under pressure Ollama gets slower rather than dying,
-provided the JVM heap is explicitly protected. That is what `MemoryMin` is for,
-and it is the single most important line here: it decides who dies.
-
-Do not cut `num_ctx` to claw back the KV cache. 4096 reintroduces the prompt
-overflow described in the migration notes, where long postings silently push the
-rubric out of context — that trades ~3GiB for wrong scores.
-
-To confirm a suspected OOM kill is actually this, rather than guessing:
-
-```bash
-journalctl -k -b --grep -i 'killed process|out of memory'
-systemctl show ollama.service -p MemoryPeak
-```
+A `MemoryMax` on the jobfilter units would do nothing: they run `orchestrator.py`
+and `filter_jobs.py`, which are HTTP requests and JSON parsing. All inference
+lives in `ollama.service`. This is the same trap the Pi's `CPUQuota=300%` fell
+into - see the migration notes.
 
 `jobfilter.service` pins the pipeline to 3 CPU cores (`CPUQuota=300%`) so the
 Pi's watchdog is less likely to kill it; `jobfilter-web.service` is capped at

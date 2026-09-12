@@ -8,18 +8,21 @@ Description=Scrape newgrad-jobs.com every 2 hours
 # Cost is one page per category (~110KB), so five requests per run.
 #
 # Why 2h and not hourly: this lane calls filter_jobs.py, and any run with at
-# least one ungated job pulls the whole model into RAM — a MEASURED ~24GiB, not
-# the ~18GB the model blob suggests (the rest is KV cache at num_ctx 8192). That
-# spike is the same size for one job as for fifty, so the memory cost scales
-# with how OFTEN this fires, not how much it finds. Hourly put 24 of those
-# spikes a day next to a Minecraft JVM on a 32GB box and the kernel started
-# OOM-killing.
+# least one ungated job pulls the whole model into RAM. That spike is the same
+# size for one job as for fifty, so the memory cost scales with how OFTEN this
+# fires, not how much it finds — and on a box shared with a Minecraft server,
+# 24 spikes a day is a lot of chances to collide.
+#
+# Honesty about the evidence: this lane was NOT what the OOM killer caught. The
+# kills on archlab were all 22-26 min into the 06:00 and 13:00 slots, i.e.
+# jobfilter.service scoring hundreds of jobs, against this lane's single digits.
+# 2h is cheap insurance, not the fix. The fix is the cap on ollama.service and
+# the JVM heap size — see README "Memory budget", which has the kill log.
 #
 # 2h is deliberately just inside the ~2.2h refill window for us/swe (README,
 # "The dedicated lane") — the margin is thin. If you see the 50-row window rolling
-# past you (jobs in the DB with big gaps in posted-at), go back to hourly and
-# take the memory back somewhere else instead, e.g. a smaller model for this
-# lane. Do not stretch this past 2h.
+# past you (jobs in the DB with big gaps in posted-at), go back to hourly. The
+# memory argument for 2h is weak enough that coverage should win.
 OnCalendar=*-*-* 00/2:00:00
 
 # Unlike the fast lane, a missed run here IS worth catching up on: the 50-row
