@@ -289,7 +289,7 @@ don't push backups.
 
 Five systemd units, all with `User=` / `WorkingDirectory=` you adjust to match
 your setup: the **pipeline**, the **web app**, the **nightly DB backup**, the
-**new-grad fast lane**, and the **newgrad-jobs.com hourly lane**.
+**new-grad fast lane**, and the **newgrad-jobs.com lane**.
 
 ```bash
 # 1. Pipeline (scrape → score → store)
@@ -312,7 +312,7 @@ sudo cp jobfilter-newgrad.service jobfilter-newgrad.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now jobfilter-newgrad.timer
 
-# 5. newgrad-jobs.com lane (hourly; see "newgrad-jobs.com" below for why)
+# 5. newgrad-jobs.com lane (every 2h; see "newgrad-jobs.com" below for why)
 sudo cp jobfilter-ngjobs.service jobfilter-ngjobs.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now jobfilter-ngjobs.timer
@@ -326,6 +326,93 @@ sudo systemctl stop jobfilter        # clean shutdown, no restart
 ```
 
 Both restart on failure but not on a clean stop.
+
+### Memory budget
+
+Relevant only when the box shares RAM with something else — on archlab it shares
+with a Minecraft server, and that combination produced real OOM kills.
+
+Inference memory is **not** proportional to how many jobs a run finds. Any run
+that gets one ungated job past `gate_job()` pulls the entire model resident:
+~18GB for `gemma4:26b`, the same for one posting as for fifty. So the cost is
+driven by how OFTEN a lane calls the model, not how much work it does.
+
+That distinguishes the two new-grad lanes, which is easy to get backwards:
+
+| Lane | Fires | Calls Ollama? | Memory |
+|---|---|---|---|
+| `jobfilter-newgrad` | every 15 min | **no** | tens of MB, transient |
+| `jobfilter-ngjobs` | every 2h | **yes** | ~18GB spike per run |
+| `jobfilter` | 06:00, 13:00 | yes | ~18GB for the cycle |
+
+`jobfilter-newgrad` looks like the aggressive one and is nearly free. The hourly
+`ngjobs` schedule was the expensive one, which is why it is now every 2h.
+
+Two of the three levers live in this repo:
+
+- **`keep_alive`** (`config/config.json`, sent per-request by `call_ollama`).
+  Ollama's default is 5 minutes of idle residency after a run; `60s` gives the
+  ~18GB back promptly instead. Per-request rather than an `OLLAMA_KEEP_ALIVE`
+  drop-in specifically so it is version-controlled beside the code that depends
+  on it.
+- **The 2h `ngjobs` schedule**, which sets how many spikes a day there are.
+
+The third cannot: **the cap itself has to go on `ollama.service`**, because that
+is the process holding the 18GB. This is the same trap the Pi's `CPUQuota=300%`
+fell into — a limit on `jobfilter.service` bounds `orchestrator.py`, which is
+HTTP requests and JSON parsing, and leaves inference entirely unbounded. Put a
+`MemoryMax` on the jobfilter units and you will cap a ~50MB Python process while
+the actual 18GB carries on.
+
+`ollama.service` is package-provided, so extend it rather than editing it:
+
+```bash
+sudo systemctl edit ollama          # opens a drop-in; add the [Service] block
+```
+
+```ini
+[Service]
+# Soft cap: over this the kernel reclaims from Ollama instead of growing it.
+# Most of the 18GB is mmap'd weights, so reclaim costs a re-read from disk —
+# scoring slows, which is the trade you want against a dead server.
+MemoryHigh=19G
+# Hard ceiling: if it blows past, the kernel kills OLLAMA rather than choosing
+# a victim. An unattended scoring run is the right thing to lose — filter_jobs
+# aborts after three consecutive failures and the seen-list makes the next run
+# pick up what it missed.
+MemoryMax=21G
+```
+
+And on whatever shares the box, so the kernel knows who to protect — for the
+Minecraft server, `MemoryMin` equal to the JVM `-Xmx` (heap pages are then never
+reclaimed) plus a `MemoryLow` band for metaspace, GC structures and thread
+stacks, which run meaningfully above the heap:
+
+```bash
+systemctl list-units --type=service | grep -i -e minecraft -e paper -e spigot
+sudo systemctl edit <that-unit>
+```
+
+```ini
+[Service]
+MemoryMin=8G
+MemoryLow=10G
+```
+
+Neither applies if the server is a hand-started `java` in tmux or a
+`systemctl --user` service — it is not in a cgroup systemd controls, and the
+lines silently do nothing. Wrap it in a system unit first.
+
+On 32GB that budget is ~19 Ollama + ~10 Minecraft (8G heap + JVM overhead) + ~2
+system. **Change the Minecraft heap and the Ollama caps have to change too** —
+it is one budget split across two units.
+
+To confirm a suspected OOM kill is actually this, rather than guessing:
+
+```bash
+journalctl -k -b --grep -i 'killed process|out of memory'
+systemctl show ollama.service -p MemoryPeak
+```
 
 `jobfilter.service` pins the pipeline to 3 CPU cores (`CPUQuota=300%`) so the
 Pi's watchdog is less likely to kill it; `jobfilter-web.service` is capped at
@@ -813,11 +900,11 @@ CrowdStrike, Oscar Health, Nuro, NC DIT). The two are complements, not
 substitutes, which is why the coverage gap below was worth a dedicated lane
 rather than shrugging at.
 
-### The hourly lane
+### The dedicated lane
 
 Because `us/swe` refills its 50 slots in ~2 hours, the twice-daily pipeline sees
 only a fraction of it. `jobfilter-ngjobs.timer` closes that gap by running a
-normal scrape/score/store pass against this source alone, every hour:
+normal scrape/score/store pass against this source alone, every 2 hours:
 
 ```bash
 python3 scripts/scraper.py --only newgrad_jobs --out data/ngjobs_scraped.json

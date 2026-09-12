@@ -8,9 +8,14 @@ config/local.json
 # Runtime state + outputs (live under data/)
 seen_jobs.txt
 scraped_jobs.json
+ngjobs_scraped.json
 *.csv
 *.xlsx
 *.log
+# Rotated logs. *.log alone does NOT cover these: logrotate appends a numeric
+# suffix and then a .gz, so filter.log.1 / filter.log.2.gz fall outside it and
+# were committed by accident once (d22c7f7). Keep both patterns.
+*.log.*
 orchestrator_state.json
 orchestrator.lock
 recruitment_alerts.json

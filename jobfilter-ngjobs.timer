@@ -1,16 +1,32 @@
 [Unit]
-Description=Scrape newgrad-jobs.com every hour
+Description=Scrape newgrad-jobs.com every 2 hours
 
 [Timer]
-# Hourly, around the clock. The source's own feed runs ~8h behind real time, so
-# there is no local "business hours" window worth aligning to — and an overnight
-# run is nearly free because it finds few new jobs to score.
-# Cost is one page per category (~110KB), so five requests an hour.
-OnCalendar=hourly
+# Every 2 hours, around the clock. The source's own feed runs ~8h behind real
+# time, so there is no local "business hours" window worth aligning to — and an
+# overnight run is nearly free because it finds few new jobs to score.
+# Cost is one page per category (~110KB), so five requests per run.
+#
+# Why 2h and not hourly: this lane calls filter_jobs.py, and any run with at
+# least one ungated job pulls the whole ~18GB model into RAM. That spike is the
+# same size for one job as for fifty, so the memory cost scales with how OFTEN
+# this fires, not how much it finds. Hourly put 24 of those spikes a day next to
+# a Minecraft JVM on a 32GB box and the kernel started OOM-killing.
+#
+# 2h is deliberately just inside the ~2.2h refill window for us/swe (README,
+# "The dedicated lane") — the margin is thin. If you see the 50-row window rolling
+# past you (jobs in the DB with big gaps in posted-at), go back to hourly and
+# take the memory back somewhere else instead, e.g. a smaller model for this
+# lane. Do not stretch this past 2h.
+OnCalendar=*-*-* 00/2:00:00
 
 # Unlike the fast lane, a missed run here IS worth catching up on: the 50-row
-# window rolls forward whether the Pi is up or not, so after downtime the useful
-# move is to grab the current window immediately rather than wait for the hour.
+# window rolls forward whether the box is up or not, so after downtime the useful
+# move is to grab the current window immediately rather than wait for the slot.
+#
+# Note this fires shortly after boot, which is often exactly when you have just
+# started the box to play. The MemoryMin on the Minecraft unit's own drop-in
+# (README, "Memory budget") is what keeps that from being a problem.
 Persistent=true
 
 # Keep it off the exact hour, where every other cron-shaped thing fires.

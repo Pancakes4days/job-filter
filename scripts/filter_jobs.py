@@ -326,6 +326,17 @@ def call_ollama(config, system_prompt, user_prompt):
         "stream": False,
         "think": False,
         "format": RESULT_SCHEMA,
+        # How long Ollama holds the model resident after this request. Its
+        # default is 5 minutes, which was harmless when only the twice-daily
+        # pipeline called it and is not once jobfilter-ngjobs is scoring on its
+        # own schedule: gemma4:26b is ~18GB, and on a box sharing RAM with
+        # anything else that idle residency is what gets something OOM-killed.
+        #
+        # Requests inside one run are back-to-back (~40-60s of scoring per job),
+        # so this window never expires mid-run — it only shortens the tail after
+        # the last job. Do not drop it below ~30s or the model starts unloading
+        # BETWEEN jobs and every posting pays a fresh ~18GB load.
+        "keep_alive": config.get("keep_alive", "60s"),
         "options": {
             "temperature": config.get("temperature", 0.1),
             "num_ctx": config.get("num_ctx", 4096),

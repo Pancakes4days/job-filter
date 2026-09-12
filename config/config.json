@@ -4,6 +4,7 @@
   "temperature": 0.1,
   "num_ctx": 8192,
   "timeout_seconds": 600,
+  "keep_alive": "60s",
   "profile": {
     "threshold": 7,
     "skills": [
