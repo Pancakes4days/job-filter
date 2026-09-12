@@ -333,17 +333,23 @@ Relevant only when the box shares RAM with something else — on archlab it shar
 with a Minecraft server, and that combination produced real OOM kills.
 
 Inference memory is **not** proportional to how many jobs a run finds. Any run
-that gets one ungated job past `gate_job()` pulls the entire model resident:
-~18GB for `gemma4:26b`, the same for one posting as for fifty. So the cost is
-driven by how OFTEN a lane calls the model, not how much work it does.
+that gets one ungated job past `gate_job()` pulls the entire model resident, the
+same for one posting as for fifty. So the cost is driven by how OFTEN a lane
+calls the model, not how much work it does.
+
+**Measured, not estimated:** `systemctl show ollama -p MemoryPeak` after a real
+scoring run reports **~24GiB** (25783328768 bytes, 2026-09-11). That is well
+above the ~18GB the migration notes predicted from the model blob alone — the
+gap is KV cache, because `num_ctx` was raised 4096 → 8192 on this host. Re-measure
+after any change to `model` or `num_ctx`; do not size limits off the blob size.
 
 That distinguishes the two new-grad lanes, which is easy to get backwards:
 
 | Lane | Fires | Calls Ollama? | Memory |
 |---|---|---|---|
 | `jobfilter-newgrad` | every 15 min | **no** | tens of MB, transient |
-| `jobfilter-ngjobs` | every 2h | **yes** | ~18GB spike per run |
-| `jobfilter` | 06:00, 13:00 | yes | ~18GB for the cycle |
+| `jobfilter-ngjobs` | every 2h | **yes** | ~24GiB spike per run |
+| `jobfilter` | 06:00, 13:00 | yes | ~24GiB for the cycle |
 
 `jobfilter-newgrad` looks like the aggressive one and is nearly free. The hourly
 `ngjobs` schedule was the expensive one, which is why it is now every 2h.
@@ -352,17 +358,17 @@ Two of the three levers live in this repo:
 
 - **`keep_alive`** (`config/config.json`, sent per-request by `call_ollama`).
   Ollama's default is 5 minutes of idle residency after a run; `60s` gives the
-  ~18GB back promptly instead. Per-request rather than an `OLLAMA_KEEP_ALIVE`
+  ~24GiB back promptly instead. Per-request rather than an `OLLAMA_KEEP_ALIVE`
   drop-in specifically so it is version-controlled beside the code that depends
   on it.
 - **The 2h `ngjobs` schedule**, which sets how many spikes a day there are.
 
 The third cannot: **the cap itself has to go on `ollama.service`**, because that
-is the process holding the 18GB. This is the same trap the Pi's `CPUQuota=300%`
+is the process holding the 24GiB. This is the same trap the Pi's `CPUQuota=300%`
 fell into — a limit on `jobfilter.service` bounds `orchestrator.py`, which is
 HTTP requests and JSON parsing, and leaves inference entirely unbounded. Put a
 `MemoryMax` on the jobfilter units and you will cap a ~50MB Python process while
-the actual 18GB carries on.
+the actual 24GiB carries on.
 
 `ollama.service` is package-provided, so extend it rather than editing it:
 
@@ -373,7 +379,7 @@ sudo systemctl edit ollama          # opens a drop-in; add the [Service] block
 ```ini
 [Service]
 # Soft cap: over this the kernel reclaims from Ollama instead of growing it.
-# Most of the 18GB is mmap'd weights, so reclaim costs a re-read from disk —
+# Most of that is mmap'd weights, so reclaim costs a re-read from disk —
 # scoring slows, which is the trade you want against a dead server.
 MemoryHigh=19G
 # Hard ceiling: if it blows past, the kernel kills OLLAMA rather than choosing
@@ -403,9 +409,16 @@ Neither applies if the server is a hand-started `java` in tmux or a
 `systemctl --user` service — it is not in a cgroup systemd controls, and the
 lines silently do nothing. Wrap it in a system unit first.
 
-On 32GB that budget is ~19 Ollama + ~10 Minecraft (8G heap + JVM overhead) + ~2
-system. **Change the Minecraft heap and the Ollama caps have to change too** —
-it is one budget split across two units.
+On 32GB this does **not** close cleanly: ~24 Ollama + ~10 Minecraft (8G heap +
+JVM overhead) + ~2 system is ~36GiB of 32. What makes it survivable is that most
+of Ollama's footprint is mmap'd weights, which the kernel CAN reclaim and
+re-read from disk — so under pressure Ollama gets slower rather than dying,
+provided the JVM heap is explicitly protected. That is what `MemoryMin` is for,
+and it is the single most important line here: it decides who dies.
+
+Do not cut `num_ctx` to claw back the KV cache. 4096 reintroduces the prompt
+overflow described in the migration notes, where long postings silently push the
+rubric out of context — that trades ~3GiB for wrong scores.
 
 To confirm a suspected OOM kill is actually this, rather than guessing:
 
