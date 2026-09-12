@@ -1,0 +1,32 @@
+{
+  "scraped_at": "2026-09-12T02:01:35.978351+00:00",
+  "jobs": [
+    {
+      "title": "Software Engineer I",
+      "company": "Uber",
+      "location": "New York, NY",
+      "salary": "$153000-$169000/yr",
+      "url": "https://jobright.ai/jobs/info/6a8e95552808f771d52887bd",
+      "description": "Work model: Hybrid\nRole type: Inhouse\nCompany size: 10000+\nIndustry: Software, Big Data\nPosted: 2026-09-11\n\nQUALIFICATIONS:\n1. Employer will accept a Bachelor's degree Computer Science, Engineering (Any), Information Technology, Mathematics, Physics, or related field, and one year of experience in the job offered or in a related occupation.\n2. Python;\n3. GIT;\n...",
+      "source": "newgrad_jobs"
+    },
+    {
+      "title": "Associate Full Stack Engineer",
+      "company": "Revolutional",
+      "location": "United States",
+      "salary": "$75000-$100000/yr",
+      "url": "https://jobright.ai/jobs/info/6a619d137196365a6f00b904",
+      "description": "Work model: Remote\nRole type: Inhouse\nCompany size: 101-250\nIndustry: Government, Enterprise Software, Cloud Computing\nH1B sponsorship: No\nPosted: 2026-09-11\n\nQUALIFICATIONS:\n1. Qualified candidates must be US citizens and able to obtain a minimum of a Public Trust clearance\n2. Travel: 0-20%\n3. US citizenship is required with the ability to obtain and maintain a Public Trust clearance.\n...",
+      "source": "newgrad_jobs"
+    },
+    {
+      "title": "Associate Software Engineer (Frontend)",
+      "company": "Book of the Month",
+      "location": "New York, NY",
+      "salary": "$80000-$100000/yr",
+      "url": "https://jobright.ai/jobs/info/6aa495cd8275e3a211760ed5",
+      "description": "Work model: On Site\nRole type: Inhouse\nCompany size: 11-50\nIndustry: Software, Apps\nPosted: 2026-09-11\n\nQUALIFICATIONS:\n1. 1+ years of experience shipping high-quality production code\n2. Proficiency in at least one modern programming language (e.g., TypeScript, Node JS, Next JS) with the ability to ramp up quickly on others\n3. Adaptability and a genuine interest in learning new technologies, languages, and paradigms as the work demands\n...",
+      "source": "newgrad_jobs"
+    }
+  ]
+}
