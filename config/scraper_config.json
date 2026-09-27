@@ -165,6 +165,15 @@
       "_note": "newgrad-jobs.com's listings, read from the jobright.ai minisite pages its tabs embed. Categories are the site's own tab names as '<country>/<name>'; the full list is in scraper.py's connector comment. ca/* tabs exist but every Canadian city is in location_exclude, so only us/* is worth fetching. Each category returns its newest 50 postings per run. That is 2-12h of volume in us/swe (bursty: ~23/hr in US business hours) and 22-168h in the others, so us/swe is the one that wants a short scrape interval — twice a day misses most of it."
     },
     {
+      "name": "Built In NYC - entry-level dev/engineering",
+      "type": "builtin",
+      "enabled": true,
+      "url": "https://www.builtinnyc.com/jobs/dev-engineering/entry-level",
+      "max_pages": 10,
+      "request_delay": 1,
+      "_note": "Built In's NYC board, filtered by path to dev/engineering + entry level. Any other Built In board URL works the same way (another city, category or level) - use path filters, not ?search=, which robots.txt disallows. ~100 postings over ~5 pages, sorted by relevance not date, so every page is read each run."
+    },
+    {
       "name": "Company watchlist",
       "type": "watchlist",
       "enabled": true,

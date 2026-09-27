@@ -2,11 +2,12 @@
 """
 Job scraper for the job_filter pipeline. Stdlib only, Python 3.9+.
 
-Pulls listings from machine-readable sources (no fragile HTML scraping):
+Pulls listings from machine-readable sources (HTML only where none exists):
   - RemoteOK public JSON API
   - We Work Remotely RSS feeds
   - Community job-list GitHub repos (raw README tables)
   - newgrad-jobs.com (the jobright.ai minisite JSON behind its tabs)
+  - Built In city boards (the one HTML-card connector — Built In has no JSON)
 
 Applies cheap keyword pre-filtering (so the slow LLM step only sees
 plausible candidates), then writes scraped_jobs.json in the exact format
@@ -1086,6 +1087,117 @@ def scrape_newgrad_jobs(source_cfg):
     return jobs
 
 
+# ---------------------------------------------------------------- Built In
+# Built In's city boards (builtinnyc.com, builtin.com/jobs/...). There is no
+# JSON behind the listing — cards are server-rendered HTML — so this is the one
+# connector that reads markup. It keys on the cards' data-id attributes and
+# Font Awesome icon names rather than on layout classes, which Built In
+# restyles far more often than it renames.
+#
+# robots.txt allows /jobs/<category>/<level>?page=N; it only disallows /jobs
+# URLs carrying ?search= or a percent-escape, so stick to the path filters.
+BUILTIN_DEFAULT_URL = "https://www.builtinnyc.com/jobs/dev-engineering/entry-level"
+BUILTIN_MAX_PAGES = 10         # 25 cards a page; the NYC entry-level board is ~5
+_BI_CARD_SPLIT = 'data-id="job-card"'
+_BI_TITLE_RE = re.compile(
+    r'<a\b[^>]*\bhref="(/job/[^"]+)"[^>]*data-id="job-card-title"[^>]*>(.*?)</a>',
+    re.S)
+_BI_COMPANY_RE = re.compile(r'data-id="company-title"[^>]*>(.*?)</a>', re.S)
+# Each card attribute sits in a span after its icon; the icon says which it is.
+_BI_ATTR_RE = re.compile(
+    r'fa-(house-building|location-dot|sack-dollar|trophy)\b[^>]*></i>\s*</div>'
+    r'\s*(?:<div>\s*)?<span[^>]*>(.*?)</span>', re.S)
+_BI_AGE_RE = re.compile(r'fa-clock\b[^>]*></i>(.*?)</span>', re.S)
+_BI_INDUSTRY_RE = re.compile(r'<div class="mb-md fs-xs fw-bold">(.*?)</div>', re.S)
+_BI_SUMMARY_RE = re.compile(
+    r'<div class="fs-sm fw-regular mb-md text-gray-04">(.*?)</div>', re.S)
+
+
+def _bi_text(fragment):
+    return WS_RE.sub(" ", html.unescape(TAG_RE.sub(" ", fragment or ""))).strip()
+
+
+def _bi_page_url(base, page):
+    parts = urllib.parse.urlsplit(base)
+    pairs = [(k, v) for k, v in urllib.parse.parse_qsl(parts.query)
+             if k != "page"]
+    if page > 1:
+        pairs.append(("page", str(page)))
+    return urllib.parse.urlunsplit(
+        (parts.scheme, parts.netloc, parts.path,
+         urllib.parse.urlencode(pairs), ""))
+
+
+def _bi_parse_card(card, origin):
+    """One listing card -> job dict, or None if it has no title link."""
+    m = _BI_TITLE_RE.search(card)
+    if m is None:
+        return None
+    attrs = {}
+    for icon, value in _BI_ATTR_RE.findall(card):
+        attrs.setdefault(icon, _bi_text(value))   # salary/level repeat per layout
+
+    lines = [f"{label}: {attrs[icon]}" for icon, label in (
+        ("house-building", "Work model"), ("trophy", "Experience"))
+        if attrs.get(icon)]
+    industry = _BI_INDUSTRY_RE.search(card)
+    if industry:
+        lines.append(f"Industry: {_bi_text(industry.group(1))}")
+    age = _BI_AGE_RE.search(card)
+    if age:
+        lines.append(f"Posted: {_bi_text(age.group(1))}")
+    summary = _BI_SUMMARY_RE.search(card)
+    if summary:
+        lines.append("")
+        lines.append(_bi_text(summary.group(1)))
+
+    company = _BI_COMPANY_RE.search(card)
+    return {
+        "title": _bi_text(m.group(2)),
+        "company": _bi_text(company.group(1)) if company else "",
+        "location": attrs.get("location-dot", ""),
+        "salary": attrs.get("sack-dollar", ""),
+        "url": urllib.parse.urljoin(origin, m.group(1)),
+        "description": "\n".join(lines)[:MAX_DESC_CHARS],
+        "source": "builtin",
+    }
+
+
+def scrape_builtin(source_cfg):
+    """A Built In job board, every page of it.
+    Config: {"type": "builtin",
+             "url": "https://www.builtinnyc.com/jobs/dev-engineering/entry-level"}"""
+    base = source_cfg.get("url") or BUILTIN_DEFAULT_URL
+    max_pages = source_cfg.get("max_pages", BUILTIN_MAX_PAGES)
+    delay = source_cfg.get("request_delay", 1)
+    origin = "{0.scheme}://{0.netloc}".format(urllib.parse.urlsplit(base))
+    jobs = []
+    for page in range(1, max_pages + 1):
+        if page > 1:
+            time.sleep(delay)
+        try:
+            raw = fetch(_bi_page_url(base, page))
+        except (urllib.error.URLError, TimeoutError) as e:
+            print(f"\n  ! builtin page {page} failed ({e}) — continuing", end="")
+            break
+        cards = raw.split(_BI_CARD_SPLIT)[1:]
+        found = [j for j in (_bi_parse_card(c, origin) for c in cards) if j]
+        if cards and not found:
+            # Cards present but nothing parsed: the markup moved, not the board.
+            print(f"\n  ! builtin page {page} had {len(cards)} cards but none "
+                  "parsed — Built In's card markup changed", end="")
+        if not found:
+            if page == 1:
+                print(f"\n  ! builtin {base} returned nothing — check the URL",
+                      end="")
+            break
+        jobs.extend(found)
+    else:
+        print(f"\n  ! builtin stopped at max_pages={max_pages} — raise it to "
+              "read the rest of the board", end="")
+    return jobs
+
+
 PLATFORM_FETCHERS = {
     "greenhouse": _fetch_greenhouse,
     "lever": _fetch_lever,
@@ -1132,6 +1244,7 @@ SCRAPERS = {
     "hn_hiring": scrape_hn_hiring,
     "github_list": scrape_github_list,
     "newgrad_jobs": scrape_newgrad_jobs,
+    "builtin": scrape_builtin,
     "watchlist": scrape_watchlist,
 }
 

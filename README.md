@@ -1081,6 +1081,45 @@ jobright stamps the *category* into `utm_campaign`, and a posting that appears
 under several tabs (they carry a `tabCategory` list) would otherwise arrive as
 several distinct URLs and survive dedupe as duplicates.
 
+## Built In
+
+The `builtin` source type reads a [Built In][bi] job board — any city, category
+and level you can express in the URL path.
+
+[bi]: https://www.builtinnyc.com/jobs/dev-engineering/entry-level
+
+```json
+{
+  "name": "Built In NYC - entry-level dev/engineering",
+  "type": "builtin",
+  "enabled": true,
+  "url": "https://www.builtinnyc.com/jobs/dev-engineering/entry-level"
+}
+```
+
+| Key | Default | What it does |
+|---|---|---|
+| `url` | the NYC entry-level dev/engineering board | Board to read; `?page=N` is added for you |
+| `max_pages` | `10` | Upper bound on pages (25 cards each) |
+| `request_delay` | `1` | Seconds to wait between pages |
+
+Built In has no JSON feed, so this is the one connector that reads HTML. It keys
+on the cards' `data-id` attributes and Font Awesome icon names (`fa-location-dot`,
+`fa-sack-dollar`, …) rather than layout classes. If Built In changes the card
+markup, the connector prints `had N cards but none parsed`, so a broken parser
+doesn't just look like an empty board.
+
+The board is sorted by relevance, not date, so every page is read on each run
+(~5 pages, ~100 postings for NYC entry-level). `seen_jobs.txt` keeps repeats away
+from the LLM. Filter with path segments only: `robots.txt` disallows `/jobs` URLs
+that carry `?search=`.
+
+Rows give the LLM the card's title, company, location, salary, work model,
+level, industries, posting age and Built In's one-paragraph summary. They don't
+include the full job body. Apply links point at Built In's own posting page, not
+the employer's ATS. A job that's also on your watchlist still dedupes on
+title+company+location.
+
 ## Running pieces by hand
 
 Each script still works standalone — handy for testing:
