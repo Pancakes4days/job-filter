@@ -49,7 +49,7 @@
       "Onsite or hybrid role located outside ALL of these areas: New York metro, Florida, Virginia, Boston, Colorado, Switzerland, Spain",
       "Requires Active Security Clearance",
       "Senior-level, staff, or principal-level role",
-      "Requires 2+ years of full-time professional experience",
+      "Requires ANY full-time professional experience (even 1 year) — new-grad roles only",
       "TS/SCI required",
       "Unpaid or commission-only",
       "Non-technical role (sales, legal, recruiting, marketing, design, operations)",
@@ -84,7 +84,13 @@
         "unclear": 0,
         "2026_or_earlier": 0
       },
-      "max_years_experience": 1,
+      "_max_years_note": "0 = new grad only. A posting whose minimum is 1+ years ('1+ years', '1-3 years', 'at least one year') is rejected; a range starting at 0 ('0-2 years') still passes, since it admits a new grad. Was 1, which let 131 of 790 kept jobs through on '1+ years' alone.",
+      "max_years_experience": 0,
+      "_max_range_top_note": "Upper end of a stated range ('0-5 years' -> 5). Above this, the role is aimed past new grads even though it technically admits one. 0-2 passes, 0-3 does not.",
+      "max_range_top_years": 2,
+      "_unclear_note": "A posting that never states its level is rejected, unless it came from a source whose whole list is new-grad roles — there, being listed IS the level, so it scores as new_grad. Prefix match on the job's source. Unclear used to score +1 and pass: 232 of 790 kept jobs, 3% applied to vs 15% for new_grad.",
+      "reject_unclear_seniority": true,
+      "new_grad_sources": ["github_list/", "newgrad_jobs"],
       "top_location_bonus": 1,
       "preferred_focus_bonus": 1,
       "skill_overlap_bonus": 1,
@@ -124,6 +130,7 @@
         "senior": [
           "\\b(senior|sr\\.?|staff|principal|distinguished|lead|head of|director|vp|vice president)\\b",
           "\\b(engineer|developer|scientist|programmer)\\s+(iii|iv|v|vi)\\b",
+          "\\b(engineer|developer|scientist|programmer)\\s+[3-9]\\b",
           "(?<!i or )(?<!1 or )\\b(engineer|developer|scientist|analyst|programmer|specialist)\\s+(ii|2)\\b",
           "(?<!1 or )\\blevel\\s+2\\b",
           "\\bl[4-9]\\b"

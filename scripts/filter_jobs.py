@@ -87,6 +87,7 @@ RESULT_SCHEMA = {
         "role_family":    {"type": "string", "enum": ROLE_FAMILIES},
         "seniority":      {"type": "string", "enum": SENIORITIES},
         "min_years_experience": {"type": "integer", "minimum": 0, "maximum": 15},
+        "range_top_years": {"type": "integer", "minimum": 0, "maximum": 15},
         "start_timing":   {"type": "string", "enum": START_TIMINGS},
         "clearance_required":       {"type": "boolean"},
         "advanced_degree_required": {"type": "boolean"},
@@ -94,14 +95,14 @@ RESULT_SCHEMA = {
         "evidence":       {"type": "string"},
     },
     "required": ["role_family", "seniority", "min_years_experience",
-                 "start_timing", "clearance_required",
+                 "range_top_years", "start_timing", "clearance_required",
                  "advanced_degree_required", "matched_skills", "evidence"],
 }
 
 # Fallback labels when a job is scored without a model call (--dry-run).
 DRY_RUN_RESULT = {
     "role_family": "software_engineering", "seniority": "new_grad",
-    "min_years_experience": 0, "start_timing": "unclear",
+    "min_years_experience": 0, "range_top_years": 0, "start_timing": "unclear",
     "clearance_required": False, "advanced_degree_required": False,
     "matched_skills": ["dry-run"], "evidence": "Dry run — no model called.",
 }
@@ -280,14 +281,18 @@ role_family — what the person in this job mainly does:
 seniority — the level this posting is aimed at:
   intern        internship, co-op, or any temporary/seasonal position
   new_grad      explicitly for graduating students or new graduates
-  junior        entry-level, "I", associate, 0-1 years
-  mid           2-5 years of experience expected
+  junior        entry-level, "I", associate, no experience required
+  mid           1 or more years of experience required
   senior_plus   senior, staff, principal, lead, or manager
   unclear       the posting does not indicate a level
 
 min_years_experience — smallest number of years of professional experience the
   posting requires. 0 if it asks for none or does not say. Ignore internships
   and coursework; only count required full-time professional experience.
+  A range uses its low end: "0-2 years" is 0, "1-3 years" is 1, "1+ years" is 1.
+
+range_top_years — the HIGH end of that experience range: "0-2 years" is 2,
+  "0-5 years" is 5. 0 if the posting gives no range or no upper end.
 
 start_timing — when the job starts:
   2027_or_later     starts in 2027 or later, or is for the 2027 graduating class
@@ -379,11 +384,24 @@ def score_from_classification(result, profile, job=None, gate=None):
         years = max(0, int(result.get("min_years_experience", 0)))
     except (TypeError, ValueError):
         years = 0
+    try:
+        range_top = max(0, int(result.get("range_top_years", 0)))
+    except (TypeError, ValueError):
+        range_top = 0
     skills = [str(s) for s in result.get("matched_skills", []) if str(s).strip()]
+
+    # A curated new-grad list states the level by listing the job at all, even
+    # when the scraped row is too thin for the model to see it.
+    source = ((job or {}).get("source") or "").lower()
+    if seniority == "unclear" and any(
+            source.startswith(p.lower()) for p in cfg.get("new_grad_sources", [])):
+        seniority = "new_grad"
 
     concerns, rejects = [], []
 
     max_years = cfg.get("max_years_experience", 1)
+    if seniority == "unclear" and cfg.get("reject_unclear_seniority"):
+        rejects.append("level not stated in posting")
     if family == "non_technical":
         rejects.append("non-technical role")
     if seniority == "senior_plus":
@@ -392,6 +410,8 @@ def score_from_classification(result, profile, job=None, gate=None):
         rejects.append("internship or temporary position")
     if years > max_years:
         rejects.append(f"requires {years}+ years experience")
+    elif range_top > cfg.get("max_range_top_years", 15):
+        rejects.append(f"experience range runs to {range_top} years")
     if start == "2026_or_earlier":
         rejects.append("starts 2026 or earlier")
     if result.get("clearance_required"):
