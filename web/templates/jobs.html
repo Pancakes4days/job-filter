@@ -38,12 +38,12 @@ cannot re-add them — that is what replaced the sync watermark.</p>
 <div class="table-scroll">
 <table class="jobs">
   <colgroup>
-    <col class="c-score"><col class="c-title"><col class="c-company">
+    <col class="c-score"><col class="c-title"><col class="c-source"><col class="c-company">
     <col class="c-loc"><col class="c-found"><col class="c-status"><col class="c-link">
   </colgroup>
   <thead>
   <tr>
-    <th>Score</th><th>Title</th><th>Company</th><th>Location</th>
+    <th>Score</th><th>Title</th><th>Source</th><th>Company</th><th>Location</th>
     <th>Found</th><th>Status</th><th>Link</th>
   </tr>
   </thead>
@@ -57,6 +57,7 @@ cannot re-add them — that is what replaced the sync watermark.</p>
        redirect to the list as you had it rather than to a bare /jobs. #}
     <td class="title"><a class="clamp" href="{{ url_for('job_detail', key=j.key, **back) }}"
         title="{{ j.title }}">{{ j.title or '(no title)' }}</a></td>
+    <td class="source"><span class="clamp" title="{{ j.source or '' }}">{{ j.source or '' }}</span></td>
     <td class="company"><span class="clamp" title="{{ j.company }}">{{ j.company }}</span></td>
     <td class="loc"><span class="clamp" title="{{ j.location }}">{{ j.location }}</span></td>
     <td class="found muted">{{ j.date_processed | shortdate }}</td>
@@ -64,7 +65,7 @@ cannot re-add them — that is what replaced the sync watermark.</p>
     <td class="link">{% if j.url %}<a href="{{ j.url }}" target="_blank" rel="noopener">apply</a>{% endif %}</td>
   </tr>
   {% else %}
-  <tr><td colspan="7" class="muted">Nothing matches those filters.</td></tr>
+  <tr><td colspan="8" class="muted">Nothing matches those filters.</td></tr>
   {% endfor %}
   </tbody>
 </table>

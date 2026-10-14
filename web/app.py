@@ -33,12 +33,13 @@ import sqlite3
 import sys
 from collections import Counter
 from pathlib import Path
+from urllib.parse import parse_qs, urlencode
 
 BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE / "scripts"))   # scripts/ import each other flatly
 
-from flask import (Flask, abort, g, jsonify, redirect, render_template,
-                   request, send_file, url_for)
+from flask import (Flask, abort, g, jsonify, make_response, redirect,
+                   render_template, request, send_file, url_for)
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 import db
@@ -240,9 +241,16 @@ def dashboard():
 # the job's own Status <select> is also named `status`, so an unprefixed hidden
 # input would come first in request.form and job_update would silently write
 # the filter's value into the job.
+#
+# The hidden inputs only exist when the job page was opened from the list. A
+# job reached any other way — the dashboard, a contact, a reload after Restore —
+# has none, and the save used to land on a bare /jobs. So the list also drops
+# its filters into a cookie each time it renders, and a save or archive that
+# arrives with nothing to go on returns to whatever the list last showed.
 
 JOBS_ARGS   = ("q", "company", "status", "min_score", "sort", "archived")
 BACK_PREFIX = "back_"
+JOBS_COOKIE = "jobs_filters"
 
 
 def carried_filters(source, *, prefixed):
@@ -261,11 +269,16 @@ def carried_filters(source, *, prefixed):
 
 
 def jobs_url_from(form):
-    """The Jobs URL a save should return to. Rebuilt through url_for from a
-    whitelist rather than echoing back a caller-supplied URL, so this round
-    trip can't be bent into an off-site redirect."""
-    params = {name: form.get(BACK_PREFIX + name) for name in JOBS_ARGS
-              if form.get(BACK_PREFIX + name)}
+    """The Jobs URL a save or archive should return to: the filters the form
+    carried, else the ones the list last rendered with (the cookie). Rebuilt
+    through url_for from a whitelist rather than echoing back a caller-supplied
+    URL, so this round trip can't be bent into an off-site redirect."""
+    source = form
+    if not any(form.get(BACK_PREFIX + name) for name in JOBS_ARGS):
+        source = parse_qs(request.cookies.get(JOBS_COOKIE, ""))
+        source = {BACK_PREFIX + k: v[0] for k, v in source.items()}
+    params = {name: source.get(BACK_PREFIX + name) for name in JOBS_ARGS
+              if source.get(BACK_PREFIX + name)}
     return url_for("jobs", **params)
 
 
@@ -285,7 +298,7 @@ def jobs():
         # sort is a SORT_ORDERS key, validated in db.search_jobs — never SQL.
         sort      = request.args.get("sort", db.JOBS_DEFAULT_SORT),
     )
-    return render_template(
+    page = render_template(
         "jobs.html",
         rows       = rows,
         archived   = archived,
@@ -302,6 +315,13 @@ def jobs():
         # Spread into each row's detail link so Save can find its way back here.
         back       = carried_filters(request.args, prefixed=False),
     )
+    resp = make_response(page)
+    # Remembered for jobs_url_from — see "returning to the list" above.
+    resp.set_cookie(JOBS_COOKIE,
+                    urlencode({n: request.args[n] for n in JOBS_ARGS
+                               if request.args.get(n)}),
+                    samesite="Lax", httponly=True)
+    return resp
 
 
 @app.route("/job")
@@ -327,8 +347,8 @@ def job_detail():
 # ── writes (phase 5) ──────────────────────────────────────────────────────────
 # The user owns these columns; the pipeline never touches them, so an edit here
 # and a `store` upsert can't collide. Each handler is one BEGIN IMMEDIATE
-# transaction and redirects back to the detail page (Post/Redirect/Get), so a
-# refresh never re-submits.
+# transaction and redirects (Post/Redirect/Get) — Save and Archive to the
+# list, Restore to the job — so a refresh never re-submits.
 
 def _require_job(conn, key):
     if not key or db.get_job(conn, key) is None:
@@ -360,7 +380,8 @@ def job_delete():
     _require_job(conn, key)
     with db.transaction(conn):
         db.soft_delete(conn, key, reason="user")
-    return redirect(url_for("job_detail", key=key))
+    # Back to the list, like Save: archiving is also "done with this one".
+    return redirect(jobs_url_from(request.form))
 
 
 @app.route("/job/restore", methods=["POST"])

@@ -157,9 +157,10 @@ td.num { text-align: right; font-family: var(--mono); }
    column instead of widening it. The wrapper keeps the horizontal scroll as a
    narrow-window fallback, so nothing is ever truly unreachable. */
 .table-scroll { overflow-x: auto; }
-table.jobs { table-layout: fixed; width: 100%; min-width: 62rem; }
+table.jobs { table-layout: fixed; width: 100%; min-width: 70rem; }
 
 .jobs .c-score { width: 3.5rem; }
+.jobs .c-source { width: 8rem; }
 .jobs .c-company { width: 10rem; }
 .jobs .c-loc { width: 15rem; }
 .jobs .c-found { width: 4.75rem; }
@@ -186,7 +187,7 @@ table.jobs { table-layout: fixed; width: 100%; min-width: 62rem; }
      its neighbour. This forces the break mid-token. */
   overflow-wrap: anywhere;
 }
-.jobs td.loc { color: var(--muted); }
+.jobs td.loc, .jobs td.source { color: var(--muted); }
 .jobs th, .jobs td.score, .jobs td.found, .jobs td.link { white-space: nowrap; }
 
 /* No sticky header here, deliberately. .table-scroll sets overflow-x, and a

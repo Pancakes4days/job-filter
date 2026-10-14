@@ -137,6 +137,10 @@
 <form method="post" action="{{ url_for('job_delete') }}" class="danger-form"
       onsubmit="return confirm('Archive this job? It stays as a tombstone and the pipeline won\'t re-add it.');">
   <input type="hidden" name="key" value="{{ job.key }}">
+  {# Archive returns to the list too, so it carries the same filters as Save. #}
+  {% for name, value in back.items() %}
+  <input type="hidden" name="{{ name }}" value="{{ value }}">
+  {% endfor %}
   <button type="submit" class="btn danger">Archive this job</button>
 </form>
 {% endif %}
