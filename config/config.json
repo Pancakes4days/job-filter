@@ -104,6 +104,16 @@
 
       "blocked_sources": ["hn_hiring"],
 
+      "_blocked_companies_note": "Employers whose listings are all AI-output rating, annotation or translation gigs. Matched against the company name, so a new phrasing of the same gig can't slip past a title rule.",
+      "blocked_companies": [
+        "\\bwelo\\b",
+        "\\bwelocalize\\b",
+        "\\binnodata\\b",
+        "^turing$",
+        "\\bprolific\\b",
+        "\\bmercor\\b"
+      ],
+
       "title_reject": {
         "non_technical": [
           "\\baccount (executive|manager|director)\\b",
@@ -134,6 +144,12 @@
           "(?<!i or )(?<!1 or )\\b(engineer|developer|scientist|analyst|programmer|specialist)\\s+(ii|2)\\b",
           "(?<!1 or )\\blevel\\s+2\\b",
           "\\bl[4-9]\\b"
+        ],
+        "gig": [
+          "\\braters?\\b",
+          "\\bfreelance\\b",
+          "\\b1099\\b",
+          "\\bflexible hours\\b"
         ],
         "quant": [
           "\\bquant(itative)?\\b",

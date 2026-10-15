@@ -174,6 +174,7 @@ def compile_gate(gate_cfg):
     return {
         "enabled": gate_cfg.get("enabled", True),
         "sources": {s.lower() for s in gate_cfg.get("blocked_sources", [])},
+        "companies": compile_all(gate_cfg.get("blocked_companies", [])),
         "titles": {rule: compile_all(pats)
                    for rule, pats in gate_cfg.get("title_reject", {}).items()
                    if not rule.startswith("_")},
@@ -196,6 +197,15 @@ def gate_job(job, gate):
     for blocked in gate["sources"]:
         if blocked in source:
             return ("source", blocked)
+
+    # Employers whose every listing is the same non-engineering work (AI-output
+    # rating, annotation, translation gigs) — no title rule can keep up with
+    # how they phrase it, but the name never changes.
+    company = job.get("company") or ""
+    if gate["companies"] is not None:
+        hit = gate["companies"].search(company)
+        if hit:
+            return ("company", hit.group(0))
 
     title = job.get("title") or ""
     for rule, pattern in gate["titles"].items():
@@ -272,11 +282,17 @@ Fill in each field:
 role_family — what the person in this job mainly does:
   software_engineering  writes application, product, or backend code
   security              security engineering, appsec, detection, threat work
-  ml_ai                 machine learning, AI, or research engineering
+  ml_ai                 builds, trains, or researches ML/AI systems. Rating,
+                        evaluating, annotating, or labeling AI output is NOT
+                        ml_ai — that is non_technical
   data                  data engineering, analytics engineering, pipelines
   infra_devops          SRE, DevOps, platform, cloud, or infrastructure
   other_technical       technical but none of the above (hardware, IT, QA, support)
-  non_technical         sales, legal, HR, marketing, design, operations, finance
+  non_technical         the job is not building or running software or systems:
+                        sales, legal, HR, marketing, design, operations, finance,
+                        AI rating/annotation/data labeling, language or
+                        translation work, fraud or investigations, business
+                        consulting, research assistants, healthcare, events
 
 seniority — the level this posting is aimed at:
   intern        internship, co-op, or any temporary/seasonal position
