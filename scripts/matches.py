@@ -91,3 +91,15 @@ def simplify_loc(loc):
 def month_day(d):
     """'Jul 3' from a date/datetime — cross-platform (strftime %-d is Linux-only)."""
     return f"{d:%b} {d.day}"
+
+
+def found_day(value):
+    """A stored date_processed ('2026-10-15 23:40', UTC) as the local day it
+    happened on, 'Oct 15'. The pipeline stamps UTC, and an evening filter run
+    in New York is already tomorrow in UTC — shown raw, a job found at 9 pm
+    read as found the next day. Converted here, at display, so the stored
+    values stay comparable and sort the same. Raises ValueError/TypeError on
+    anything that isn't TS_FORMAT."""
+    from datetime import datetime, timezone
+    utc = datetime.strptime(str(value).strip(), TS_FORMAT).replace(tzinfo=timezone.utc)
+    return month_day(utc.astimezone())

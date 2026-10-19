@@ -36,7 +36,7 @@ except ImportError:
 # row_key lives in matches.py (stdlib only) so db.py and the web app can key
 # rows without importing openpyxl. Re-exported here for callers that still do
 # `from export_workbook import row_key`.
-from matches import month_day, row_key  # noqa: F401 — re-export
+from matches import found_day, month_day, row_key  # noqa: F401 — re-export
 from paths import DATA_DIR
 
 XLSX_PATH = DATA_DIR / "matched_jobs.xlsx"
@@ -94,9 +94,13 @@ HEADER_FG = "FFFFFFFF"
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 def fmt_date(val):
-    """Format date_processed to clean 'Jun 17' style."""
+    """Format date_processed to clean 'Jun 17' style, in local time."""
     if not val:
         return ""
+    try:
+        return found_day(val)
+    except Exception:
+        pass
     try:
         from datetime import datetime
         return month_day(datetime.strptime(str(val).strip()[:10], "%Y-%m-%d"))

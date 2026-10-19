@@ -671,11 +671,11 @@ def isodate(value):
 
 @app.template_filter("shortdate")
 def shortdate(value):
-    """'2026-07-21 09:30' -> 'Jul 21'. Tolerates anything unparseable."""
-    from datetime import datetime
-    from matches import TS_FORMAT, month_day
+    """'2026-07-21 09:30' (UTC) -> 'Jul 21' (local). Tolerates anything
+    unparseable."""
+    from matches import found_day
     try:
-        return month_day(datetime.strptime(str(value), TS_FORMAT))
+        return found_day(value)
     except (TypeError, ValueError):
         return str(value or "")[:10]
 
